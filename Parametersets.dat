@@ -1,0 +1,811 @@
+Parameterset=1.01_Halloween
+alpha=5
+betha=1.5
+gamma=1
+delta=0
+omega=0
+lambda=-2.7
+degree=6
+npdegree=0
+scale=0.6
+palettegamma=0.5
+palette=10
+0 0 0 0
+0 133 51 18
+0.0189474 206 230 201
+0.0378947 38 38 68
+0.0589474 255 115 0
+0.0778947 255 255 0
+0.128421 255 255 255
+0.157895 0 255 0
+0.210526 248 8 0
+1 255 0 0
+end=
+Parameterset=1.02_MayanBracelet
+alpha=1
+betha=-0.1
+gamma=0.167
+delta=0
+omega=0
+lambda=-2.08
+degree=7
+npdegree=0
+scale=0.4
+palettegamma=0.5
+palette=7
+0 0 0 0
+0 255 255 0
+0.136842 255 0 0
+0.189474 86 255 89
+0.231579 0 0 212
+0.425263 255 255 255
+1 255 255 255
+end=
+Parameterset=1.07_WildChaos
+alpha=-1
+betha=-0.2
+gamma=-0.75
+delta=0
+omega=0.04
+lambda=1.5
+degree=3
+npdegree=24
+scale=0.87
+palettegamma=0.5
+palette=3
+0 0 0 0
+0.0620253 0 0 221
+1 255 255 255
+end=
+Parameterset=1.08_ClamTriple
+alpha=-1
+betha=0.1
+gamma=-0.82
+delta=0
+omega=0.12
+lambda=1.56
+degree=3
+npdegree=0
+scale=0.38
+palettegamma=0.3
+palette=8
+0 0 0 0
+0.0291667 230 233 255
+0.0833333 230 255 138
+0.135417 233 151 0
+0.183333 255 202 104
+0.233333 255 123 0
+0.377083 240 77 134
+1 255 0 0
+end=
+Parameterset=1.13_EmporersCloak
+alpha=1.806
+betha=0
+gamma=1
+delta=0
+omega=0
+lambda=-1.806
+degree=5
+npdegree=0
+scale=0.59
+palettegamma=0.5
+palette=6
+0 0 0 0
+0.0189873 255 233 255
+0.0721519 255 255 0
+0.187342 246 0 0
+0.420253 0 214 0
+1 255 255 255
+end=
+Parameterset=1.15_TheTrampoline
+alpha=-1
+betha=0.1
+gamma=-0.82
+delta=0
+omega=0
+lambda=1.56
+degree=3
+npdegree=0
+scale=0.38
+palettegamma=0.3
+palette=9
+0 0 0 0
+0.08 214 44 134
+0.189474 255 230 0
+0.235789 0 165 0
+0.362105 187 11 178
+0.418947 0 48 190
+0.549474 60 96 205
+0.591579 255 255 255
+1 255 255 255
+end=
+Parameterset=1.18_
+alpha=10
+betha=-12
+gamma=1
+delta=0
+omega=0
+lambda=-2.195
+degree=3
+npdegree=0
+scale=1.2
+palettegamma=0.5
+palette=3
+0 255 255 255
+0.128421 0 0 0
+1 0 0 0
+end=
+Parameterset=1.18_FishAndEye
+alpha=10
+betha=-12
+gamma=1
+delta=0
+omega=0
+lambda=-2.18
+degree=3
+npdegree=0
+scale=1.2
+palettegamma=0.5
+palette=3
+0 0 0 0
+0.329114 255 255 255
+1 255 255 255
+end=
+Parameterset=2.03_SwirlingStreamers
+alpha=2
+betha=0
+gamma=1
+delta=0
+omega=0.1
+lambda=-1.86
+degree=4
+npdegree=0
+scale=0.54
+palettegamma=0.5
+palette=8
+0 0 0 0
+0 50 62 115
+0.0333333 24 110 172
+0.0589474 140 135 214
+0.0854167 255 255 0
+0.158333 160 0 160
+0.216667 255 154 181
+1 255 154 183
+end=
+Parameterset=2.5_LaceByNine
+alpha=8
+betha=-0.7
+gamma=1
+delta=-0.9
+omega=0
+lambda=-2.5
+degree=9
+npdegree=0
+scale=0.75
+palettegamma=0.5
+palette=9
+0 0 0 0
+0 15 86 71
+0.0863158 190 221 165
+0.134737 215 197 126
+0.197895 172 127 60
+0.341053 224 0 0
+0.494737 255 153 0
+0.658947 247 214 158
+1 255 255 255
+end=
+Parameterset=3.04_GothicMedallion
+alpha=10
+betha=-12.3
+gamma=0.75
+delta=0.02
+omega=0
+lambda=-2.38
+degree=5
+npdegree=1
+scale=1.1
+palettegamma=0.5
+palette=8
+0 0 0 0
+0 255 0 0
+0.115789 119 135 0
+0.178947 0 209 0
+0.223158 0 0 255
+0.273684 0 255 255
+0.334737 210 255 255
+1 255 255 255
+end=
+Parameterset=3.05_TheSanddollar
+alpha=2
+betha=0.2
+gamma=0.1
+delta=0
+omega=0
+lambda=-2.34
+degree=5
+npdegree=0
+scale=0.49
+palettegamma=0.5
+palette=9
+0 0 0 0
+0 169 64 43
+0.0652632 255 239 167
+0.183158 185 137 83
+0.208421 194 65 0
+0.237895 0 0 199
+0.277895 0 153 0
+0.442105 255 255 0
+1 255 255 0
+end=
+Parameterset=3.06_PentagonAttractor
+alpha=-2
+betha=0
+gamma=-0.5
+delta=0
+omega=0
+lambda=2.6
+degree=5
+npdegree=0
+scale=0.38
+palettegamma=0.5
+palette=12
+0 0 0 0
+0 253 253 255
+0.0568421 219 240 228
+0.0842105 155 217 179
+0.111579 187 229 169
+0.136842 255 255 149
+0.16 74 162 125
+0.187368 152 230 229
+0.242105 68 116 199
+0.32 169 99 169
+0.423158 0 162 0
+1 0 165 0
+end=
+Parameterset=3.07_ChaoticFlower
+alpha=5
+betha=-1.9
+gamma=1
+delta=0
+omega=0.188
+lambda=-2.5
+degree=5
+npdegree=0
+scale=0.7
+palettegamma=0.5
+palette=6
+0 0 0 0
+0 255 255 0
+0.16 249 93 116
+0.195789 246 0 185
+0.237895 255 248 253
+1 255 255 255
+end=
+Parameterset=3.09_MercedesBenz
+alpha=-2.1
+betha=0
+gamma=1
+delta=1
+omega=0
+lambda=1
+degree=3
+npdegree=1
+scale=0.48
+palettegamma=0.2
+palette=9
+0 0 0 0
+0 224 224 184
+0.134737 135 135 135
+0.166316 255 255 255
+0.208421 43 138 147
+0.258947 0 0 187
+0.303158 166 166 255
+0.349474 255 255 200
+1 255 255 187
+end=
+Parameterset=3.11_KachinaDolls
+alpha=-2.5
+betha=0
+gamma=0.9
+delta=0
+omega=0
+lambda=2.409
+degree=23
+npdegree=0
+scale=0.53
+palettegamma=0.5
+palette=9
+0 0 0 0
+0 255 255 255
+0.0168421 228 228 243
+0.0294737 192 180 235
+0.0568421 212 0 0
+0.101053 0 167 0
+0.117895 0 0 165
+0.187368 249 249 4
+1 255 255 0
+end=
+Parameterset=3.11_Sunflower
+alpha=1.5
+betha=-0.014
+gamma=0.002
+delta=-0.02
+omega=0
+lambda=-2.225
+degree=57
+npdegree=0
+scale=0.45
+palettegamma=0.5
+palette=8
+0 0 0 0
+0 255 255 0
+0.0378947 255 234 0
+0.210526 255 26 0
+0.338947 255 0 0
+0.378947 0 0 255
+0.503158 0 217 0
+1 0 255 0
+end=
+Parameterset=3.13_SantaChiaraIcon
+alpha=-2.5
+betha=-0.2
+gamma=0.81
+delta=0
+omega=0
+lambda=2.409
+degree=24
+npdegree=0
+scale=0.53
+palettegamma=0.5
+palette=7
+0 0 0 0
+0 255 255 255
+0.0463158 96 106 34
+0.08 25 35 169
+0.143158 125 0 129
+0.212632 247 0 255
+1 255 255 255
+end=
+Parameterset=3.14_FrenchGlass
+alpha=3
+betha=-16.79
+gamma=1
+delta=0
+omega=0
+lambda=-2.05
+degree=9
+npdegree=0
+scale=0.7
+palettegamma=0.5
+palette=7
+0 0 0 0
+0 0 205 0
+0.0357895 128 99 156
+0.0505263 157 81 162
+0.138947 255 204 0
+0.189474 255 255 0
+1 255 255 250
+end=
+Parameterset=3.15_ThePentacle
+alpha=2.32
+betha=0
+gamma=0.75
+delta=0
+omega=0
+lambda=-2.32
+degree=5
+npdegree=0
+scale=0.49
+palettegamma=0.5
+palette=11
+0 0 0 0
+0 255 255 210
+0.0757895 247 247 195
+0.0968421 199 190 126
+0.117895 177 215 145
+0.138947 120 165 217
+0.157895 56 95 221
+0.178947 139 141 225
+0.244211 150 29 156
+0.355789 205 38 214
+1 223 34 223
+end=
+Parameterset=3_15_StarOfDavid
+alpha=1
+betha=-0.04
+gamma=0.14
+delta=0.088
+omega=0
+lambda=-2.42
+degree=6
+npdegree=0
+scale=0.33
+palettegamma=0.5
+palette=10
+0 0 0 0
+0 132 0 162
+0.0147368 255 255 255
+0.04 0 179 199
+0.0989474 104 125 185
+0.128421 192 191 210
+0.162105 255 0 0
+0.197895 255 255 0
+0.233684 0 192 0
+1 0 201 0
+end=
+Parameterset=5.05_GoldenFlintstone
+alpha=-2.5
+betha=0
+gamma=0.9
+delta=0
+omega=0
+lambda=2.5
+degree=3
+npdegree=0
+scale=0.37
+palettegamma=0.45
+palette=10
+0 0 0 0
+0 255 255 0
+0.0357895 255 255 0
+0.115789 255 0 0
+0.157895 0 0 255
+0.176842 255 255 255
+0.195789 154 0 154
+0.324211 0 221 0
+0.433684 255 120 120
+1 255 123 123
+end=
+Parameterset=5.12_a
+alpha=-1
+betha=0.03
+gamma=-0.8
+delta=0
+omega=0
+lambda=1.455
+degree=3
+npdegree=0
+scale=0.4
+palettegamma=0.5
+palette=6
+0 0 0 0
+0 255 255 255
+0.0652632 255 0 0
+0.138947 0 203 0
+0.151579 255 255 0
+1 255 255 0
+end=
+Parameterset=5.12_b
+alpha=-1
+betha=0.03
+gamma=-0.8
+delta=-0.025
+omega=0
+lambda=1.455
+degree=3
+npdegree=0
+scale=0.4
+palettegamma=0.5
+palette=6
+0 0 0 0
+0 255 255 255
+0.0989474 255 0 0
+0.162105 0 208 0
+0.216842 255 255 0
+1 255 255 0
+end=
+Parameterset=5.13_a
+alpha=-2.5
+betha=-0.1
+gamma=0.9
+delta=0
+omega=0
+lambda=2.39
+degree=16
+npdegree=0
+scale=0.54
+palettegamma=0.5
+palette=6
+0 0 0 0
+0 255 255 255
+0.128421 255 0 0
+0.237895 117 0 115
+0.4 255 255 0
+1 255 255 0
+end=
+Parameterset=5.13_b
+alpha=-2.5
+betha=-0.1
+gamma=0.9
+delta=0
+omega=-0.15
+lambda=2.39
+degree=16
+npdegree=0
+scale=0.54
+palettegamma=0.5
+palette=6
+0 0 0 0
+0 255 255 255
+0.216842 255 0 0
+0.273684 111 0 87
+0.431579 255 255 0
+1 255 255 0
+end=
+Parameterset=5.14_
+alpha=-1
+betha=0.1
+gamma=-0.8
+delta=0
+omega=0
+lambda=1.5
+degree=3
+npdegree=0
+scale=0.4
+palettegamma=0.5
+palette=3
+0 0 0 0
+0.224051 0 0 221
+1 255 255 255
+end=
+Parameterset=5.15_TrinityInRed
+alpha=-1
+betha=0.1
+gamma=-0.805
+delta=0
+omega=0
+lambda=1.5
+degree=3
+npdegree=0
+scale=0.4
+palettegamma=0.5
+palette=7
+0 0 0 0
+0 192 205 0
+0.0821053 255 0 0
+0.174737 0 172 46
+0.233684 0 0 185
+0.503158 255 255 255
+1 255 255 255
+end=
+Parameterset=andy_PureChaos
+alpha=9.5
+betha=-12
+gamma=1
+delta=0.22
+omega=0.47
+lambda=-2.3
+degree=3
+npdegree=5
+scale=0.85
+palettegamma=0.5
+palette=6
+0 0 0 0
+0.0329114 0 0 221
+0.0670886 230 114 197
+0.140506 176 134 255
+0.201266 0 50 111
+1 255 255 255
+end=
+Parameterset=fractint_12SpokeWheel
+alpha=4
+betha=1.5
+gamma=1
+delta=0
+omega=0
+lambda=-2.6
+degree=12
+npdegree=0
+scale=0.6
+palettegamma=0.4
+palette=7
+0 0 0 0
+0.0357895 248 243 255
+0.0968421 84 177 51
+0.109474 176 122 40
+0.136842 209 102 36
+0.227368 0 0 221
+1 255 255 255
+end=
+Parameterset=fractint_36SpokeWheel
+alpha=3.2
+betha=1.2
+gamma=-1.75
+delta=0
+omega=0
+lambda=-2.57
+degree=36
+npdegree=0
+scale=0.55
+palettegamma=0.5
+palette=6
+0 0 0 0
+0.0547368 96 96 96
+0.0673684 255 255 255
+0.0989474 255 0 0
+0.296842 0 0 221
+1 255 255 255
+end=
+Parameterset=fractint_ChristmasBow
+alpha=2.2
+betha=0.4
+gamma=0.05
+delta=0
+omega=0
+lambda=-2.34
+degree=5
+npdegree=0
+scale=0.5
+palettegamma=0.5
+palette=7
+0 0 0 0
+0.0336842 89 186 255
+0.0589474 175 0 85
+0.124211 0 178 131
+0.162105 255 255 255
+0.541053 0 0 0
+1 255 255 255
+end=
+Parameterset=fractint_FuzzyHexKnot
+alpha=1.807
+betha=-0.07
+gamma=1.08
+delta=0
+omega=0
+lambda=-1.806
+degree=6
+npdegree=0
+scale=0.5
+palettegamma=0.5
+palette=6
+0 0 0 0
+0.0294737 0 66 113
+0.0652632 255 255 255
+0.115789 0 0 0
+0.187368 0 80 145
+1 255 255 255
+end=
+Parameterset=fractint_Origami
+alpha=-2.5
+betha=0
+gamma=0.9
+delta=0
+omega=0
+lambda=2.409
+degree=4
+npdegree=0
+scale=0.43
+palettegamma=0.5
+palette=8
+0 0 0 0
+0.0210526 0 120 0
+0.0568421 178 218 56
+0.0926316 175 34 58
+0.107368 83 44 57
+0.166316 206 181 221
+0.212632 34 132 224
+1 255 255 255
+end=
+Parameterset=fractint_PendulumSwing
+alpha=1.806
+betha=-0.85
+gamma=1.8
+delta=0
+omega=0
+lambda=-1.9
+degree=7
+npdegree=0
+scale=0.55
+palettegamma=0.5
+palette=8
+0 0 0 0
+0 255 255 255
+0.117895 221 171 105
+0.149474 0 0 95
+0.189474 98 137 138
+0.223158 255 255 255
+0.349474 68 68 68
+1 0 0 0
+end=
+Parameterset=fractint_PentiUmmm
+alpha=8
+betha=-0.7
+gamma=1
+delta=0
+omega=0
+lambda=-2.5
+degree=5
+npdegree=0
+scale=0.87
+palettegamma=0.2
+palette=9
+0 0 0 0
+0.109474 12 12 12
+0.124211 142 142 142
+0.143158 255 255 255
+0.170526 0 0 71
+0.195789 255 97 12
+0.233684 239 251 11
+0.56 255 255 255
+1 255 255 255
+end=
+Parameterset=fractint_Square
+alpha=5
+betha=1.5
+gamma=1
+delta=0
+omega=0
+lambda=-2.7
+degree=4
+npdegree=0
+scale=0.7
+palettegamma=0.5
+palette=8
+0 0 0 0
+0.0505263 0 221 74
+0.0673684 255 255 255
+0.0926316 177 255 99
+0.113684 255 255 255
+0.145263 0 149 92
+0.330526 209 236 239
+1 255 255 255
+end=
+Parameterset=fractint_TwoTriangles
+alpha=-2.5
+betha=-0.9
+gamma=0.9
+delta=0
+omega=0
+lambda=2.4
+degree=3
+npdegree=0
+scale=0.43
+palettegamma=0.5
+palette=7
+0 0 0 0
+0.0736842 255 0 0
+0.12 205 184 178
+0.162105 168 113 40
+0.225263 26 123 140
+0.406316 171 207 213
+1 255 255 255
+end=
+Parameterset=fractint_WarriorsShield
+alpha=1.806
+betha=0
+gamma=1.5
+delta=0
+omega=0
+lambda=-1.806
+degree=7
+npdegree=0
+scale=0.6
+palettegamma=0.5
+palette=6
+0 0 0 0
+0.0147368 0 0 0
+0.0736842 221 174 22
+0.143158 12 91 70
+0.286316 192 192 229
+1 255 255 255
+end=
+Parameterset=fractint_Wingz
+alpha=-1
+betha=0.1
+gamma=-0.82
+delta=0
+omega=-0.3
+lambda=1.56
+degree=3
+npdegree=0
+scale=0.36
+palettegamma=0.5
+palette=7
+0 0 0 0
+0.0336842 0 255 0
+0.0863158 14 142 14
+0.136842 26 26 148
+0.235789 196 196 227
+0.492632 88 88 96
+1 255 255 255
+end=
