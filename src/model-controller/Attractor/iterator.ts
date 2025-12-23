@@ -1,5 +1,10 @@
+export class Point {
+  xpos: number;
+  ypos: number;
+}
+
 export interface Iterator {
-  iterate(xpos: number, ypos: number): { xpos: number; ypos: number };
+  iterate(point): Point;
 }
 
 export class SymmetricIconIterator implements Iterator {
@@ -12,22 +17,13 @@ export class SymmetricIconIterator implements Iterator {
     private lambda: number,
     private degree: number,
     private npdegree: number
-  ) {
-    console.log(
-      "value ",
-      this.alpha,
-      this.betha,
-      this.gamma,
-      this.delta,
-      this.omega,
-      this.degree
-    );
-  }
+  ) {}
 
-  public iterate(xpos: number, ypos: number): { xpos: number; ypos: number } {
+  public iterate(point: Point): Point {
     let zzbar: number, zz: number;
     let zreal: number, zimag: number;
     let za: number, zb: number, zn: number, zc: number, zd: number;
+    let { xpos, ypos } = point;
 
     zzbar = xpos * xpos + ypos * ypos;
 
@@ -77,7 +73,8 @@ export class CliffordIterator implements Iterator {
     private c: number,
     private d: number
   ) {}
-  iterate(xpos: number, ypos: number): { xpos: number; ypos: number } {
+  iterate(point: Point): Point {
+    let { xpos, ypos } = point;
     return {
       xpos: Math.sin(this.a * ypos) + this.c * Math.cos(this.a * xpos),
       ypos: Math.sin(this.b * xpos) + this.d * Math.cos(this.b * ypos),
