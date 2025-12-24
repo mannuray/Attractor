@@ -1,70 +1,101 @@
-# Getting Started with Create React App
+# Attractor
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+A real-time strange attractor visualization tool built with React and Web Workers. Generate beautiful mathematical art by exploring chaotic dynamical systems.
 
-## Available Scripts
+## Features
 
-In the project directory, you can run:
+- **Multiple Attractor Types**: Symmetric Icon, Symmetric Quilt, Clifford, De Jong, Tinkerbell, Henon, Bedhead, Svensson, Fractal Dream, and Hopalong
+- **Real-time Rendering**: Uses Web Workers and OffscreenCanvas for smooth, non-blocking iteration
+- **Custom Palettes**: Built-in palette editor with gamma correction and scaling options
+- **Presets**: Each attractor type comes with curated presets to explore
+- **High Resolution**: Configurable canvas sizes up to 4096x4096 with anti-aliasing
+- **Export**: Save your creations as PNG images
 
-### `npm start`
+## Attractor Types
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
+| Type | Formula | Parameters |
+|------|---------|------------|
+| **Symmetric Icon** | Complex polynomial with rotational symmetry | alpha, beta, gamma, delta, omega, lambda, degree |
+| **Symmetric Quilt** | Tiled patterns using sin/cos functions | lambda, alpha, beta, gamma, omega, m, shift |
+| **Clifford** | `x' = sin(a*y) + c*cos(a*x)` | a, b, c, d |
+| **De Jong** | `x' = sin(a*y) - cos(b*x)` | a, b, c, d |
+| **Svensson** | `x' = d*sin(a*x) - sin(b*y)` | a, b, c, d |
+| **Fractal Dream** | `x' = sin(y*b) + c*sin(x*b)` | a, b, c, d |
+| **Tinkerbell** | `x' = x² - y² + a*x + b*y` | a, b, c, d |
+| **Henon** | `x' = 1 - a*x² + y` | a, b |
+| **Bedhead** | `x' = sin(x*y/b)*y + cos(a*x - y)` | a, b |
+| **Hopalong** | `x' = y - sign(x)*sqrt(abs(b*x - c))` | a, b, c |
 
-The page will reload when you make changes.\
-You may also see any lint errors in the console.
+## Getting Started
 
-### `npm test`
+### Prerequisites
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+- Node.js 16+
+- npm or yarn
 
-### `npm run build`
+### Installation
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+```bash
+# Clone the repository
+git clone https://github.com/mannuray/Attractor.git
+cd Attractor
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+# Install dependencies
+npm install
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+# Start development server
+npm start
+```
 
-### `npm run eject`
+Open [http://localhost:3000](http://localhost:3000) to view the app.
 
-**Note: this is a one-way operation. Once you `eject`, you can't go back!**
+### Build for Production
 
-If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+```bash
+npm run build
+```
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
+## Usage
 
-You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
+1. **Select Attractor Type**: Choose from the dropdown menu
+2. **Choose a Preset**: Each type has curated presets with interesting parameters
+3. **Start Iteration**: Click "Start" to begin generating the attractor
+4. **Adjust Parameters**: Click "Edit" to modify parameters, then "Apply" to regenerate
+5. **Customize Colors**: Open the Palette editor to create custom color schemes
+6. **Export**: Click "Save Image" to download your creation as PNG
 
-## Learn More
+### Palette Settings
 
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
+- **Gamma**: Adjusts color distribution (lower = more contrast)
+- **Scale Mode**: Dynamic (based on max hits) or Fixed (manual threshold)
+- **Pal Max**: Fixed threshold value for color scaling
 
-To learn React, check out the [React documentation](https://reactjs.org/).
+## Architecture
 
-### Code Splitting
+```
+src/
+├── view/pages/Home.tsx      # Main UI component
+├── model-controller/
+│   └── Attractor/
+│       └── palette.ts       # Color palette management
+└── Parametersets.ts         # Preset data for all attractors
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
+public/
+└── worker.js                # Web Worker with iterator implementations
+```
 
-### Analyzing the Bundle Size
+## Performance
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
+- Uses **OffscreenCanvas** for GPU-accelerated rendering in supported browsers
+- Falls back to main-thread rendering for compatibility
+- **Color LUT** (lookup table) for fast palette interpolation
+- **Anti-aliasing** via supersampling
 
-### Making a Progressive Web App
+## License
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
+MIT
 
-### Advanced Configuration
+## Acknowledgments
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
-
-### Deployment
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
-
-### `npm run build` fails to minify
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+- Mathematical formulas based on research in chaotic dynamical systems
+- Inspired by the work of Clifford Pickover and other chaos mathematicians
