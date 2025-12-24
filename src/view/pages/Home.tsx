@@ -440,6 +440,7 @@ function Home() {
   const [palGamma, setPalGamma] = useState(1.0);
   const [palScale, setPalScale] = useState(false); // true = dynamic (maxHits), false = fixed (palMax)
   const [palMax, setPalMax] = useState(10000);
+  const [bgColor, setBgColor] = useState({ r: 255, g: 255, b: 255 }); // Background color for 0-hit pixels
   const [paletteKey, setPaletteKey] = useState(0);
   const [canvasKey, setCanvasKey] = useState(0); // Force new canvas element when incremented
   const [isEditing, setIsEditing] = useState(false); // Enable/disable parameter editing
@@ -494,7 +495,8 @@ function Home() {
   ): number => {
     const lut = colorLUTRef.current;
     if (!lut || maxHitsVal === 0) {
-      return 0xFFFFFFFF; // White (ABGR)
+      // Return background color (ABGR format)
+      return (255 << 24) | (bgColor.b << 16) | (bgColor.g << 8) | bgColor.r;
     }
 
     let totalR = 0, totalG = 0, totalB = 0;
@@ -510,11 +512,11 @@ function Home() {
         // Flat array access: x * height + y
         const hitVal = hits[col * iteratorSize + row] || 0;
 
-        // Background (no hits) is white
+        // Background (no hits) uses custom background color
         if (hitVal === 0) {
-          totalR += 255;
-          totalG += 255;
-          totalB += 255;
+          totalR += bgColor.r;
+          totalG += bgColor.g;
+          totalB += bgColor.b;
           continue;
         }
 
@@ -531,7 +533,7 @@ function Home() {
     const g = Math.round(totalG / aliasSq);
     const b = Math.round(totalB / aliasSq);
     return (255 << 24) | (b << 16) | (g << 8) | r;
-  }, []);
+  }, [bgColor]);
 
   // Clear canvas to white
   const clearCanvas = useCallback((size: number) => {
@@ -806,6 +808,7 @@ function Home() {
           palGamma: currentPalGamma,
           palScale,
           palMax,
+          bgColor,
         };
 
         worker.postMessage({ type: "initialize", payload }, [offscreen]);
@@ -847,6 +850,7 @@ function Home() {
         scale,
         palette: currentPalette,
         iterator: iteratorPayload,
+        bgColor,
       };
 
       worker.postMessage({ type: "initialize", payload });
@@ -1161,7 +1165,7 @@ function Home() {
   }, [initializeWorker]);
 
   // Update palette settings (gamma, scale mode, max)
-  const updatePaletteSettings = useCallback((newGamma?: number, newScale?: boolean, newMax?: number) => {
+  const updatePaletteSettings = useCallback((newGamma?: number, newScale?: boolean, newMax?: number, newBgColor?: { r: number; g: number; b: number }) => {
     if (workerRef.current) {
       workerRef.current.postMessage({
         type: "updatePaletteSettings",
@@ -1169,24 +1173,30 @@ function Home() {
           palGamma: newGamma ?? palGamma,
           palScale: newScale ?? palScale,
           palMax: newMax ?? palMax,
+          bgColor: newBgColor ?? bgColor,
         },
       });
     }
-  }, [palGamma, palScale, palMax]);
+  }, [palGamma, palScale, palMax, bgColor]);
 
   const handleGammaChange = useCallback((value: number) => {
     setPalGamma(value);
-    updatePaletteSettings(value, undefined, undefined);
+    updatePaletteSettings(value, undefined, undefined, undefined);
   }, [updatePaletteSettings]);
 
   const handleScaleModeChange = useCallback((useDynamic: boolean) => {
     setPalScale(useDynamic);
-    updatePaletteSettings(undefined, useDynamic, undefined);
+    updatePaletteSettings(undefined, useDynamic, undefined, undefined);
   }, [updatePaletteSettings]);
 
   const handlePalMaxChange = useCallback((value: number) => {
     setPalMax(value);
-    updatePaletteSettings(undefined, undefined, value);
+    updatePaletteSettings(undefined, undefined, value, undefined);
+  }, [updatePaletteSettings]);
+
+  const handleBgColorChange = useCallback((newColor: { r: number; g: number; b: number }) => {
+    setBgColor(newColor);
+    updatePaletteSettings(undefined, undefined, undefined, newColor);
   }, [updatePaletteSettings]);
 
   // Handle start/stop iteration
@@ -2313,6 +2323,67 @@ function Home() {
                     />
                   </div>
                 )}
+
+                {/* Background Color */}
+                <div style={{ marginTop: "16px" }}>
+                  <label style={{ display: "block", marginBottom: "8px", fontSize: "12px", fontWeight: 600, color: "rgba(255, 180, 120, 0.7)", textTransform: "uppercase", letterSpacing: "1px" }}>Background Color</label>
+                  <div style={{ display: "flex", gap: "12px", alignItems: "center" }}>
+                    <input
+                      type="color"
+                      value={`#${bgColor.r.toString(16).padStart(2, '0')}${bgColor.g.toString(16).padStart(2, '0')}${bgColor.b.toString(16).padStart(2, '0')}`}
+                      onChange={(e) => {
+                        const hex = e.target.value;
+                        const r = parseInt(hex.slice(1, 3), 16);
+                        const g = parseInt(hex.slice(3, 5), 16);
+                        const b = parseInt(hex.slice(5, 7), 16);
+                        handleBgColorChange({ r, g, b });
+                      }}
+                      style={{
+                        width: "60px",
+                        height: "40px",
+                        padding: "2px",
+                        borderRadius: "8px",
+                        border: "2px solid rgba(255, 180, 120, 0.3)",
+                        background: "transparent",
+                        cursor: "pointer",
+                      }}
+                    />
+                    <div style={{ display: "flex", gap: "8px", flex: 1 }}>
+                      <button
+                        onClick={() => handleBgColorChange({ r: 255, g: 255, b: 255 })}
+                        style={{
+                          flex: 1,
+                          padding: "8px",
+                          fontSize: "12px",
+                          fontWeight: 600,
+                          border: bgColor.r === 255 && bgColor.g === 255 && bgColor.b === 255 ? "2px solid #f59e0b" : "1px solid rgba(255, 180, 120, 0.2)",
+                          borderRadius: "8px",
+                          background: "#ffffff",
+                          color: "#000000",
+                          cursor: "pointer",
+                        }}
+                      >
+                        White
+                      </button>
+                      <button
+                        onClick={() => handleBgColorChange({ r: 0, g: 0, b: 0 })}
+                        style={{
+                          flex: 1,
+                          padding: "8px",
+                          fontSize: "12px",
+                          fontWeight: 600,
+                          border: bgColor.r === 0 && bgColor.g === 0 && bgColor.b === 0 ? "2px solid #f59e0b" : "1px solid rgba(255, 180, 120, 0.2)",
+                          borderRadius: "8px",
+                          background: "#000000",
+                          color: "#ffffff",
+                          cursor: "pointer",
+                        }}
+                      >
+                        Black
+                      </button>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
           </div>

@@ -18,6 +18,7 @@ let colorLUTSize = 2048;
 let palGamma = 1.0;       // Gamma correction for color distribution
 let palScale = false;     // true = dynamic (use maxHits), false = fixed (use palMax)
 let palMax = 10000;       // Fixed max value when palScale is false
+let bgColor = { r: 255, g: 255, b: 255 }; // Background color for 0-hit pixels
 
 // ============================================
 // COLOR PALETTE MANAGEMENT
@@ -78,14 +79,17 @@ function buildColorLUT(palette, lutSize) {
 
 // Get color for a pixel with anti-aliasing
 function getColorRGB(x, y, hits, maxHits, iteratorSize) {
+  // Return background color (ABGR format)
+  const bgColorPacked = (255 << 24) | (bgColor.b << 16) | (bgColor.g << 8) | bgColor.r;
+
   if (!colorLUT) {
-    return 0xffffffff; // White (ABGR)
+    return bgColorPacked;
   }
 
   // Determine the divisor based on scaling mode
   const divisor = palScale ? maxHits : palMax;
   if (divisor === 0) {
-    return 0xffffffff; // White (ABGR)
+    return bgColorPacked;
   }
 
   let totalR = 0,
@@ -102,11 +106,11 @@ function getColorRGB(x, y, hits, maxHits, iteratorSize) {
       const col = startX + dx;
       const hitVal = hits[col * iteratorSize + row] || 0;
 
-      // Background (no hits) is white
+      // Background (no hits) uses custom background color
       if (hitVal === 0) {
-        totalR += 255;
-        totalG += 255;
-        totalB += 255;
+        totalR += bgColor.r;
+        totalG += bgColor.g;
+        totalB += bgColor.b;
         continue;
       }
 
@@ -196,6 +200,7 @@ self.onmessage = (event) => {
     if (payload.palGamma !== undefined) palGamma = payload.palGamma;
     if (payload.palScale !== undefined) palScale = payload.palScale;
     if (payload.palMax !== undefined) palMax = payload.palMax;
+    if (payload.bgColor !== undefined) bgColor = payload.bgColor;
 
     // Check for OffscreenCanvas mode
     if (payload.mode === "offscreen" && payload.canvas) {
@@ -265,6 +270,7 @@ self.onmessage = (event) => {
     if (payload.palGamma !== undefined) palGamma = payload.palGamma;
     if (payload.palScale !== undefined) palScale = payload.palScale;
     if (payload.palMax !== undefined) palMax = payload.palMax;
+    if (payload.bgColor !== undefined) bgColor = payload.bgColor;
 
     if (mode === "offscreen") {
       render();
@@ -342,11 +348,11 @@ function getColorRGBInterpolated(x, y, hits, invDivisor, iteratorSize) {
       const col = startX + dx;
       const hitVal = hits[col * iteratorSize + row] || 0;
 
-      // Background (no hits) is white
+      // Background (no hits) uses custom background color
       if (hitVal === 0) {
-        totalR += 255;
-        totalG += 255;
-        totalB += 255;
+        totalR += bgColor.r;
+        totalG += bgColor.g;
+        totalB += bgColor.b;
         continue;
       }
 
