@@ -11,7 +11,7 @@ const CONFIG = {
   ALIAS: 2,
   INITIAL_ICON_INDEX: 32,
   ITERATION_INTERVAL_MS: 500, // Reduced for faster visual feedback
-  COLOR_LUT_SIZE: 1024, // Size of color lookup table
+  COLOR_LUT_SIZE: 2048, // Size of color lookup table (higher = smoother gradients)
 };
 
 // Types
@@ -1195,6 +1195,10 @@ function Home() {
       if (intervalRef.current) {
         clearInterval(intervalRef.current);
         intervalRef.current = null;
+      }
+      // Request high-quality final render with true interpolation (no LUT)
+      if (useOffscreenRef.current && canvasTransferredRef.current && workerRef.current) {
+        workerRef.current.postMessage({ type: "finalRender" });
       }
     } else {
       const id = setInterval(() => {

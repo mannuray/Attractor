@@ -9,9 +9,10 @@ let mode = "legacy";
 let offscreenCanvas = null;
 let ctx = null;
 let colorLUT = null;
+let currentPalette = null; // Store palette for final render interpolation
 let canvasSize = 0;
 let configAlias = 2;
-let colorLUTSize = 1024;
+let colorLUTSize = 2048;
 
 // Palette gamma and max hits scaling
 let palGamma = 1.0;       // Gamma correction for color distribution
@@ -204,12 +205,16 @@ self.onmessage = (event) => {
       canvasSize = size;
       configAlias = alias;
 
-      // Build color LUT from palette
+      // Build color LUT from palette and store palette for final render
       if (palette && lutSize) {
+        currentPalette = palette;
         buildColorLUT(palette, lutSize);
       }
     } else {
       mode = "legacy";
+      if (palette) {
+        currentPalette = palette;
+      }
     }
 
     // Initialize iterator and canvas
@@ -244,6 +249,7 @@ self.onmessage = (event) => {
     // Update color LUT when palette changes
     const { palette, colorLUTSize: lutSize } = payload;
     if (palette && lutSize) {
+      currentPalette = palette;
       buildColorLUT(palette, lutSize);
 
       if (mode === "offscreen") {
@@ -277,8 +283,93 @@ self.onmessage = (event) => {
         });
       });
     }
+  } else if (type === "finalRender") {
+    // High-quality final render using true interpolation (no LUT)
+    if (mode === "offscreen" && ctx && iterCanvas && currentPalette) {
+      renderFinal();
+      self.postMessage({
+        type: "finalRenderComplete",
+        payload: { maxHits: iterCanvas.getMaxHits(), totalIterations: iterCanvas.getTotalIterations() },
+      });
+    }
   }
 };
+
+// ============================================
+// FINAL HIGH-QUALITY RENDER (True Interpolation)
+// ============================================
+
+function renderFinal() {
+  if (!ctx || !iterCanvas || !currentPalette) return;
+
+  const size = canvasSize;
+  const hits = iterCanvas.getHits();
+  const maxHits = iterCanvas.getMaxHits();
+  const iteratorSize = iterCanvas.iterator_size;
+
+  if (maxHits === 0) {
+    ctx.fillStyle = "#ffffff";
+    ctx.fillRect(0, 0, size, size);
+    return;
+  }
+
+  const imageData = ctx.createImageData(size, size);
+  const data32 = new Uint32Array(imageData.data.buffer);
+
+  // Determine the divisor based on scaling mode
+  const divisor = palScale ? maxHits : palMax;
+  const invDivisor = 1 / divisor;
+
+  for (let y = 0; y < size; y++) {
+    for (let x = 0; x < size; x++) {
+      const idx = y * size + x;
+      data32[idx] = getColorRGBInterpolated(x, y, hits, invDivisor, iteratorSize);
+    }
+  }
+
+  ctx.putImageData(imageData, 0, 0);
+}
+
+// Get color using true interpolation (no LUT) for final render
+function getColorRGBInterpolated(x, y, hits, invDivisor, iteratorSize) {
+  let totalR = 0, totalG = 0, totalB = 0;
+  const startX = x * configAlias;
+  const startY = y * configAlias;
+
+  for (let dy = 0; dy < configAlias; dy++) {
+    const row = startY + dy;
+    for (let dx = 0; dx < configAlias; dx++) {
+      const col = startX + dx;
+      const hitVal = hits[col * iteratorSize + row] || 0;
+
+      // Background (no hits) is white
+      if (hitVal === 0) {
+        totalR += 255;
+        totalG += 255;
+        totalB += 255;
+        continue;
+      }
+
+      // Normalize and apply gamma - TRUE INTERPOLATION
+      let ratio = Math.min(1, hitVal * invDivisor);
+      if (palGamma !== 1.0) {
+        ratio = Math.pow(ratio, palGamma);
+      }
+
+      // Direct palette interpolation (no LUT quantization)
+      const color = interpolatePaletteColor(currentPalette, ratio);
+      totalR += color.red;
+      totalG += color.green;
+      totalB += color.blue;
+    }
+  }
+
+  const aliasSq = configAlias * configAlias;
+  const r = Math.round(totalR / aliasSq);
+  const g = Math.round(totalG / aliasSq);
+  const b = Math.round(totalB / aliasSq);
+  return (255 << 24) | (b << 16) | (g << 8) | r;
+}
 
 // ============================================
 // ITERATORS
