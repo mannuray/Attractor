@@ -2844,4 +2844,131 @@ export const symmetricQuiltData = [
   ]}
 ];
 
+// Mandelbrot Set Presets
+export const mandelbrotData = [
+  { name: "Classic", centerX: -0.5, centerY: 0, zoom: 1, maxIter: 256, palGamma: 0.5, paletteData: [
+    { position: 0, red: 0, green: 0, blue: 0 },
+    { position: 0.1, red: 25, green: 7, blue: 26 },
+    { position: 0.25, red: 9, green: 1, blue: 47 },
+    { position: 0.4, red: 4, green: 4, blue: 73 },
+    { position: 0.55, red: 0, green: 7, blue: 100 },
+    { position: 0.7, red: 12, green: 44, blue: 138 },
+    { position: 0.85, red: 24, green: 82, blue: 177 },
+    { position: 1, red: 255, green: 255, blue: 255 }
+  ]},
+  { name: "Fire", centerX: -0.5, centerY: 0, zoom: 1, maxIter: 256, palGamma: 0.4, paletteData: [
+    { position: 0, red: 0, green: 0, blue: 0 },
+    { position: 0.25, red: 128, green: 0, blue: 0 },
+    { position: 0.5, red: 255, green: 100, blue: 0 },
+    { position: 0.75, red: 255, green: 200, blue: 0 },
+    { position: 1, red: 255, green: 255, blue: 200 }
+  ]},
+  { name: "Seahorse Valley", centerX: -0.75, centerY: 0.1, zoom: 15, maxIter: 512, palGamma: 0.5, paletteData: [
+    { position: 0, red: 0, green: 0, blue: 0 },
+    { position: 0.2, red: 0, green: 50, blue: 100 },
+    { position: 0.4, red: 0, green: 150, blue: 200 },
+    { position: 0.6, red: 100, green: 200, blue: 255 },
+    { position: 0.8, red: 200, green: 255, blue: 255 },
+    { position: 1, red: 255, green: 255, blue: 255 }
+  ]},
+  { name: "Spiral Galaxy", centerX: -0.743643887037158, centerY: 0.131825904205330, zoom: 1500, maxIter: 512, palGamma: 0.4, paletteData: [
+    { position: 0, red: 0, green: 0, blue: 20 },
+    { position: 0.2, red: 50, green: 0, blue: 100 },
+    { position: 0.4, red: 150, green: 50, blue: 200 },
+    { position: 0.6, red: 255, green: 100, blue: 150 },
+    { position: 0.8, red: 255, green: 200, blue: 100 },
+    { position: 1, red: 255, green: 255, blue: 255 }
+  ]},
+  { name: "Mini Mandelbrot", centerX: -1.769, centerY: 0, zoom: 300, maxIter: 512, palGamma: 0.5, paletteData: [
+    { position: 0, red: 0, green: 0, blue: 0 },
+    { position: 0.3, red: 100, green: 0, blue: 100 },
+    { position: 0.6, red: 200, green: 100, blue: 200 },
+    { position: 1, red: 255, green: 255, blue: 255 }
+  ]},
+  { name: "Electric", centerX: -0.5, centerY: 0, zoom: 1, maxIter: 256, palGamma: 0.3, paletteData: [
+    { position: 0, red: 0, green: 0, blue: 0 },
+    { position: 0.15, red: 0, green: 0, blue: 139 },
+    { position: 0.35, red: 0, green: 100, blue: 255 },
+    { position: 0.55, red: 0, green: 255, blue: 255 },
+    { position: 0.75, red: 200, green: 255, blue: 255 },
+    { position: 1, red: 255, green: 255, blue: 255 }
+  ]},
+  { name: "Grayscale", centerX: -0.5, centerY: 0, zoom: 1, maxIter: 256, palGamma: 0.5, paletteData: [
+    { position: 0, red: 0, green: 0, blue: 0 },
+    { position: 0.5, red: 128, green: 128, blue: 128 },
+    { position: 1, red: 255, green: 255, blue: 255 }
+  ]},
+  { name: "Deep Zoom", centerX: -0.7436447860, centerY: 0.1318252536, zoom: 100000, maxIter: 1000, palGamma: 0.4, paletteData: [
+    { position: 0, red: 0, green: 0, blue: 0 },
+    { position: 0.1, red: 139, green: 0, blue: 0 },
+    { position: 0.3, red: 255, green: 0, blue: 0 },
+    { position: 0.5, red: 255, green: 165, blue: 0 },
+    { position: 0.7, red: 255, green: 255, blue: 0 },
+    { position: 0.9, red: 255, green: 255, blue: 200 },
+    { position: 1, red: 255, green: 255, blue: 255 }
+  ]}
+];
+
+// Julia Set Presets
+export const juliaData = [
+  { name: "Dendrite", cReal: 0, cImag: 1, centerX: 0, centerY: 0, zoom: 1, maxIter: 256, palGamma: 0.5, paletteData: [
+    { position: 0, red: 0, green: 0, blue: 0 },
+    { position: 0.3, red: 50, green: 50, blue: 100 },
+    { position: 0.6, red: 150, green: 150, blue: 200 },
+    { position: 1, red: 255, green: 255, blue: 255 }
+  ]},
+  { name: "Rabbit", cReal: -0.123, cImag: 0.745, centerX: 0, centerY: 0, zoom: 1, maxIter: 256, palGamma: 0.5, paletteData: [
+    { position: 0, red: 0, green: 0, blue: 0 },
+    { position: 0.2, red: 0, green: 50, blue: 0 },
+    { position: 0.4, red: 0, green: 150, blue: 50 },
+    { position: 0.6, red: 50, green: 200, blue: 100 },
+    { position: 0.8, red: 150, green: 255, blue: 150 },
+    { position: 1, red: 255, green: 255, blue: 255 }
+  ]},
+  { name: "Dragon", cReal: -0.8, cImag: 0.156, centerX: 0, centerY: 0, zoom: 1, maxIter: 256, palGamma: 0.4, paletteData: [
+    { position: 0, red: 0, green: 0, blue: 0 },
+    { position: 0.25, red: 139, green: 0, blue: 0 },
+    { position: 0.5, red: 255, green: 69, blue: 0 },
+    { position: 0.75, red: 255, green: 200, blue: 0 },
+    { position: 1, red: 255, green: 255, blue: 255 }
+  ]},
+  { name: "Classic", cReal: -0.7, cImag: 0.27015, centerX: 0, centerY: 0, zoom: 1, maxIter: 256, palGamma: 0.5, paletteData: [
+    { position: 0, red: 0, green: 0, blue: 0 },
+    { position: 0.2, red: 0, green: 0, blue: 100 },
+    { position: 0.4, red: 50, green: 50, blue: 200 },
+    { position: 0.6, red: 150, green: 100, blue: 255 },
+    { position: 0.8, red: 200, green: 200, blue: 255 },
+    { position: 1, red: 255, green: 255, blue: 255 }
+  ]},
+  { name: "Spiral", cReal: -0.4, cImag: 0.6, centerX: 0, centerY: 0, zoom: 1, maxIter: 256, palGamma: 0.5, paletteData: [
+    { position: 0, red: 0, green: 0, blue: 0 },
+    { position: 0.25, red: 100, green: 0, blue: 100 },
+    { position: 0.5, red: 255, green: 0, blue: 150 },
+    { position: 0.75, red: 255, green: 150, blue: 200 },
+    { position: 1, red: 255, green: 255, blue: 255 }
+  ]},
+  { name: "Starfish", cReal: -0.70176, cImag: -0.3842, centerX: 0, centerY: 0, zoom: 1, maxIter: 256, palGamma: 0.5, paletteData: [
+    { position: 0, red: 0, green: 20, blue: 40 },
+    { position: 0.2, red: 0, green: 80, blue: 120 },
+    { position: 0.4, red: 50, green: 150, blue: 200 },
+    { position: 0.6, red: 100, green: 200, blue: 255 },
+    { position: 0.8, red: 180, green: 230, blue: 255 },
+    { position: 1, red: 255, green: 255, blue: 255 }
+  ]},
+  { name: "Snowflake", cReal: -0.1, cImag: 0.651, centerX: 0, centerY: 0, zoom: 1, maxIter: 256, palGamma: 0.5, paletteData: [
+    { position: 0, red: 0, green: 0, blue: 50 },
+    { position: 0.3, red: 100, green: 150, blue: 200 },
+    { position: 0.6, red: 180, green: 220, blue: 255 },
+    { position: 1, red: 255, green: 255, blue: 255 }
+  ]},
+  { name: "Sunrise", cReal: 0.285, cImag: 0.01, centerX: 0, centerY: 0, zoom: 1, maxIter: 256, palGamma: 0.4, paletteData: [
+    { position: 0, red: 25, green: 25, blue: 50 },
+    { position: 0.2, red: 100, green: 50, blue: 100 },
+    { position: 0.4, red: 200, green: 100, blue: 100 },
+    { position: 0.6, red: 255, green: 150, blue: 50 },
+    { position: 0.8, red: 255, green: 220, blue: 100 },
+    { position: 1, red: 255, green: 255, blue: 200 }
+  ]}
+];
+
 export default symmetricIconData

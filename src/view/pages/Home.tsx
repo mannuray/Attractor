@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState, useCallback, useMemo, lazy, Suspense } from "react";
 import { Color, Palette } from "../../model-controller/Attractor/palette";
-import symmetricIconData, { cliffordData, deJongData, tinkerbellData, henonData, bedheadData, svenssonData, fractalDreamData, hopalongData, symmetricQuiltData } from "../../Parametersets";
+import symmetricIconData, { cliffordData, deJongData, tinkerbellData, henonData, bedheadData, svenssonData, fractalDreamData, hopalongData, symmetricQuiltData, mandelbrotData, juliaData } from "../../Parametersets";
 
 // Lazy load ColorBar - only loads when palette modal opens
 const ColorBar = lazy(() => import("../components/colorbar"));
@@ -15,7 +15,7 @@ const CONFIG = {
 };
 
 // Types
-type AttractorType = "symmetric_icon" | "clifford" | "dejong" | "tinkerbell" | "henon" | "bedhead" | "svensson" | "fractal_dream" | "hopalong" | "symmetric_quilt";
+type AttractorType = "symmetric_icon" | "clifford" | "dejong" | "tinkerbell" | "henon" | "bedhead" | "svensson" | "fractal_dream" | "hopalong" | "symmetric_quilt" | "mandelbrot" | "julia";
 
 interface HitsData {
   hits: Uint32Array;
@@ -108,6 +108,22 @@ interface SymmetricQuiltParams {
   m: number;
   shift: number;
   scale: number;
+}
+
+interface MandelbrotParams {
+  centerX: number;
+  centerY: number;
+  zoom: number;
+  maxIter: number;
+}
+
+interface JuliaParams {
+  cReal: number;
+  cImag: number;
+  centerX: number;
+  centerY: number;
+  zoom: number;
+  maxIter: number;
 }
 
 interface IconData {
@@ -215,6 +231,32 @@ const DEFAULT_SYMMETRIC_QUILT: SymmetricQuiltParams = {
   scale: 1.0,
 };
 
+// Default Mandelbrot parameters
+const DEFAULT_MANDELBROT: MandelbrotParams = {
+  centerX: -0.5,
+  centerY: 0,
+  zoom: 1,
+  maxIter: 256,
+};
+
+// Default Julia parameters (classic Julia set at c = -0.7 + 0.27i)
+const DEFAULT_JULIA: JuliaParams = {
+  cReal: -0.7,
+  cImag: 0.27015,
+  centerX: 0,
+  centerY: 0,
+  zoom: 1,
+  maxIter: 256,
+};
+
+// Format large numbers compactly (e.g., 1.2K, 64M)
+const formatCompact = (num: number): string => {
+  if (num >= 1_000_000_000) return (num / 1_000_000_000).toFixed(1).replace(/\.0$/, '') + 'B';
+  if (num >= 1_000_000) return (num / 1_000_000).toFixed(1).replace(/\.0$/, '') + 'M';
+  if (num >= 1_000) return (num / 1_000).toFixed(1).replace(/\.0$/, '') + 'K';
+  return num.toString();
+};
+
 // Feature detection for OffscreenCanvas
 const supportsOffscreenCanvas = (): boolean => {
   if (typeof OffscreenCanvas === 'undefined') return false;
@@ -276,15 +318,15 @@ const STYLES = {
     boxShadow: "0 8px 32px rgba(0, 0, 0, 0.3)",
   },
   buttonPrimary: {
-    padding: "14px 24px",
-    fontSize: "14px",
+    padding: "8px 16px",
+    fontSize: "13px",
     fontWeight: 600,
     cursor: "pointer",
     background: "linear-gradient(135deg, #f59e0b 0%, #ea580c 100%)",
     color: "white",
     border: "none",
-    borderRadius: "12px",
-    boxShadow: "0 4px 15px rgba(245, 158, 11, 0.4)",
+    borderRadius: "8px",
+    boxShadow: "0 2px 10px rgba(245, 158, 11, 0.3)",
     transition: "all 0.2s ease",
   },
   buttonSuccess: {
@@ -347,6 +389,20 @@ const STYLES = {
     color: "#ffffff",
     border: "1px solid rgba(255, 180, 120, 0.2)",
     borderRadius: "10px",
+    transition: "all 0.2s ease",
+  },
+  floatingButton: {
+    width: "44px",
+    height: "44px",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    fontSize: "20px",
+    background: "rgba(255, 180, 120, 0.15)",
+    border: "1px solid rgba(255, 180, 120, 0.3)",
+    borderRadius: "10px",
+    color: "#ffffff",
+    cursor: "pointer",
     transition: "all 0.2s ease",
   },
 };
@@ -427,6 +483,14 @@ function Home() {
   const [symmetricQuiltParams, setSymmetricQuiltParams] = useState<SymmetricQuiltParams>(DEFAULT_SYMMETRIC_QUILT);
   const [symmetricQuiltPreset, setSymmetricQuiltPreset] = useState(0);
 
+  // Mandelbrot parameters
+  const [mandelbrotParams, setMandelbrotParams] = useState<MandelbrotParams>(DEFAULT_MANDELBROT);
+  const [mandelbrotPreset, setMandelbrotPreset] = useState(0);
+
+  // Julia parameters
+  const [juliaParams, setJuliaParams] = useState<JuliaParams>(DEFAULT_JULIA);
+  const [juliaPreset, setJuliaPreset] = useState(0);
+
   // Current palette data
   const [paletteData, setPaletteData] = useState<Color[]>(
     symmetricIconData[CONFIG.INITIAL_ICON_INDEX].paletteData
@@ -436,9 +500,9 @@ function Home() {
   const [totalIterations, setTotalIterations] = useState(0);
   const [iterating, setIterating] = useState(false);
 
-  // Palette gamma and scaling settings
-  const [palGamma, setPalGamma] = useState(1.0);
-  const [palScale, setPalScale] = useState(false); // true = dynamic (maxHits), false = fixed (palMax)
+  // Palette gamma and scaling settings - initialize from preset
+  const [palGamma, setPalGamma] = useState(() => symmetricIconData[CONFIG.INITIAL_ICON_INDEX].palGamma ?? 0.5);
+  const [palScale, setPalScale] = useState(true); // true = dynamic (maxHits), false = fixed (palMax)
   const [palMax, setPalMax] = useState(10000);
   const [bgColor, setBgColor] = useState({ r: 255, g: 255, b: 255 }); // Background color for 0-hit pixels
   const [paletteKey, setPaletteKey] = useState(0);
@@ -600,6 +664,8 @@ function Home() {
       fractalDreamOverride?: FractalDreamParams;
       hopalongOverride?: HopalongParams;
       symmetricQuiltOverride?: SymmetricQuiltParams;
+      mandelbrotOverride?: MandelbrotParams;
+      juliaOverride?: JuliaParams;
       paletteOverride?: Color[];
       typeOverride?: AttractorType;
       palGammaOverride?: number;
@@ -617,6 +683,8 @@ function Home() {
     const currentFractalDream = options?.fractalDreamOverride ?? fractalDreamParams;
     const currentHopalong = options?.hopalongOverride ?? hopalongParams;
     const currentSymmetricQuilt = options?.symmetricQuiltOverride ?? symmetricQuiltParams;
+    const currentMandelbrot = options?.mandelbrotOverride ?? mandelbrotParams;
+    const currentJulia = options?.juliaOverride ?? juliaParams;
     const currentPalette = options?.paletteOverride ?? paletteData;
     const currentPalGamma = options?.palGammaOverride ?? palGamma;
 
@@ -661,6 +729,8 @@ function Home() {
       case "fractal_dream": scale = currentFractalDream.scale; break;
       case "hopalong": scale = currentHopalong.scale; break;
       case "symmetric_quilt": scale = currentSymmetricQuilt.scale; break;
+      case "mandelbrot": scale = 1; break; // Fractals use zoom instead of scale
+      case "julia": scale = 1; break;
       default: scale = 0.25;
     }
 
@@ -779,6 +849,30 @@ function Home() {
           },
         };
         break;
+      case "mandelbrot":
+        iteratorPayload = {
+          name: "mandelbrot",
+          parameters: {
+            centerX: currentMandelbrot.centerX,
+            centerY: currentMandelbrot.centerY,
+            zoom: currentMandelbrot.zoom,
+            maxIter: currentMandelbrot.maxIter,
+          },
+        };
+        break;
+      case "julia":
+        iteratorPayload = {
+          name: "julia",
+          parameters: {
+            cReal: currentJulia.cReal,
+            cImag: currentJulia.cImag,
+            centerX: currentJulia.centerX,
+            centerY: currentJulia.centerY,
+            zoom: currentJulia.zoom,
+            maxIter: currentJulia.maxIter,
+          },
+        };
+        break;
       default:
         iteratorPayload = { name: "clifford_iterator", parameters: { alpha: -1.7, beta: 1.3, gamma: -0.1, delta: -1.21 } };
     }
@@ -889,7 +983,7 @@ function Home() {
 
     setMaxHits(0);
     setTotalIterations(0);
-  }, [attractorType, iconParams, cliffordParams, deJongParams, tinkerbellParams, henonParams, bedheadParams, svenssonParams, fractalDreamParams, hopalongParams, symmetricQuiltParams, paletteData, palGamma, palScale, palMax, draw, canvasSize, clearCanvas]);
+  }, [attractorType, iconParams, cliffordParams, deJongParams, tinkerbellParams, henonParams, bedheadParams, svenssonParams, fractalDreamParams, hopalongParams, symmetricQuiltParams, mandelbrotParams, juliaParams, paletteData, palGamma, palScale, palMax, bgColor, draw, canvasSize, clearCanvas]);
 
   // Initialize canvas on mount only
   useEffect(() => {
@@ -1159,6 +1253,30 @@ function Home() {
     initializeWorker(canvasSize, { symmetricQuiltOverride: newParams, paletteOverride: preset.paletteData, palGammaOverride: presetPalGamma });
   }, [canvasSize, initializeWorker]);
 
+  const handleMandelbrotPresetChange = useCallback((e: React.ChangeEvent<HTMLSelectElement>) => {
+    const index = parseInt(e.target.value, 10);
+    setMandelbrotPreset(index);
+    const preset = mandelbrotData[index] as { centerX: number; centerY: number; zoom: number; maxIter: number; palGamma?: number; paletteData: Color[] };
+    const newParams = { centerX: preset.centerX, centerY: preset.centerY, zoom: preset.zoom, maxIter: preset.maxIter };
+    setMandelbrotParams(newParams);
+    setPaletteData(preset.paletteData);
+    const presetPalGamma = preset.palGamma ?? 0.5;
+    setPalGamma(presetPalGamma);
+    initializeWorker(canvasSize, { mandelbrotOverride: newParams, paletteOverride: preset.paletteData, palGammaOverride: presetPalGamma });
+  }, [canvasSize, initializeWorker]);
+
+  const handleJuliaPresetChange = useCallback((e: React.ChangeEvent<HTMLSelectElement>) => {
+    const index = parseInt(e.target.value, 10);
+    setJuliaPreset(index);
+    const preset = juliaData[index] as { cReal: number; cImag: number; centerX: number; centerY: number; zoom: number; maxIter: number; palGamma?: number; paletteData: Color[] };
+    const newParams = { cReal: preset.cReal, cImag: preset.cImag, centerX: preset.centerX, centerY: preset.centerY, zoom: preset.zoom, maxIter: preset.maxIter };
+    setJuliaParams(newParams);
+    setPaletteData(preset.paletteData);
+    const presetPalGamma = preset.palGamma ?? 0.5;
+    setPalGamma(presetPalGamma);
+    initializeWorker(canvasSize, { juliaOverride: newParams, paletteOverride: preset.paletteData, palGammaOverride: presetPalGamma });
+  }, [canvasSize, initializeWorker]);
+
   // Apply parameters and restart
   const handleApply = useCallback(() => {
     initializeWorker();
@@ -1199,8 +1317,16 @@ function Home() {
     updatePaletteSettings(undefined, undefined, undefined, newColor);
   }, [updatePaletteSettings]);
 
+  // Check if current type is a fractal (renders instantly, no iteration needed)
+  const isFractalType = attractorType === "mandelbrot" || attractorType === "julia";
+
   // Handle start/stop iteration
   const handleIterating = useCallback(() => {
+    // Fractals don't iterate - they render instantly
+    if (isFractalType) {
+      return;
+    }
+
     if (iterating) {
       if (intervalRef.current) {
         clearInterval(intervalRef.current);
@@ -1220,7 +1346,7 @@ function Home() {
     }
 
     setIterating(!iterating);
-  }, [iterating]);
+  }, [iterating, isFractalType]);
 
   // Handle palette changes
   const handlePaletteChange = useCallback((p: Color[]) => {
@@ -1305,7 +1431,7 @@ function Home() {
   }), [isEditing]);
 
   // Destructure static styles for convenience
-  const { selectStyle, labelStyle, fieldStyle, cardStyle, buttonPrimary, buttonSuccess, buttonDanger, buttonSecondary, buttonSmall } = STYLES;
+  const { selectStyle, labelStyle, fieldStyle, cardStyle, buttonPrimary, buttonSuccess, buttonSecondary, buttonSmall, floatingButton } = STYLES;
 
   return (
     <div style={{ display: "flex", height: "100vh", background: "var(--bg-gradient)" }}>
@@ -1316,11 +1442,13 @@ function Home() {
           background: "rgba(0, 0, 0, 0.4)",
           backdropFilter: "blur(12px)",
           WebkitBackdropFilter: "blur(12px)",
-          padding: "20px",
-          overflowY: "auto",
+          display: "flex",
+          flexDirection: "column",
           borderRight: "1px solid rgba(255, 180, 120, 0.12)",
         }}
       >
+        {/* Scrollable content */}
+        <div style={{ flex: 1, overflowY: "auto", padding: "20px", paddingBottom: "10px" }}>
         {/* Sticky Controls Section */}
         <div style={{
           position: "sticky",
@@ -1333,7 +1461,7 @@ function Home() {
           borderBottom: "1px solid rgba(255, 180, 120, 0.12)",
           marginBottom: "12px",
         }}>
-          <h3 style={{ margin: "0 0 16px 0", fontSize: "22px", fontWeight: 700 }}>
+          <h3 style={{ margin: 0, fontSize: "22px", fontWeight: 700 }}>
             <span style={{
               background: "linear-gradient(135deg, #f59e0b 0%, #ea580c 100%)",
               WebkitBackgroundClip: "text",
@@ -1342,87 +1470,6 @@ function Home() {
               Attractor
             </span>
           </h3>
-
-          {/* Stats */}
-          <div style={{ ...cardStyle, marginBottom: "12px" }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
-              <span style={{ color: "rgba(255, 180, 120, 0.7)", fontSize: "12px", fontWeight: 600, textTransform: "uppercase" }}>Max Hits</span>
-              <span style={{
-                color: "#ffffff",
-                fontSize: "18px",
-                fontWeight: 700,
-                textShadow: "0 0 10px rgba(245, 158, 11, 0.4)",
-              }}>{maxHits.toLocaleString()}</span>
-            </div>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-              <span style={{ color: "rgba(255, 180, 120, 0.7)", fontSize: "12px", fontWeight: 600, textTransform: "uppercase" }}>Iterations</span>
-              <span style={{
-                color: "#ffffff",
-                fontSize: "18px",
-                fontWeight: 700,
-                textShadow: "0 0 10px rgba(245, 158, 11, 0.4)",
-              }}>{totalIterations.toLocaleString()}</span>
-            </div>
-          </div>
-
-          {/* Start/Stop Button */}
-          <button
-            onClick={handleIterating}
-            style={{
-              width: "100%",
-              marginBottom: "12px",
-              ...(iterating ? buttonDanger : { ...buttonSuccess, padding: "14px 20px", fontSize: "15px" }),
-            }}
-          >
-            {iterating ? "Stop" : "Start"}
-          </button>
-
-          {/* Palette Editor Button */}
-          <button
-            onClick={() => setPaletteModalOpen(true)}
-            style={{ ...buttonPrimary, width: "100%", marginBottom: "12px" }}
-          >
-            Palette
-          </button>
-
-          {/* Save Image Button - enabled only after iteration and when not iterating */}
-          <button
-            onClick={handleSaveImage}
-            disabled={maxHits === 0 || iterating}
-            style={{
-              width: "100%",
-              marginBottom: "12px",
-              padding: "14px 24px",
-              fontSize: "14px",
-              fontWeight: 600,
-              border: "none",
-              borderRadius: "12px",
-              background: (maxHits === 0 || iterating)
-                ? "rgba(0, 0, 0, 0.3)"
-                : "linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%)",
-              color: "white",
-              opacity: (maxHits === 0 || iterating) ? 0.5 : 1,
-              cursor: (maxHits === 0 || iterating) ? "not-allowed" : "pointer",
-              boxShadow: (maxHits === 0 || iterating) ? "none" : "0 4px 15px rgba(139, 92, 246, 0.4)",
-              transition: "all 0.2s ease",
-            }}
-          >
-            Save Image
-          </button>
-
-          {/* Zoom Controls - Always visible */}
-          <div style={cardStyle}>
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "12px" }}>
-              <span style={{ color: "rgba(255, 180, 120, 0.7)", fontSize: "12px", fontWeight: 600, textTransform: "uppercase" }}>Zoom</span>
-              <span style={{ color: "#ffffff", fontSize: "16px", fontWeight: 700 }}>{Math.round(zoom * 100)}%</span>
-            </div>
-            <div style={{ display: "flex", gap: "8px" }}>
-              <button onClick={handleZoomOut} style={buttonSmall}>−</button>
-              <button onClick={handleZoomIn} style={buttonSmall}>+</button>
-              <button onClick={handleFitToView} style={{ ...buttonSmall, flex: 1 }}>Fit</button>
-              <button onClick={handleZoomReset} style={{ ...buttonSmall, flex: 1 }}>100%</button>
-            </div>
-          </div>
         </div>
 
         {/* Attractor Settings Group */}
@@ -1482,16 +1529,22 @@ function Home() {
                   onChange={handleAttractorTypeChange}
                   style={selectStyle}
                 >
-                  <option value="symmetric_icon">Symmetric Icon</option>
-                  <option value="symmetric_quilt">Symmetric Quilt</option>
-                  <option value="clifford">Clifford Attractor</option>
-                  <option value="dejong">De Jong Attractor</option>
-                  <option value="tinkerbell">Tinkerbell Attractor</option>
-                  <option value="henon">Henon Attractor</option>
-                  <option value="bedhead">Bedhead Attractor</option>
-                  <option value="svensson">Svensson Attractor</option>
-                  <option value="fractal_dream">Fractal Dream</option>
-                  <option value="hopalong">Hopalong Attractor</option>
+                  <optgroup label="Attractors">
+                    <option value="symmetric_icon">Symmetric Icon</option>
+                    <option value="symmetric_quilt">Symmetric Quilt</option>
+                    <option value="clifford">Clifford Attractor</option>
+                    <option value="dejong">De Jong Attractor</option>
+                    <option value="tinkerbell">Tinkerbell Attractor</option>
+                    <option value="henon">Henon Attractor</option>
+                    <option value="bedhead">Bedhead Attractor</option>
+                    <option value="svensson">Svensson Attractor</option>
+                    <option value="fractal_dream">Fractal Dream</option>
+                    <option value="hopalong">Hopalong Attractor</option>
+                  </optgroup>
+                  <optgroup label="Fractals">
+                    <option value="mandelbrot">Mandelbrot Set</option>
+                    <option value="julia">Julia Set</option>
+                  </optgroup>
                 </select>
               </div>
 
@@ -2116,6 +2169,150 @@ function Home() {
             </div>
           </>
         )}
+
+        {/* Mandelbrot Controls */}
+        {attractorType === "mandelbrot" && (
+          <>
+            <div style={fieldStyle}>
+              <label style={labelStyle}>Preset</label>
+              <select
+                value={mandelbrotPreset}
+                onChange={handleMandelbrotPresetChange}
+                disabled={isEditing}
+                style={{ ...selectStyle, opacity: isEditing ? 0.5 : 1 }}
+              >
+                {mandelbrotData.map((preset, index) => (
+                  <option key={index} value={index}>{preset.name}</option>
+                ))}
+              </select>
+            </div>
+            <div style={cardStyle}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
+                <h4 style={{ margin: 0, fontSize: "14px", color: "#ffffff", fontWeight: 600 }}>Mandelbrot Parameters</h4>
+                {!isEditing && <button onClick={() => setIsEditing(true)} style={buttonPrimary}>Edit</button>}
+              </div>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
+                <div>
+                  <label style={labelStyle}>Center X</label>
+                  <input type="number" step="0.01" value={mandelbrotParams.centerX} onChange={(e) => setMandelbrotParams(p => ({ ...p, centerX: parseFloat(e.target.value) || 0 }))} disabled={!isEditing} style={inputStyle} />
+                </div>
+                <div>
+                  <label style={labelStyle}>Center Y</label>
+                  <input type="number" step="0.01" value={mandelbrotParams.centerY} onChange={(e) => setMandelbrotParams(p => ({ ...p, centerY: parseFloat(e.target.value) || 0 }))} disabled={!isEditing} style={inputStyle} />
+                </div>
+                <div>
+                  <label style={labelStyle}>Zoom</label>
+                  <input type="number" step="0.1" min="0.1" value={mandelbrotParams.zoom} onChange={(e) => setMandelbrotParams(p => ({ ...p, zoom: parseFloat(e.target.value) || 1 }))} disabled={!isEditing} style={inputStyle} />
+                </div>
+                <div>
+                  <label style={labelStyle}>Max Iterations</label>
+                  <input type="number" step="50" min="50" max="2000" value={mandelbrotParams.maxIter} onChange={(e) => setMandelbrotParams(p => ({ ...p, maxIter: parseInt(e.target.value) || 256 }))} disabled={!isEditing} style={inputStyle} />
+                </div>
+              </div>
+              {isEditing && (
+                <div style={{ display: "flex", gap: "10px", marginTop: "16px" }}>
+                  <button onClick={() => { handleApply(); setIsEditing(false); }} style={{ ...buttonSuccess, flex: 1 }}>Apply</button>
+                  <button onClick={() => { setMandelbrotParams(DEFAULT_MANDELBROT); setIsEditing(false); }} style={{ ...buttonSecondary, flex: 1 }}>Cancel</button>
+                </div>
+              )}
+            </div>
+            <div style={{ ...cardStyle, padding: "12px", marginTop: "8px" }}>
+              <p style={{ margin: 0, fontSize: "11px", color: "rgba(255, 180, 120, 0.6)", lineHeight: "1.5" }}>
+                Fractals render instantly. Use Edit to adjust parameters, then Apply to re-render. Increase Max Iterations for more detail at higher zoom levels.
+              </p>
+            </div>
+          </>
+        )}
+
+        {/* Julia Controls */}
+        {attractorType === "julia" && (
+          <>
+            <div style={fieldStyle}>
+              <label style={labelStyle}>Preset</label>
+              <select
+                value={juliaPreset}
+                onChange={handleJuliaPresetChange}
+                disabled={isEditing}
+                style={{ ...selectStyle, opacity: isEditing ? 0.5 : 1 }}
+              >
+                {juliaData.map((preset, index) => (
+                  <option key={index} value={index}>{preset.name}</option>
+                ))}
+              </select>
+            </div>
+            <div style={cardStyle}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
+                <h4 style={{ margin: 0, fontSize: "14px", color: "#ffffff", fontWeight: 600 }}>Julia Set Parameters</h4>
+                {!isEditing && <button onClick={() => setIsEditing(true)} style={buttonPrimary}>Edit</button>}
+              </div>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
+                <div>
+                  <label style={labelStyle}>C Real</label>
+                  <input type="number" step="0.01" value={juliaParams.cReal} onChange={(e) => setJuliaParams(p => ({ ...p, cReal: parseFloat(e.target.value) || 0 }))} disabled={!isEditing} style={inputStyle} />
+                </div>
+                <div>
+                  <label style={labelStyle}>C Imaginary</label>
+                  <input type="number" step="0.01" value={juliaParams.cImag} onChange={(e) => setJuliaParams(p => ({ ...p, cImag: parseFloat(e.target.value) || 0 }))} disabled={!isEditing} style={inputStyle} />
+                </div>
+                <div>
+                  <label style={labelStyle}>Center X</label>
+                  <input type="number" step="0.01" value={juliaParams.centerX} onChange={(e) => setJuliaParams(p => ({ ...p, centerX: parseFloat(e.target.value) || 0 }))} disabled={!isEditing} style={inputStyle} />
+                </div>
+                <div>
+                  <label style={labelStyle}>Center Y</label>
+                  <input type="number" step="0.01" value={juliaParams.centerY} onChange={(e) => setJuliaParams(p => ({ ...p, centerY: parseFloat(e.target.value) || 0 }))} disabled={!isEditing} style={inputStyle} />
+                </div>
+                <div>
+                  <label style={labelStyle}>Zoom</label>
+                  <input type="number" step="0.1" min="0.1" value={juliaParams.zoom} onChange={(e) => setJuliaParams(p => ({ ...p, zoom: parseFloat(e.target.value) || 1 }))} disabled={!isEditing} style={inputStyle} />
+                </div>
+                <div>
+                  <label style={labelStyle}>Max Iterations</label>
+                  <input type="number" step="50" min="50" max="2000" value={juliaParams.maxIter} onChange={(e) => setJuliaParams(p => ({ ...p, maxIter: parseInt(e.target.value) || 256 }))} disabled={!isEditing} style={inputStyle} />
+                </div>
+              </div>
+              {isEditing && (
+                <div style={{ display: "flex", gap: "10px", marginTop: "16px" }}>
+                  <button onClick={() => { handleApply(); setIsEditing(false); }} style={{ ...buttonSuccess, flex: 1 }}>Apply</button>
+                  <button onClick={() => { setJuliaParams(DEFAULT_JULIA); setIsEditing(false); }} style={{ ...buttonSecondary, flex: 1 }}>Cancel</button>
+                </div>
+              )}
+            </div>
+            <div style={{ ...cardStyle, padding: "12px", marginTop: "8px" }}>
+              <p style={{ margin: 0, fontSize: "11px", color: "rgba(255, 180, 120, 0.6)", lineHeight: "1.5" }}>
+                Julia sets are defined by the constant c = (C Real) + (C Imaginary)i. Try values like c = -0.7 + 0.27i or c = -0.4 + 0.6i for interesting patterns.
+              </p>
+            </div>
+          </>
+        )}
+            </div>
+          )}
+        </div>
+        </div>
+
+        {/* Stats Footer */}
+        <div style={{
+          padding: "12px 20px",
+          borderTop: "1px solid rgba(255, 180, 120, 0.12)",
+          background: "rgba(0, 0, 0, 0.3)",
+        }}>
+          {isFractalType ? (
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <span style={{ color: "rgba(255, 180, 120, 0.7)", fontSize: "11px", fontWeight: 600, textTransform: "uppercase" }}>Max Iter</span>
+              <span style={{
+                color: "#ffffff",
+                fontSize: "15px",
+                fontWeight: 700,
+              }}>{attractorType === "mandelbrot" ? mandelbrotParams.maxIter : juliaParams.maxIter}</span>
+            </div>
+          ) : (
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <span style={{ color: "rgba(255, 180, 120, 0.7)", fontSize: "11px", fontWeight: 600, textTransform: "uppercase" }}>Hits / Iter</span>
+              <span style={{
+                color: "#ffffff",
+                fontSize: "15px",
+                fontWeight: 700,
+              }}>{formatCompact(maxHits)} / {formatCompact(totalIterations)}</span>
             </div>
           )}
         </div>
@@ -2135,6 +2332,7 @@ function Home() {
               display: needsScroll ? "block" : "flex",
               alignItems: "center",
               justifyContent: "center",
+              position: "relative",
             }}
           >
             {needsScroll ? (
@@ -2171,6 +2369,94 @@ function Home() {
                 />
               </div>
             )}
+
+            {/* Floating Zoom Panel */}
+            <div style={{
+              position: "absolute",
+              bottom: 20,
+              left: 20,
+              display: "flex",
+              alignItems: "center",
+              gap: "6px",
+              padding: "8px 12px",
+              background: "rgba(0, 0, 0, 0.6)",
+              backdropFilter: "blur(12px)",
+              WebkitBackdropFilter: "blur(12px)",
+              borderRadius: "14px",
+              border: "1px solid rgba(255, 180, 120, 0.2)",
+              boxShadow: "0 4px 24px rgba(0, 0, 0, 0.5)",
+              zIndex: 100,
+            }}>
+              <button onClick={handleZoomOut} style={floatingButton} title="Zoom Out">−</button>
+              <button onClick={handleZoomIn} style={floatingButton} title="Zoom In">+</button>
+              <span style={{
+                color: "#fff",
+                fontSize: "13px",
+                fontWeight: 600,
+                minWidth: "42px",
+                textAlign: "center",
+                opacity: 0.9,
+              }}>
+                {Math.round(zoom * 100)}%
+              </span>
+              <button onClick={handleZoomReset} style={floatingButton} title="Reset to 100%">1:1</button>
+              <button onClick={handleFitToView} style={floatingButton} title="Fit to View">⊡</button>
+            </div>
+
+            {/* Floating Control Panel */}
+            <div style={{
+              position: "absolute",
+              bottom: 20,
+              right: 20,
+              display: "flex",
+              gap: "8px",
+              padding: "10px",
+              background: "rgba(0, 0, 0, 0.6)",
+              backdropFilter: "blur(12px)",
+              WebkitBackdropFilter: "blur(12px)",
+              borderRadius: "14px",
+              border: "1px solid rgba(255, 180, 120, 0.2)",
+              boxShadow: "0 4px 24px rgba(0, 0, 0, 0.5)",
+              zIndex: 100,
+            }}>
+              {/* Start/Stop - hidden for fractals */}
+              {!isFractalType && (
+                <button
+                  onClick={handleIterating}
+                  style={{
+                    ...floatingButton,
+                    background: iterating ? "rgba(239, 68, 68, 0.3)" : "rgba(34, 197, 94, 0.3)",
+                    borderColor: iterating ? "rgba(239, 68, 68, 0.5)" : "rgba(34, 197, 94, 0.5)",
+                  }}
+                  title={iterating ? "Stop" : "Start"}
+                >
+                  {iterating ? "■" : "▶"}
+                </button>
+              )}
+
+              {/* Palette */}
+              <button
+                onClick={() => setPaletteModalOpen(true)}
+                style={floatingButton}
+                title="Palette"
+              >
+                🎨
+              </button>
+
+              {/* Save */}
+              <button
+                onClick={handleSaveImage}
+                disabled={(!isFractalType && maxHits === 0) || iterating}
+                style={{
+                  ...floatingButton,
+                  opacity: ((!isFractalType && maxHits === 0) || iterating) ? 0.4 : 1,
+                  cursor: ((!isFractalType && maxHits === 0) || iterating) ? "not-allowed" : "pointer",
+                }}
+                title="Save Image"
+              >
+                💾
+              </button>
+            </div>
           </div>
         );
       })()}

@@ -5,6 +5,10 @@ let it = null;
 // Rendering mode: "legacy" or "offscreen"
 let mode = "legacy";
 
+// Fractal mode: true for Mandelbrot/Julia (escape-time), false for attractors (hit-counting)
+let fractalMode = false;
+let fractalParams = null;
+
 // OffscreenCanvas rendering state
 let offscreenCanvas = null;
 let ctx = null;
@@ -202,6 +206,9 @@ self.onmessage = (event) => {
     if (payload.palMax !== undefined) palMax = payload.palMax;
     if (payload.bgColor !== undefined) bgColor = payload.bgColor;
 
+    // Check if this is a fractal type (Mandelbrot/Julia)
+    fractalMode = iterator.name === "mandelbrot" || iterator.name === "julia";
+
     // Check for OffscreenCanvas mode
     if (payload.mode === "offscreen" && payload.canvas) {
       mode = "offscreen";
@@ -222,21 +229,50 @@ self.onmessage = (event) => {
       }
     }
 
-    // Initialize iterator and canvas
-    it = iteratorBuilder(iterator);
-    iterCanvas = new IterationCanvas(point, size, alias, scale, it);
+    if (fractalMode) {
+      // Fractal mode: store parameters and render immediately
+      fractalParams = {
+        type: iterator.name,
+        ...iterator.parameters,
+      };
+      iterCanvas = null; // Not used for fractals
 
-    if (mode === "offscreen") {
-      render();
-      // Send stats only
-      self.postMessage({
-        type: "stats",
-        payload: { maxHits: iterCanvas.getMaxHits(), totalIterations: iterCanvas.getTotalIterations() },
-      });
+      if (mode === "offscreen") {
+        renderFractal();
+        self.postMessage({
+          type: "stats",
+          payload: { maxHits: 0, totalIterations: 0, fractalComplete: true },
+        });
+      }
     } else {
-      sendHits();
+      // Attractor mode: initialize iterator and canvas
+      it = iteratorBuilder(iterator);
+      iterCanvas = new IterationCanvas(point, size, alias, scale, it);
+
+      if (mode === "offscreen") {
+        render();
+        self.postMessage({
+          type: "stats",
+          payload: { maxHits: iterCanvas.getMaxHits(), totalIterations: iterCanvas.getTotalIterations() },
+        });
+      } else {
+        sendHits();
+      }
     }
   } else if (type === "iterate") {
+    // Fractals don't iterate - they render once completely
+    if (fractalMode) {
+      // Just re-render the fractal (in case palette changed)
+      if (mode === "offscreen") {
+        renderFractal();
+        self.postMessage({
+          type: "stats",
+          payload: { maxHits: 0, totalIterations: 0, fractalComplete: true },
+        });
+      }
+      return;
+    }
+
     if (!iterCanvas) return;
 
     iterCanvas.iterate();
@@ -258,11 +294,19 @@ self.onmessage = (event) => {
       buildColorLUT(palette, lutSize);
 
       if (mode === "offscreen") {
-        render();
-        self.postMessage({
-          type: "stats",
-          payload: { maxHits: iterCanvas ? iterCanvas.getMaxHits() : 0, totalIterations: iterCanvas ? iterCanvas.getTotalIterations() : 0 },
-        });
+        if (fractalMode) {
+          renderFractal();
+          self.postMessage({
+            type: "stats",
+            payload: { maxHits: 0, totalIterations: 0, fractalComplete: true },
+          });
+        } else {
+          render();
+          self.postMessage({
+            type: "stats",
+            payload: { maxHits: iterCanvas ? iterCanvas.getMaxHits() : 0, totalIterations: iterCanvas ? iterCanvas.getTotalIterations() : 0 },
+          });
+        }
       }
     }
   } else if (type === "updatePaletteSettings") {
@@ -273,11 +317,19 @@ self.onmessage = (event) => {
     if (payload.bgColor !== undefined) bgColor = payload.bgColor;
 
     if (mode === "offscreen") {
-      render();
-      self.postMessage({
-        type: "stats",
-        payload: { maxHits: iterCanvas ? iterCanvas.getMaxHits() : 0, totalIterations: iterCanvas ? iterCanvas.getTotalIterations() : 0 },
-      });
+      if (fractalMode) {
+        renderFractal();
+        self.postMessage({
+          type: "stats",
+          payload: { maxHits: 0, totalIterations: 0, fractalComplete: true },
+        });
+      } else {
+        render();
+        self.postMessage({
+          type: "stats",
+          payload: { maxHits: iterCanvas ? iterCanvas.getMaxHits() : 0, totalIterations: iterCanvas ? iterCanvas.getTotalIterations() : 0 },
+        });
+      }
     }
   } else if (type === "exportImage") {
     // Export image as blob for save functionality
@@ -375,6 +427,151 @@ function getColorRGBInterpolated(x, y, hits, invDivisor, iteratorSize) {
   const g = Math.round(totalG / aliasSq);
   const b = Math.round(totalB / aliasSq);
   return (255 << 24) | (b << 16) | (g << 8) | r;
+}
+
+// ============================================
+// FRACTAL RENDERING (Escape-Time Algorithm)
+// ============================================
+
+// Render Mandelbrot set
+function renderMandelbrot() {
+  if (!ctx || !colorLUT) return;
+
+  const size = canvasSize;
+  const { centerX, centerY, zoom, maxIter } = fractalParams;
+
+  // Calculate view bounds
+  const range = 3.0 / zoom; // Default view is about 3 units wide
+  const xMin = centerX - range / 2;
+  const yMin = centerY - range / 2;
+  const pixelSize = range / size;
+
+  const imageData = ctx.createImageData(size, size);
+  const data32 = new Uint32Array(imageData.data.buffer);
+  const lutSize = colorLUT.length;
+
+  // Background color packed
+  const bgColorPacked = (255 << 24) | (bgColor.b << 16) | (bgColor.g << 8) | bgColor.r;
+
+  for (let py = 0; py < size; py++) {
+    const y0 = yMin + py * pixelSize;
+    for (let px = 0; px < size; px++) {
+      const x0 = xMin + px * pixelSize;
+
+      // Mandelbrot iteration: z = z² + c, where c = (x0, y0)
+      let x = 0, y = 0;
+      let iter = 0;
+      let x2 = 0, y2 = 0;
+
+      while (x2 + y2 <= 4 && iter < maxIter) {
+        y = 2 * x * y + y0;
+        x = x2 - y2 + x0;
+        x2 = x * x;
+        y2 = y * y;
+        iter++;
+      }
+
+      const idx = py * size + px;
+
+      if (iter === maxIter) {
+        // Point is in the set - use background (typically black for Mandelbrot)
+        data32[idx] = bgColorPacked;
+      } else {
+        // Smooth coloring using escape value
+        // Add fractional iteration count for smooth coloring
+        const log_zn = Math.log(x2 + y2) / 2;
+        const nu = Math.log(log_zn / Math.LN2) / Math.LN2;
+        const smoothIter = iter + 1 - nu;
+
+        // Map to palette (normalized to 0-1 range)
+        let ratio = smoothIter / maxIter;
+        if (palGamma !== 1.0) {
+          ratio = Math.pow(ratio, palGamma);
+        }
+        ratio = Math.min(1, Math.max(0, ratio));
+
+        const lutIndex = Math.min(lutSize - 1, Math.floor(ratio * lutSize));
+        data32[idx] = colorLUT[lutIndex];
+      }
+    }
+  }
+
+  ctx.putImageData(imageData, 0, 0);
+}
+
+// Render Julia set
+function renderJulia() {
+  if (!ctx || !colorLUT) return;
+
+  const size = canvasSize;
+  const { cReal, cImag, centerX, centerY, zoom, maxIter } = fractalParams;
+
+  // Calculate view bounds
+  const range = 3.0 / zoom;
+  const xMin = centerX - range / 2;
+  const yMin = centerY - range / 2;
+  const pixelSize = range / size;
+
+  const imageData = ctx.createImageData(size, size);
+  const data32 = new Uint32Array(imageData.data.buffer);
+  const lutSize = colorLUT.length;
+
+  // Background color packed
+  const bgColorPacked = (255 << 24) | (bgColor.b << 16) | (bgColor.g << 8) | bgColor.r;
+
+  for (let py = 0; py < size; py++) {
+    const y0 = yMin + py * pixelSize;
+    for (let px = 0; px < size; px++) {
+      const x0 = xMin + px * pixelSize;
+
+      // Julia iteration: z = z² + c, where z starts at (x0, y0) and c is constant
+      let x = x0, y = y0;
+      let iter = 0;
+      let x2 = x * x, y2 = y * y;
+
+      while (x2 + y2 <= 4 && iter < maxIter) {
+        y = 2 * x * y + cImag;
+        x = x2 - y2 + cReal;
+        x2 = x * x;
+        y2 = y * y;
+        iter++;
+      }
+
+      const idx = py * size + px;
+
+      if (iter === maxIter) {
+        // Point is in the set
+        data32[idx] = bgColorPacked;
+      } else {
+        // Smooth coloring
+        const log_zn = Math.log(x2 + y2) / 2;
+        const nu = Math.log(log_zn / Math.LN2) / Math.LN2;
+        const smoothIter = iter + 1 - nu;
+
+        let ratio = smoothIter / maxIter;
+        if (palGamma !== 1.0) {
+          ratio = Math.pow(ratio, palGamma);
+        }
+        ratio = Math.min(1, Math.max(0, ratio));
+
+        const lutIndex = Math.min(lutSize - 1, Math.floor(ratio * lutSize));
+        data32[idx] = colorLUT[lutIndex];
+      }
+    }
+  }
+
+  ctx.putImageData(imageData, 0, 0);
+}
+
+// Render fractal based on type
+function renderFractal() {
+  if (!fractalParams) return;
+
+  if (fractalParams.type === "mandelbrot") {
+    renderMandelbrot();
+  } else if (fractalParams.type === "julia") {
+    renderJulia();
+  }
 }
 
 // ============================================
