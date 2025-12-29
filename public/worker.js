@@ -206,8 +206,9 @@ self.onmessage = (event) => {
     if (payload.palMax !== undefined) palMax = payload.palMax;
     if (payload.bgColor !== undefined) bgColor = payload.bgColor;
 
-    // Check if this is a fractal type (Mandelbrot/Julia)
-    fractalMode = iterator.name === "mandelbrot" || iterator.name === "julia";
+    // Check if this is a fractal type
+    const fractalTypes = ["mandelbrot", "julia", "burningship", "tricorn", "multibrot", "newton", "phoenix", "lyapunov"];
+    fractalMode = fractalTypes.includes(iterator.name);
 
     // Check for OffscreenCanvas mode
     if (payload.mode === "offscreen" && payload.canvas) {
@@ -235,6 +236,10 @@ self.onmessage = (event) => {
         type: iterator.name,
         ...iterator.parameters,
       };
+      // Handle Lyapunov sequence (string parameter)
+      if (iterator.sequence) {
+        fractalParams.sequence = iterator.sequence;
+      }
       iterCanvas = null; // Not used for fractals
 
       if (mode === "offscreen") {
@@ -563,6 +568,403 @@ function renderJulia() {
   ctx.putImageData(imageData, 0, 0);
 }
 
+// Render Burning Ship fractal
+function renderBurningShip() {
+  if (!ctx || !colorLUT) return;
+
+  const size = canvasSize;
+  const { centerX, centerY, zoom, maxIter } = fractalParams;
+
+  const range = 3.0 / zoom;
+  const xMin = centerX - range / 2;
+  const yMin = centerY - range / 2;
+  const pixelSize = range / size;
+
+  const imageData = ctx.createImageData(size, size);
+  const data32 = new Uint32Array(imageData.data.buffer);
+  const lutSize = colorLUT.length;
+  const bgColorPacked = (255 << 24) | (bgColor.b << 16) | (bgColor.g << 8) | bgColor.r;
+
+  for (let py = 0; py < size; py++) {
+    const y0 = yMin + py * pixelSize;
+    for (let px = 0; px < size; px++) {
+      const x0 = xMin + px * pixelSize;
+
+      // Burning Ship: z = (|Re(z)| + i|Im(z)|)² + c
+      let x = 0, y = 0;
+      let iter = 0;
+      let x2 = 0, y2 = 0;
+
+      while (x2 + y2 <= 4 && iter < maxIter) {
+        // Take absolute values before squaring
+        x = Math.abs(x);
+        y = Math.abs(y);
+        y = 2 * x * y + y0;
+        x = x2 - y2 + x0;
+        x2 = x * x;
+        y2 = y * y;
+        iter++;
+      }
+
+      const idx = py * size + px;
+
+      if (iter === maxIter) {
+        data32[idx] = bgColorPacked;
+      } else {
+        const log_zn = Math.log(x2 + y2) / 2;
+        const nu = Math.log(log_zn / Math.LN2) / Math.LN2;
+        const smoothIter = iter + 1 - nu;
+
+        let ratio = smoothIter / maxIter;
+        if (palGamma !== 1.0) ratio = Math.pow(ratio, palGamma);
+        ratio = Math.min(1, Math.max(0, ratio));
+
+        const lutIndex = Math.min(lutSize - 1, Math.floor(ratio * lutSize));
+        data32[idx] = colorLUT[lutIndex];
+      }
+    }
+  }
+
+  ctx.putImageData(imageData, 0, 0);
+}
+
+// Render Tricorn (Mandelbar) fractal
+function renderTricorn() {
+  if (!ctx || !colorLUT) return;
+
+  const size = canvasSize;
+  const { centerX, centerY, zoom, maxIter } = fractalParams;
+
+  const range = 3.0 / zoom;
+  const xMin = centerX - range / 2;
+  const yMin = centerY - range / 2;
+  const pixelSize = range / size;
+
+  const imageData = ctx.createImageData(size, size);
+  const data32 = new Uint32Array(imageData.data.buffer);
+  const lutSize = colorLUT.length;
+  const bgColorPacked = (255 << 24) | (bgColor.b << 16) | (bgColor.g << 8) | bgColor.r;
+
+  for (let py = 0; py < size; py++) {
+    const y0 = yMin + py * pixelSize;
+    for (let px = 0; px < size; px++) {
+      const x0 = xMin + px * pixelSize;
+
+      // Tricorn: z = conj(z)² + c (conjugate before squaring)
+      let x = 0, y = 0;
+      let iter = 0;
+      let x2 = 0, y2 = 0;
+
+      while (x2 + y2 <= 4 && iter < maxIter) {
+        // Conjugate: negate imaginary part
+        y = -y;
+        const newY = 2 * x * y + y0;
+        x = x2 - y2 + x0;
+        y = newY;
+        x2 = x * x;
+        y2 = y * y;
+        iter++;
+      }
+
+      const idx = py * size + px;
+
+      if (iter === maxIter) {
+        data32[idx] = bgColorPacked;
+      } else {
+        const log_zn = Math.log(x2 + y2) / 2;
+        const nu = Math.log(log_zn / Math.LN2) / Math.LN2;
+        const smoothIter = iter + 1 - nu;
+
+        let ratio = smoothIter / maxIter;
+        if (palGamma !== 1.0) ratio = Math.pow(ratio, palGamma);
+        ratio = Math.min(1, Math.max(0, ratio));
+
+        const lutIndex = Math.min(lutSize - 1, Math.floor(ratio * lutSize));
+        data32[idx] = colorLUT[lutIndex];
+      }
+    }
+  }
+
+  ctx.putImageData(imageData, 0, 0);
+}
+
+// Render Multibrot fractal (z^n + c)
+function renderMultibrot() {
+  if (!ctx || !colorLUT) return;
+
+  const size = canvasSize;
+  const { centerX, centerY, zoom, maxIter, power } = fractalParams;
+
+  const range = 3.0 / zoom;
+  const xMin = centerX - range / 2;
+  const yMin = centerY - range / 2;
+  const pixelSize = range / size;
+
+  const imageData = ctx.createImageData(size, size);
+  const data32 = new Uint32Array(imageData.data.buffer);
+  const lutSize = colorLUT.length;
+  const bgColorPacked = (255 << 24) | (bgColor.b << 16) | (bgColor.g << 8) | bgColor.r;
+
+  for (let py = 0; py < size; py++) {
+    const y0 = yMin + py * pixelSize;
+    for (let px = 0; px < size; px++) {
+      const x0 = xMin + px * pixelSize;
+
+      // Multibrot: z = z^n + c (using polar form)
+      let x = 0, y = 0;
+      let iter = 0;
+
+      while (x * x + y * y <= 4 && iter < maxIter) {
+        const r = Math.sqrt(x * x + y * y);
+        const theta = Math.atan2(y, x);
+        const rn = Math.pow(r, power);
+        x = rn * Math.cos(power * theta) + x0;
+        y = rn * Math.sin(power * theta) + y0;
+        iter++;
+      }
+
+      const idx = py * size + px;
+
+      if (iter === maxIter) {
+        data32[idx] = bgColorPacked;
+      } else {
+        const r2 = x * x + y * y;
+        const log_zn = Math.log(r2) / 2;
+        const nu = Math.log(log_zn / Math.log(power)) / Math.log(power);
+        const smoothIter = iter + 1 - nu;
+
+        let ratio = smoothIter / maxIter;
+        if (palGamma !== 1.0) ratio = Math.pow(ratio, palGamma);
+        ratio = Math.min(1, Math.max(0, ratio));
+
+        const lutIndex = Math.min(lutSize - 1, Math.floor(ratio * lutSize));
+        data32[idx] = colorLUT[lutIndex];
+      }
+    }
+  }
+
+  ctx.putImageData(imageData, 0, 0);
+}
+
+// Render Newton fractal (z³ - 1 = 0)
+function renderNewton() {
+  if (!ctx || !colorLUT) return;
+
+  const size = canvasSize;
+  const { centerX, centerY, zoom, maxIter } = fractalParams;
+
+  const range = 3.0 / zoom;
+  const xMin = centerX - range / 2;
+  const yMin = centerY - range / 2;
+  const pixelSize = range / size;
+
+  const imageData = ctx.createImageData(size, size);
+  const data32 = new Uint32Array(imageData.data.buffer);
+  const lutSize = colorLUT.length;
+
+  // Three roots of z³ - 1 = 0
+  const roots = [
+    { x: 1, y: 0 },
+    { x: -0.5, y: Math.sqrt(3) / 2 },
+    { x: -0.5, y: -Math.sqrt(3) / 2 }
+  ];
+  const tolerance = 1e-6;
+
+  for (let py = 0; py < size; py++) {
+    const y0 = yMin + py * pixelSize;
+    for (let px = 0; px < size; px++) {
+      let x = xMin + px * pixelSize;
+      let y = y0;
+
+      let iter = 0;
+      let rootIndex = -1;
+
+      for (iter = 0; iter < maxIter; iter++) {
+        // Newton's method for z³ - 1: z = z - (z³-1)/(3z²) = (2z³ + 1) / (3z²)
+        const x2 = x * x, y2 = y * y;
+        const r2 = x2 + y2;
+        if (r2 < 1e-10) break;
+
+        // z² = (x + iy)² = x² - y² + 2ixy
+        const zx2 = x2 - y2;
+        const zy2 = 2 * x * y;
+
+        // z³ = z * z² = (x + iy)(zx2 + izy2)
+        const zx3 = x * zx2 - y * zy2;
+        const zy3 = x * zy2 + y * zx2;
+
+        // 3z²
+        const denom_x = 3 * zx2;
+        const denom_y = 3 * zy2;
+        const denom_r2 = denom_x * denom_x + denom_y * denom_y;
+        if (denom_r2 < 1e-10) break;
+
+        // 2z³ + 1
+        const num_x = 2 * zx3 + 1;
+        const num_y = 2 * zy3;
+
+        // Complex division: (2z³ + 1) / (3z²)
+        x = (num_x * denom_x + num_y * denom_y) / denom_r2;
+        y = (num_y * denom_x - num_x * denom_y) / denom_r2;
+
+        // Check convergence to roots
+        for (let r = 0; r < 3; r++) {
+          const dx = x - roots[r].x;
+          const dy = y - roots[r].y;
+          if (dx * dx + dy * dy < tolerance) {
+            rootIndex = r;
+            break;
+          }
+        }
+        if (rootIndex >= 0) break;
+      }
+
+      const idx = py * size + px;
+
+      if (rootIndex >= 0) {
+        // Color based on root and iteration count
+        const brightness = 1 - iter / maxIter;
+        let ratio = (rootIndex / 3 + brightness * 0.3) % 1;
+        if (palGamma !== 1.0) ratio = Math.pow(ratio, palGamma);
+        ratio = Math.min(1, Math.max(0, ratio));
+        const lutIndex = Math.min(lutSize - 1, Math.floor(ratio * lutSize));
+        data32[idx] = colorLUT[lutIndex];
+      } else {
+        // Didn't converge - use background
+        data32[idx] = (255 << 24) | (bgColor.b << 16) | (bgColor.g << 8) | bgColor.r;
+      }
+    }
+  }
+
+  ctx.putImageData(imageData, 0, 0);
+}
+
+// Render Phoenix fractal
+function renderPhoenix() {
+  if (!ctx || !colorLUT) return;
+
+  const size = canvasSize;
+  const { centerX, centerY, zoom, maxIter, cReal, cImag, p } = fractalParams;
+
+  const range = 3.0 / zoom;
+  const xMin = centerX - range / 2;
+  const yMin = centerY - range / 2;
+  const pixelSize = range / size;
+
+  const imageData = ctx.createImageData(size, size);
+  const data32 = new Uint32Array(imageData.data.buffer);
+  const lutSize = colorLUT.length;
+  const bgColorPacked = (255 << 24) | (bgColor.b << 16) | (bgColor.g << 8) | bgColor.r;
+
+  for (let py = 0; py < size; py++) {
+    const y0 = yMin + py * pixelSize;
+    for (let px = 0; px < size; px++) {
+      const x0 = xMin + px * pixelSize;
+
+      // Phoenix: z_new = z² + c + p * z_prev
+      let x = x0, y = y0;
+      let prevX = 0, prevY = 0;
+      let iter = 0;
+
+      while (x * x + y * y <= 4 && iter < maxIter) {
+        const x2 = x * x, y2 = y * y;
+        const newX = x2 - y2 + cReal + p * prevX;
+        const newY = 2 * x * y + cImag + p * prevY;
+        prevX = x;
+        prevY = y;
+        x = newX;
+        y = newY;
+        iter++;
+      }
+
+      const idx = py * size + px;
+
+      if (iter === maxIter) {
+        data32[idx] = bgColorPacked;
+      } else {
+        const r2 = x * x + y * y;
+        const log_zn = Math.log(r2) / 2;
+        const nu = Math.log(log_zn / Math.LN2) / Math.LN2;
+        const smoothIter = iter + 1 - nu;
+
+        let ratio = smoothIter / maxIter;
+        if (palGamma !== 1.0) ratio = Math.pow(ratio, palGamma);
+        ratio = Math.min(1, Math.max(0, ratio));
+
+        const lutIndex = Math.min(lutSize - 1, Math.floor(ratio * lutSize));
+        data32[idx] = colorLUT[lutIndex];
+      }
+    }
+  }
+
+  ctx.putImageData(imageData, 0, 0);
+}
+
+// Render Lyapunov fractal
+function renderLyapunov() {
+  if (!ctx || !colorLUT) return;
+
+  const size = canvasSize;
+  const { aMin, aMax, bMin, bMax, maxIter, sequence } = fractalParams;
+
+  const imageData = ctx.createImageData(size, size);
+  const data32 = new Uint32Array(imageData.data.buffer);
+  const lutSize = colorLUT.length;
+  const bgColorPacked = (255 << 24) | (bgColor.b << 16) | (bgColor.g << 8) | bgColor.r;
+
+  const seqLen = sequence.length;
+
+  for (let py = 0; py < size; py++) {
+    const b = bMin + (py / size) * (bMax - bMin);
+    for (let px = 0; px < size; px++) {
+      const a = aMin + (px / size) * (aMax - aMin);
+
+      // Lyapunov exponent calculation
+      let x = 0.5; // Initial condition
+      let lyapunov = 0;
+
+      for (let n = 0; n < maxIter; n++) {
+        // Get r value based on sequence
+        const r = sequence[n % seqLen] === 'A' ? a : b;
+
+        // Logistic map: x = r * x * (1 - x)
+        x = r * x * (1 - x);
+
+        // Accumulate Lyapunov exponent
+        const deriv = Math.abs(r * (1 - 2 * x));
+        if (deriv > 0) {
+          lyapunov += Math.log(deriv);
+        }
+      }
+
+      lyapunov /= maxIter;
+
+      const idx = py * size + px;
+
+      if (isNaN(lyapunov) || !isFinite(lyapunov)) {
+        data32[idx] = bgColorPacked;
+      } else {
+        // Map Lyapunov exponent to color
+        // Negative = stable (colored), Positive = chaotic (dark)
+        let ratio;
+        if (lyapunov < 0) {
+          ratio = Math.min(1, -lyapunov / 2); // Scale negative values
+        } else {
+          ratio = 0; // Chaotic regions get background-like color
+        }
+
+        if (palGamma !== 1.0) ratio = Math.pow(ratio, palGamma);
+        ratio = Math.min(1, Math.max(0, ratio));
+
+        const lutIndex = Math.min(lutSize - 1, Math.floor(ratio * lutSize));
+        data32[idx] = colorLUT[lutIndex];
+      }
+    }
+  }
+
+  ctx.putImageData(imageData, 0, 0);
+}
+
 // Render fractal based on type
 function renderFractal() {
   if (!fractalParams) return;
@@ -571,6 +973,18 @@ function renderFractal() {
     renderMandelbrot();
   } else if (fractalParams.type === "julia") {
     renderJulia();
+  } else if (fractalParams.type === "burningship") {
+    renderBurningShip();
+  } else if (fractalParams.type === "tricorn") {
+    renderTricorn();
+  } else if (fractalParams.type === "multibrot") {
+    renderMultibrot();
+  } else if (fractalParams.type === "newton") {
+    renderNewton();
+  } else if (fractalParams.type === "phoenix") {
+    renderPhoenix();
+  } else if (fractalParams.type === "lyapunov") {
+    renderLyapunov();
   }
 }
 

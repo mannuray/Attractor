@@ -126,6 +126,54 @@ interface JuliaParams {
   maxIter: number;
 }
 
+interface BurningShipParams {
+  centerX: number;
+  centerY: number;
+  zoom: number;
+  maxIter: number;
+}
+
+interface TricornParams {
+  centerX: number;
+  centerY: number;
+  zoom: number;
+  maxIter: number;
+}
+
+interface MultibrotParams {
+  centerX: number;
+  centerY: number;
+  zoom: number;
+  maxIter: number;
+  power: number;
+}
+
+interface NewtonParams {
+  centerX: number;
+  centerY: number;
+  zoom: number;
+  maxIter: number;
+}
+
+interface PhoenixParams {
+  centerX: number;
+  centerY: number;
+  zoom: number;
+  maxIter: number;
+  cReal: number;
+  cImag: number;
+  p: number;
+}
+
+interface LyapunovParams {
+  aMin: number;
+  aMax: number;
+  bMin: number;
+  bMax: number;
+  maxIter: number;
+  sequence: string;
+}
+
 interface IconData {
   name: string;
   alpha: number;
@@ -247,6 +295,60 @@ const DEFAULT_JULIA: JuliaParams = {
   centerY: 0,
   zoom: 1,
   maxIter: 256,
+};
+
+// Default Burning Ship parameters
+const DEFAULT_BURNING_SHIP: BurningShipParams = {
+  centerX: -0.4,
+  centerY: -0.6,
+  zoom: 1,
+  maxIter: 256,
+};
+
+// Default Tricorn parameters
+const DEFAULT_TRICORN: TricornParams = {
+  centerX: 0,
+  centerY: 0,
+  zoom: 1,
+  maxIter: 256,
+};
+
+// Default Multibrot parameters (power 3)
+const DEFAULT_MULTIBROT: MultibrotParams = {
+  centerX: 0,
+  centerY: 0,
+  zoom: 1,
+  maxIter: 256,
+  power: 3,
+};
+
+// Default Newton parameters (z³ - 1)
+const DEFAULT_NEWTON: NewtonParams = {
+  centerX: 0,
+  centerY: 0,
+  zoom: 1,
+  maxIter: 64,
+};
+
+// Default Phoenix parameters
+const DEFAULT_PHOENIX: PhoenixParams = {
+  centerX: 0,
+  centerY: 0,
+  zoom: 1,
+  maxIter: 256,
+  cReal: 0.5667,
+  cImag: 0,
+  p: -0.5,
+};
+
+// Default Lyapunov parameters
+const DEFAULT_LYAPUNOV: LyapunovParams = {
+  aMin: 2,
+  aMax: 4,
+  bMin: 2,
+  bMax: 4,
+  maxIter: 100,
+  sequence: "AB",
 };
 
 // Format large numbers compactly (e.g., 1.2K, 64M)
@@ -491,6 +593,14 @@ function Home() {
   const [juliaParams, setJuliaParams] = useState<JuliaParams>(DEFAULT_JULIA);
   const [juliaPreset, setJuliaPreset] = useState(0);
 
+  // New fractal parameters
+  const [burningShipParams, setBurningShipParams] = useState<BurningShipParams>(DEFAULT_BURNING_SHIP);
+  const [tricornParams, setTricornParams] = useState<TricornParams>(DEFAULT_TRICORN);
+  const [multibrotParams, setMultibrotParams] = useState<MultibrotParams>(DEFAULT_MULTIBROT);
+  const [newtonParams, setNewtonParams] = useState<NewtonParams>(DEFAULT_NEWTON);
+  const [phoenixParams, setPhoenixParams] = useState<PhoenixParams>(DEFAULT_PHOENIX);
+  const [lyapunovParams, setLyapunovParams] = useState<LyapunovParams>(DEFAULT_LYAPUNOV);
+
   // Current palette data
   const [paletteData, setPaletteData] = useState<Color[]>(
     symmetricIconData[CONFIG.INITIAL_ICON_INDEX].paletteData
@@ -509,6 +619,11 @@ function Home() {
   const [canvasKey, setCanvasKey] = useState(0); // Force new canvas element when incremented
   const [isEditing, setIsEditing] = useState(false); // Enable/disable parameter editing
   const [paletteModalOpen, setPaletteModalOpen] = useState(false); // Palette editor modal
+
+  // Fractal drag-to-zoom state
+  const [dragStart, setDragStart] = useState<{x: number, y: number} | null>(null);
+  const [dragEnd, setDragEnd] = useState<{x: number, y: number} | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
 
   // Collapsed state for attractor settings
   const [attractorCollapsed, setAttractorCollapsed] = useState(false);
@@ -666,6 +781,12 @@ function Home() {
       symmetricQuiltOverride?: SymmetricQuiltParams;
       mandelbrotOverride?: MandelbrotParams;
       juliaOverride?: JuliaParams;
+      burningShipOverride?: BurningShipParams;
+      tricornOverride?: TricornParams;
+      multibrotOverride?: MultibrotParams;
+      newtonOverride?: NewtonParams;
+      phoenixOverride?: PhoenixParams;
+      lyapunovOverride?: LyapunovParams;
       paletteOverride?: Color[];
       typeOverride?: AttractorType;
       palGammaOverride?: number;
@@ -685,6 +806,12 @@ function Home() {
     const currentSymmetricQuilt = options?.symmetricQuiltOverride ?? symmetricQuiltParams;
     const currentMandelbrot = options?.mandelbrotOverride ?? mandelbrotParams;
     const currentJulia = options?.juliaOverride ?? juliaParams;
+    const currentBurningShip = options?.burningShipOverride ?? burningShipParams;
+    const currentTricorn = options?.tricornOverride ?? tricornParams;
+    const currentMultibrot = options?.multibrotOverride ?? multibrotParams;
+    const currentNewton = options?.newtonOverride ?? newtonParams;
+    const currentPhoenix = options?.phoenixOverride ?? phoenixParams;
+    const currentLyapunov = options?.lyapunovOverride ?? lyapunovParams;
     const currentPalette = options?.paletteOverride ?? paletteData;
     const currentPalGamma = options?.palGammaOverride ?? palGamma;
 
@@ -731,6 +858,12 @@ function Home() {
       case "symmetric_quilt": scale = currentSymmetricQuilt.scale; break;
       case "mandelbrot": scale = 1; break; // Fractals use zoom instead of scale
       case "julia": scale = 1; break;
+      case "burningship": scale = 1; break;
+      case "tricorn": scale = 1; break;
+      case "multibrot": scale = 1; break;
+      case "newton": scale = 1; break;
+      case "phoenix": scale = 1; break;
+      case "lyapunov": scale = 1; break;
       default: scale = 0.25;
     }
 
@@ -873,6 +1006,79 @@ function Home() {
           },
         };
         break;
+      case "burningship":
+        iteratorPayload = {
+          name: "burningship",
+          parameters: {
+            centerX: currentBurningShip.centerX,
+            centerY: currentBurningShip.centerY,
+            zoom: currentBurningShip.zoom,
+            maxIter: currentBurningShip.maxIter,
+          },
+        };
+        break;
+      case "tricorn":
+        iteratorPayload = {
+          name: "tricorn",
+          parameters: {
+            centerX: currentTricorn.centerX,
+            centerY: currentTricorn.centerY,
+            zoom: currentTricorn.zoom,
+            maxIter: currentTricorn.maxIter,
+          },
+        };
+        break;
+      case "multibrot":
+        iteratorPayload = {
+          name: "multibrot",
+          parameters: {
+            centerX: currentMultibrot.centerX,
+            centerY: currentMultibrot.centerY,
+            zoom: currentMultibrot.zoom,
+            maxIter: currentMultibrot.maxIter,
+            power: currentMultibrot.power,
+          },
+        };
+        break;
+      case "newton":
+        iteratorPayload = {
+          name: "newton",
+          parameters: {
+            centerX: currentNewton.centerX,
+            centerY: currentNewton.centerY,
+            zoom: currentNewton.zoom,
+            maxIter: currentNewton.maxIter,
+          },
+        };
+        break;
+      case "phoenix":
+        iteratorPayload = {
+          name: "phoenix",
+          parameters: {
+            centerX: currentPhoenix.centerX,
+            centerY: currentPhoenix.centerY,
+            zoom: currentPhoenix.zoom,
+            maxIter: currentPhoenix.maxIter,
+            cReal: currentPhoenix.cReal,
+            cImag: currentPhoenix.cImag,
+            p: currentPhoenix.p,
+          },
+        };
+        break;
+      case "lyapunov":
+        iteratorPayload = {
+          name: "lyapunov",
+          parameters: {
+            aMin: currentLyapunov.aMin,
+            aMax: currentLyapunov.aMax,
+            bMin: currentLyapunov.bMin,
+            bMax: currentLyapunov.bMax,
+            maxIter: currentLyapunov.maxIter,
+          },
+        };
+        // Add sequence as a separate property since it's a string
+        (iteratorPayload as { name: string; parameters: Record<string, number>; sequence?: string }).sequence = currentLyapunov.sequence;
+        break;
       default:
         iteratorPayload = { name: "clifford_iterator", parameters: { alpha: -1.7, beta: 1.3, gamma: -0.1, delta: -1.21 } };
     }
@@ -983,7 +1189,7 @@ function Home() {
 
     setMaxHits(0);
     setTotalIterations(0);
-  }, [attractorType, iconParams, cliffordParams, deJongParams, tinkerbellParams, henonParams, bedheadParams, svenssonParams, fractalDreamParams, hopalongParams, symmetricQuiltParams, mandelbrotParams, juliaParams, paletteData, palGamma, palScale, palMax, bgColor, draw, canvasSize, clearCanvas]);
+  }, [attractorType, iconParams, cliffordParams, deJongParams, tinkerbellParams, henonParams, bedheadParams, svenssonParams, fractalDreamParams, hopalongParams, symmetricQuiltParams, mandelbrotParams, juliaParams, burningShipParams, tricornParams, multibrotParams, newtonParams, phoenixParams, lyapunovParams, paletteData, palGamma, palScale, palMax, bgColor, draw, canvasSize, clearCanvas]);
 
   // Initialize canvas on mount only
   useEffect(() => {
@@ -1318,7 +1524,7 @@ function Home() {
   }, [updatePaletteSettings]);
 
   // Check if current type is a fractal (renders instantly, no iteration needed)
-  const isFractalType = attractorType === "mandelbrot" || attractorType === "julia";
+  const isFractalType = ["mandelbrot", "julia", "burningship", "tricorn", "multibrot", "newton", "phoenix", "lyapunov"].includes(attractorType);
 
   // Handle start/stop iteration
   const handleIterating = useCallback(() => {
@@ -1397,6 +1603,162 @@ function Home() {
     setZoom(1);
   }, []);
 
+  // Fractal coordinate conversion helper
+  const pixelToFractal = useCallback((pixelX: number, pixelY: number, params: MandelbrotParams | JuliaParams) => {
+    const range = 3.0 / params.zoom;
+    const xMin = params.centerX - range / 2;
+    const yMin = params.centerY - range / 2;
+    const pixelSize = range / canvasSize;
+    return {
+      x: xMin + pixelX * pixelSize,
+      y: yMin + pixelY * pixelSize,
+    };
+  }, [canvasSize]);
+
+  // Reset fractal view to default
+  const handleResetFractalView = useCallback(() => {
+    if (attractorType === "mandelbrot") {
+      setMandelbrotParams(DEFAULT_MANDELBROT);
+      initializeWorker(canvasSize, { mandelbrotOverride: DEFAULT_MANDELBROT });
+    } else if (attractorType === "julia") {
+      setJuliaParams(DEFAULT_JULIA);
+      initializeWorker(canvasSize, { juliaOverride: DEFAULT_JULIA });
+    } else if (attractorType === "burningship") {
+      setBurningShipParams(DEFAULT_BURNING_SHIP);
+      initializeWorker(canvasSize, { burningShipOverride: DEFAULT_BURNING_SHIP });
+    } else if (attractorType === "tricorn") {
+      setTricornParams(DEFAULT_TRICORN);
+      initializeWorker(canvasSize, { tricornOverride: DEFAULT_TRICORN });
+    } else if (attractorType === "multibrot") {
+      setMultibrotParams(DEFAULT_MULTIBROT);
+      initializeWorker(canvasSize, { multibrotOverride: DEFAULT_MULTIBROT });
+    } else if (attractorType === "newton") {
+      setNewtonParams(DEFAULT_NEWTON);
+      initializeWorker(canvasSize, { newtonOverride: DEFAULT_NEWTON });
+    } else if (attractorType === "phoenix") {
+      setPhoenixParams(DEFAULT_PHOENIX);
+      initializeWorker(canvasSize, { phoenixOverride: DEFAULT_PHOENIX });
+    } else if (attractorType === "lyapunov") {
+      setLyapunovParams(DEFAULT_LYAPUNOV);
+      initializeWorker(canvasSize, { lyapunovOverride: DEFAULT_LYAPUNOV });
+    }
+  }, [attractorType, initializeWorker, canvasSize]);
+
+  // Fractal drag-to-zoom handlers
+  const handleFractalMouseDown = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
+    if (!isFractalType) return;
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = (e.clientX - rect.left) / zoom;
+    const y = (e.clientY - rect.top) / zoom;
+    setDragStart({ x, y });
+    setDragEnd({ x, y });
+    setIsDragging(true);
+  }, [isFractalType, zoom]);
+
+  const handleFractalMouseMove = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
+    if (!isDragging || !dragStart) return;
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = (e.clientX - rect.left) / zoom;
+    const y = (e.clientY - rect.top) / zoom;
+    setDragEnd({ x, y });
+  }, [isDragging, dragStart, zoom]);
+
+  const handleFractalMouseUp = useCallback(() => {
+    if (!isDragging || !dragStart || !dragEnd) {
+      setIsDragging(false);
+      return;
+    }
+
+    // Ignore tiny drags (just clicks)
+    const dragWidth = Math.abs(dragEnd.x - dragStart.x);
+    const dragHeight = Math.abs(dragEnd.y - dragStart.y);
+    if (dragWidth < 10 && dragHeight < 10) {
+      setIsDragging(false);
+      setDragStart(null);
+      setDragEnd(null);
+      return;
+    }
+
+    // Handle Lyapunov separately (uses aMin/aMax/bMin/bMax instead of center/zoom)
+    if (attractorType === "lyapunov") {
+      const minX = Math.min(dragStart.x, dragEnd.x);
+      const maxX = Math.max(dragStart.x, dragEnd.x);
+      const minY = Math.min(dragStart.y, dragEnd.y);
+      const maxY = Math.max(dragStart.y, dragEnd.y);
+
+      // Convert pixel coords to a/b space
+      const aRange = lyapunovParams.aMax - lyapunovParams.aMin;
+      const bRange = lyapunovParams.bMax - lyapunovParams.bMin;
+      const newAMin = lyapunovParams.aMin + (minX / canvasSize) * aRange;
+      const newAMax = lyapunovParams.aMin + (maxX / canvasSize) * aRange;
+      const newBMin = lyapunovParams.bMin + (minY / canvasSize) * bRange;
+      const newBMax = lyapunovParams.bMin + (maxY / canvasSize) * bRange;
+
+      const newParams = { ...lyapunovParams, aMin: newAMin, aMax: newAMax, bMin: newBMin, bMax: newBMax };
+      setLyapunovParams(newParams);
+      initializeWorker(canvasSize, { lyapunovOverride: newParams });
+
+      setIsDragging(false);
+      setDragStart(null);
+      setDragEnd(null);
+      return;
+    }
+
+    // Get current params based on attractor type (all use centerX/centerY/zoom)
+    let params: { centerX: number; centerY: number; zoom: number };
+    if (attractorType === "mandelbrot") params = mandelbrotParams;
+    else if (attractorType === "julia") params = juliaParams;
+    else if (attractorType === "burningship") params = burningShipParams;
+    else if (attractorType === "tricorn") params = tricornParams;
+    else if (attractorType === "multibrot") params = multibrotParams;
+    else if (attractorType === "newton") params = newtonParams;
+    else if (attractorType === "phoenix") params = phoenixParams;
+    else params = mandelbrotParams; // fallback
+
+    const topLeft = pixelToFractal(Math.min(dragStart.x, dragEnd.x), Math.min(dragStart.y, dragEnd.y), params);
+    const bottomRight = pixelToFractal(Math.max(dragStart.x, dragEnd.x), Math.max(dragStart.y, dragEnd.y), params);
+
+    const newCenterX = (topLeft.x + bottomRight.x) / 2;
+    const newCenterY = (topLeft.y + bottomRight.y) / 2;
+    const newRange = Math.max(bottomRight.x - topLeft.x, bottomRight.y - topLeft.y);
+    const newZoom = 3.0 / newRange;
+
+    // Update params and re-render based on type
+    if (attractorType === "mandelbrot") {
+      const newParams = { ...mandelbrotParams, centerX: newCenterX, centerY: newCenterY, zoom: newZoom };
+      setMandelbrotParams(newParams);
+      initializeWorker(canvasSize, { mandelbrotOverride: newParams });
+    } else if (attractorType === "julia") {
+      const newParams = { ...juliaParams, centerX: newCenterX, centerY: newCenterY, zoom: newZoom };
+      setJuliaParams(newParams);
+      initializeWorker(canvasSize, { juliaOverride: newParams });
+    } else if (attractorType === "burningship") {
+      const newParams = { ...burningShipParams, centerX: newCenterX, centerY: newCenterY, zoom: newZoom };
+      setBurningShipParams(newParams);
+      initializeWorker(canvasSize, { burningShipOverride: newParams });
+    } else if (attractorType === "tricorn") {
+      const newParams = { ...tricornParams, centerX: newCenterX, centerY: newCenterY, zoom: newZoom };
+      setTricornParams(newParams);
+      initializeWorker(canvasSize, { tricornOverride: newParams });
+    } else if (attractorType === "multibrot") {
+      const newParams = { ...multibrotParams, centerX: newCenterX, centerY: newCenterY, zoom: newZoom };
+      setMultibrotParams(newParams);
+      initializeWorker(canvasSize, { multibrotOverride: newParams });
+    } else if (attractorType === "newton") {
+      const newParams = { ...newtonParams, centerX: newCenterX, centerY: newCenterY, zoom: newZoom };
+      setNewtonParams(newParams);
+      initializeWorker(canvasSize, { newtonOverride: newParams });
+    } else if (attractorType === "phoenix") {
+      const newParams = { ...phoenixParams, centerX: newCenterX, centerY: newCenterY, zoom: newZoom };
+      setPhoenixParams(newParams);
+      initializeWorker(canvasSize, { phoenixOverride: newParams });
+    }
+
+    setIsDragging(false);
+    setDragStart(null);
+    setDragEnd(null);
+  }, [isDragging, dragStart, dragEnd, attractorType, mandelbrotParams, juliaParams, burningShipParams, tricornParams, multibrotParams, newtonParams, phoenixParams, lyapunovParams, pixelToFractal, initializeWorker, canvasSize]);
+
   // Save image handler
   const handleSaveImage = useCallback(() => {
     // In offscreen mode, request export from worker
@@ -1431,7 +1793,7 @@ function Home() {
   }), [isEditing]);
 
   // Destructure static styles for convenience
-  const { selectStyle, labelStyle, fieldStyle, cardStyle, buttonPrimary, buttonSuccess, buttonSecondary, buttonSmall, floatingButton } = STYLES;
+  const { selectStyle, labelStyle, fieldStyle, cardStyle, buttonPrimary, buttonSuccess, buttonSecondary, floatingButton } = STYLES;
 
   return (
     <div style={{ display: "flex", height: "100vh", background: "var(--bg-gradient)" }}>
@@ -1544,6 +1906,12 @@ function Home() {
                   <optgroup label="Fractals">
                     <option value="mandelbrot">Mandelbrot Set</option>
                     <option value="julia">Julia Set</option>
+                    <option value="burningship">Burning Ship</option>
+                    <option value="tricorn">Tricorn (Mandelbar)</option>
+                    <option value="multibrot">Multibrot</option>
+                    <option value="newton">Newton Fractal</option>
+                    <option value="phoenix">Phoenix Fractal</option>
+                    <option value="lyapunov">Lyapunov Fractal</option>
                   </optgroup>
                 </select>
               </div>
@@ -2285,6 +2653,144 @@ function Home() {
             </div>
           </>
         )}
+
+        {/* Burning Ship Controls */}
+        {attractorType === "burningship" && (
+          <>
+            <div style={fieldStyle}>
+              {!isEditing && <button onClick={() => setIsEditing(true)} style={buttonPrimary}>Edit</button>}
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px", marginTop: isEditing ? 0 : "12px" }}>
+                <div><label style={labelStyle}>Center X</label><input type="number" step="0.01" value={burningShipParams.centerX} onChange={(e) => setBurningShipParams(p => ({ ...p, centerX: parseFloat(e.target.value) || 0 }))} disabled={!isEditing} style={inputStyle} /></div>
+                <div><label style={labelStyle}>Center Y</label><input type="number" step="0.01" value={burningShipParams.centerY} onChange={(e) => setBurningShipParams(p => ({ ...p, centerY: parseFloat(e.target.value) || 0 }))} disabled={!isEditing} style={inputStyle} /></div>
+                <div><label style={labelStyle}>Zoom</label><input type="number" step="0.1" min="0.1" value={burningShipParams.zoom} onChange={(e) => setBurningShipParams(p => ({ ...p, zoom: parseFloat(e.target.value) || 1 }))} disabled={!isEditing} style={inputStyle} /></div>
+                <div><label style={labelStyle}>Max Iter</label><input type="number" step="50" min="50" max="2000" value={burningShipParams.maxIter} onChange={(e) => setBurningShipParams(p => ({ ...p, maxIter: parseInt(e.target.value) || 256 }))} disabled={!isEditing} style={inputStyle} /></div>
+              </div>
+              {isEditing && (
+                <div style={{ display: "flex", gap: "8px", marginTop: "12px" }}>
+                  <button onClick={() => { handleApply(); setIsEditing(false); }} style={{ ...buttonSuccess, flex: 1 }}>Apply</button>
+                  <button onClick={() => { setBurningShipParams(DEFAULT_BURNING_SHIP); setIsEditing(false); }} style={{ ...buttonSecondary, flex: 1 }}>Cancel</button>
+                </div>
+              )}
+            </div>
+          </>
+        )}
+
+        {/* Tricorn Controls */}
+        {attractorType === "tricorn" && (
+          <>
+            <div style={fieldStyle}>
+              {!isEditing && <button onClick={() => setIsEditing(true)} style={buttonPrimary}>Edit</button>}
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px", marginTop: isEditing ? 0 : "12px" }}>
+                <div><label style={labelStyle}>Center X</label><input type="number" step="0.01" value={tricornParams.centerX} onChange={(e) => setTricornParams(p => ({ ...p, centerX: parseFloat(e.target.value) || 0 }))} disabled={!isEditing} style={inputStyle} /></div>
+                <div><label style={labelStyle}>Center Y</label><input type="number" step="0.01" value={tricornParams.centerY} onChange={(e) => setTricornParams(p => ({ ...p, centerY: parseFloat(e.target.value) || 0 }))} disabled={!isEditing} style={inputStyle} /></div>
+                <div><label style={labelStyle}>Zoom</label><input type="number" step="0.1" min="0.1" value={tricornParams.zoom} onChange={(e) => setTricornParams(p => ({ ...p, zoom: parseFloat(e.target.value) || 1 }))} disabled={!isEditing} style={inputStyle} /></div>
+                <div><label style={labelStyle}>Max Iter</label><input type="number" step="50" min="50" max="2000" value={tricornParams.maxIter} onChange={(e) => setTricornParams(p => ({ ...p, maxIter: parseInt(e.target.value) || 256 }))} disabled={!isEditing} style={inputStyle} /></div>
+              </div>
+              {isEditing && (
+                <div style={{ display: "flex", gap: "8px", marginTop: "12px" }}>
+                  <button onClick={() => { handleApply(); setIsEditing(false); }} style={{ ...buttonSuccess, flex: 1 }}>Apply</button>
+                  <button onClick={() => { setTricornParams(DEFAULT_TRICORN); setIsEditing(false); }} style={{ ...buttonSecondary, flex: 1 }}>Cancel</button>
+                </div>
+              )}
+            </div>
+          </>
+        )}
+
+        {/* Multibrot Controls */}
+        {attractorType === "multibrot" && (
+          <>
+            <div style={fieldStyle}>
+              {!isEditing && <button onClick={() => setIsEditing(true)} style={buttonPrimary}>Edit</button>}
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px", marginTop: isEditing ? 0 : "12px" }}>
+                <div><label style={labelStyle}>Center X</label><input type="number" step="0.01" value={multibrotParams.centerX} onChange={(e) => setMultibrotParams(p => ({ ...p, centerX: parseFloat(e.target.value) || 0 }))} disabled={!isEditing} style={inputStyle} /></div>
+                <div><label style={labelStyle}>Center Y</label><input type="number" step="0.01" value={multibrotParams.centerY} onChange={(e) => setMultibrotParams(p => ({ ...p, centerY: parseFloat(e.target.value) || 0 }))} disabled={!isEditing} style={inputStyle} /></div>
+                <div><label style={labelStyle}>Zoom</label><input type="number" step="0.1" min="0.1" value={multibrotParams.zoom} onChange={(e) => setMultibrotParams(p => ({ ...p, zoom: parseFloat(e.target.value) || 1 }))} disabled={!isEditing} style={inputStyle} /></div>
+                <div><label style={labelStyle}>Power</label><input type="number" step="1" min="2" max="10" value={multibrotParams.power} onChange={(e) => setMultibrotParams(p => ({ ...p, power: parseInt(e.target.value) || 3 }))} disabled={!isEditing} style={inputStyle} /></div>
+                <div style={{ gridColumn: "span 2" }}><label style={labelStyle}>Max Iter</label><input type="number" step="50" min="50" max="2000" value={multibrotParams.maxIter} onChange={(e) => setMultibrotParams(p => ({ ...p, maxIter: parseInt(e.target.value) || 256 }))} disabled={!isEditing} style={inputStyle} /></div>
+              </div>
+              {isEditing && (
+                <div style={{ display: "flex", gap: "8px", marginTop: "12px" }}>
+                  <button onClick={() => { handleApply(); setIsEditing(false); }} style={{ ...buttonSuccess, flex: 1 }}>Apply</button>
+                  <button onClick={() => { setMultibrotParams(DEFAULT_MULTIBROT); setIsEditing(false); }} style={{ ...buttonSecondary, flex: 1 }}>Cancel</button>
+                </div>
+              )}
+            </div>
+          </>
+        )}
+
+        {/* Newton Controls */}
+        {attractorType === "newton" && (
+          <>
+            <div style={fieldStyle}>
+              {!isEditing && <button onClick={() => setIsEditing(true)} style={buttonPrimary}>Edit</button>}
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px", marginTop: isEditing ? 0 : "12px" }}>
+                <div><label style={labelStyle}>Center X</label><input type="number" step="0.01" value={newtonParams.centerX} onChange={(e) => setNewtonParams(p => ({ ...p, centerX: parseFloat(e.target.value) || 0 }))} disabled={!isEditing} style={inputStyle} /></div>
+                <div><label style={labelStyle}>Center Y</label><input type="number" step="0.01" value={newtonParams.centerY} onChange={(e) => setNewtonParams(p => ({ ...p, centerY: parseFloat(e.target.value) || 0 }))} disabled={!isEditing} style={inputStyle} /></div>
+                <div><label style={labelStyle}>Zoom</label><input type="number" step="0.1" min="0.1" value={newtonParams.zoom} onChange={(e) => setNewtonParams(p => ({ ...p, zoom: parseFloat(e.target.value) || 1 }))} disabled={!isEditing} style={inputStyle} /></div>
+                <div><label style={labelStyle}>Max Iter</label><input type="number" step="10" min="10" max="500" value={newtonParams.maxIter} onChange={(e) => setNewtonParams(p => ({ ...p, maxIter: parseInt(e.target.value) || 64 }))} disabled={!isEditing} style={inputStyle} /></div>
+              </div>
+              {isEditing && (
+                <div style={{ display: "flex", gap: "8px", marginTop: "12px" }}>
+                  <button onClick={() => { handleApply(); setIsEditing(false); }} style={{ ...buttonSuccess, flex: 1 }}>Apply</button>
+                  <button onClick={() => { setNewtonParams(DEFAULT_NEWTON); setIsEditing(false); }} style={{ ...buttonSecondary, flex: 1 }}>Cancel</button>
+                </div>
+              )}
+            </div>
+          </>
+        )}
+
+        {/* Phoenix Controls */}
+        {attractorType === "phoenix" && (
+          <>
+            <div style={fieldStyle}>
+              {!isEditing && <button onClick={() => setIsEditing(true)} style={buttonPrimary}>Edit</button>}
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px", marginTop: isEditing ? 0 : "12px" }}>
+                <div><label style={labelStyle}>C Real</label><input type="number" step="0.01" value={phoenixParams.cReal} onChange={(e) => setPhoenixParams(p => ({ ...p, cReal: parseFloat(e.target.value) || 0 }))} disabled={!isEditing} style={inputStyle} /></div>
+                <div><label style={labelStyle}>C Imag</label><input type="number" step="0.01" value={phoenixParams.cImag} onChange={(e) => setPhoenixParams(p => ({ ...p, cImag: parseFloat(e.target.value) || 0 }))} disabled={!isEditing} style={inputStyle} /></div>
+                <div><label style={labelStyle}>P (Memory)</label><input type="number" step="0.05" value={phoenixParams.p} onChange={(e) => setPhoenixParams(p => ({ ...p, p: parseFloat(e.target.value) || 0 }))} disabled={!isEditing} style={inputStyle} /></div>
+                <div><label style={labelStyle}>Zoom</label><input type="number" step="0.1" min="0.1" value={phoenixParams.zoom} onChange={(e) => setPhoenixParams(p => ({ ...p, zoom: parseFloat(e.target.value) || 1 }))} disabled={!isEditing} style={inputStyle} /></div>
+                <div><label style={labelStyle}>Center X</label><input type="number" step="0.01" value={phoenixParams.centerX} onChange={(e) => setPhoenixParams(p => ({ ...p, centerX: parseFloat(e.target.value) || 0 }))} disabled={!isEditing} style={inputStyle} /></div>
+                <div><label style={labelStyle}>Center Y</label><input type="number" step="0.01" value={phoenixParams.centerY} onChange={(e) => setPhoenixParams(p => ({ ...p, centerY: parseFloat(e.target.value) || 0 }))} disabled={!isEditing} style={inputStyle} /></div>
+                <div style={{ gridColumn: "span 2" }}><label style={labelStyle}>Max Iter</label><input type="number" step="50" min="50" max="2000" value={phoenixParams.maxIter} onChange={(e) => setPhoenixParams(p => ({ ...p, maxIter: parseInt(e.target.value) || 256 }))} disabled={!isEditing} style={inputStyle} /></div>
+              </div>
+              {isEditing && (
+                <div style={{ display: "flex", gap: "8px", marginTop: "12px" }}>
+                  <button onClick={() => { handleApply(); setIsEditing(false); }} style={{ ...buttonSuccess, flex: 1 }}>Apply</button>
+                  <button onClick={() => { setPhoenixParams(DEFAULT_PHOENIX); setIsEditing(false); }} style={{ ...buttonSecondary, flex: 1 }}>Cancel</button>
+                </div>
+              )}
+            </div>
+          </>
+        )}
+
+        {/* Lyapunov Controls */}
+        {attractorType === "lyapunov" && (
+          <>
+            <div style={fieldStyle}>
+              {!isEditing && <button onClick={() => setIsEditing(true)} style={buttonPrimary}>Edit</button>}
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px", marginTop: isEditing ? 0 : "12px" }}>
+                <div><label style={labelStyle}>A Min</label><input type="number" step="0.1" value={lyapunovParams.aMin} onChange={(e) => setLyapunovParams(p => ({ ...p, aMin: parseFloat(e.target.value) || 2 }))} disabled={!isEditing} style={inputStyle} /></div>
+                <div><label style={labelStyle}>A Max</label><input type="number" step="0.1" value={lyapunovParams.aMax} onChange={(e) => setLyapunovParams(p => ({ ...p, aMax: parseFloat(e.target.value) || 4 }))} disabled={!isEditing} style={inputStyle} /></div>
+                <div><label style={labelStyle}>B Min</label><input type="number" step="0.1" value={lyapunovParams.bMin} onChange={(e) => setLyapunovParams(p => ({ ...p, bMin: parseFloat(e.target.value) || 2 }))} disabled={!isEditing} style={inputStyle} /></div>
+                <div><label style={labelStyle}>B Max</label><input type="number" step="0.1" value={lyapunovParams.bMax} onChange={(e) => setLyapunovParams(p => ({ ...p, bMax: parseFloat(e.target.value) || 4 }))} disabled={!isEditing} style={inputStyle} /></div>
+                <div><label style={labelStyle}>Sequence</label><input type="text" value={lyapunovParams.sequence} onChange={(e) => setLyapunovParams(p => ({ ...p, sequence: e.target.value || "AB" }))} disabled={!isEditing} style={inputStyle} /></div>
+                <div><label style={labelStyle}>Max Iter</label><input type="number" step="10" min="10" max="500" value={lyapunovParams.maxIter} onChange={(e) => setLyapunovParams(p => ({ ...p, maxIter: parseInt(e.target.value) || 100 }))} disabled={!isEditing} style={inputStyle} /></div>
+              </div>
+              {isEditing && (
+                <div style={{ display: "flex", gap: "8px", marginTop: "12px" }}>
+                  <button onClick={() => { handleApply(); setIsEditing(false); }} style={{ ...buttonSuccess, flex: 1 }}>Apply</button>
+                  <button onClick={() => { setLyapunovParams(DEFAULT_LYAPUNOV); setIsEditing(false); }} style={{ ...buttonSecondary, flex: 1 }}>Cancel</button>
+                </div>
+              )}
+            </div>
+            <div style={{ ...cardStyle, padding: "12px", marginTop: "8px" }}>
+              <p style={{ margin: 0, fontSize: "11px", color: "rgba(255, 180, 120, 0.6)", lineHeight: "1.5" }}>
+                Lyapunov fractals use a sequence like "AB" or "AABB". A and B represent the two parameter values that alternate during iteration.
+              </p>
+            </div>
+          </>
+        )}
+
             </div>
           )}
         </div>
@@ -2303,7 +2809,16 @@ function Home() {
                 color: "#ffffff",
                 fontSize: "15px",
                 fontWeight: 700,
-              }}>{attractorType === "mandelbrot" ? mandelbrotParams.maxIter : juliaParams.maxIter}</span>
+              }}>{
+                attractorType === "mandelbrot" ? mandelbrotParams.maxIter :
+                attractorType === "julia" ? juliaParams.maxIter :
+                attractorType === "burningship" ? burningShipParams.maxIter :
+                attractorType === "tricorn" ? tricornParams.maxIter :
+                attractorType === "multibrot" ? multibrotParams.maxIter :
+                attractorType === "newton" ? newtonParams.maxIter :
+                attractorType === "phoenix" ? phoenixParams.maxIter :
+                attractorType === "lyapunov" ? lyapunovParams.maxIter : 0
+              }</span>
             </div>
           ) : (
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
@@ -2336,11 +2851,19 @@ function Home() {
             }}
           >
             {needsScroll ? (
-              <div style={{
-                width: scaledSize,
-                height: scaledSize,
-                margin: "20px",
-              }}>
+              <div
+                style={{
+                  width: scaledSize,
+                  height: scaledSize,
+                  margin: "20px",
+                  position: "relative",
+                  cursor: isFractalType ? "crosshair" : "default",
+                }}
+                onMouseDown={handleFractalMouseDown}
+                onMouseMove={handleFractalMouseMove}
+                onMouseUp={handleFractalMouseUp}
+                onMouseLeave={handleFractalMouseUp}
+              >
                 <canvas
                   key={canvasKey}
                   ref={canvasRef}
@@ -2351,12 +2874,34 @@ function Home() {
                     boxShadow: "0 0 80px rgba(245, 158, 11, 0.12), 0 20px 60px rgba(0, 0, 0, 0.5)",
                   }}
                 />
+                {/* Drag selection rectangle */}
+                {isFractalType && isDragging && dragStart && dragEnd && (
+                  <div style={{
+                    position: "absolute",
+                    left: Math.min(dragStart.x, dragEnd.x) * zoom,
+                    top: Math.min(dragStart.y, dragEnd.y) * zoom,
+                    width: Math.abs(dragEnd.x - dragStart.x) * zoom,
+                    height: Math.abs(dragEnd.y - dragStart.y) * zoom,
+                    border: "2px dashed rgba(255, 180, 120, 0.9)",
+                    background: "rgba(255, 180, 120, 0.15)",
+                    pointerEvents: "none",
+                    borderRadius: "4px",
+                  }} />
+                )}
               </div>
             ) : (
-              <div style={{
-                width: scaledSize,
-                height: scaledSize,
-              }}>
+              <div
+                style={{
+                  width: scaledSize,
+                  height: scaledSize,
+                  position: "relative",
+                  cursor: isFractalType ? "crosshair" : "default",
+                }}
+                onMouseDown={handleFractalMouseDown}
+                onMouseMove={handleFractalMouseMove}
+                onMouseUp={handleFractalMouseUp}
+                onMouseLeave={handleFractalMouseUp}
+              >
                 <canvas
                   key={canvasKey}
                   ref={canvasRef}
@@ -2367,6 +2912,20 @@ function Home() {
                     boxShadow: "0 0 80px rgba(245, 158, 11, 0.12), 0 20px 60px rgba(0, 0, 0, 0.5)",
                   }}
                 />
+                {/* Drag selection rectangle */}
+                {isFractalType && isDragging && dragStart && dragEnd && (
+                  <div style={{
+                    position: "absolute",
+                    left: Math.min(dragStart.x, dragEnd.x) * zoom,
+                    top: Math.min(dragStart.y, dragEnd.y) * zoom,
+                    width: Math.abs(dragEnd.x - dragStart.x) * zoom,
+                    height: Math.abs(dragEnd.y - dragStart.y) * zoom,
+                    border: "2px dashed rgba(255, 180, 120, 0.9)",
+                    background: "rgba(255, 180, 120, 0.15)",
+                    pointerEvents: "none",
+                    borderRadius: "4px",
+                  }} />
+                )}
               </div>
             )}
 
@@ -2431,6 +2990,17 @@ function Home() {
                   title={iterating ? "Stop" : "Start"}
                 >
                   {iterating ? "■" : "▶"}
+                </button>
+              )}
+
+              {/* Reset View - only for fractals */}
+              {isFractalType && (
+                <button
+                  onClick={handleResetFractalView}
+                  style={floatingButton}
+                  title="Reset View"
+                >
+                  ↺
                 </button>
               )}
 
