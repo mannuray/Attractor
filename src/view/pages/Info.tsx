@@ -154,8 +154,27 @@ const AttractorCard = styled.div`
   margin-bottom: 20px;
 `;
 
+const AttractorHeader = styled.div`
+  display: flex;
+  gap: 16px;
+  margin-bottom: 12px;
+`;
+
+const Thumbnail = styled.img`
+  width: 80px;
+  height: 80px;
+  border-radius: 8px;
+  object-fit: cover;
+  border: 1px solid rgba(255, 180, 120, 0.2);
+  flex-shrink: 0;
+`;
+
+const AttractorInfo = styled.div`
+  flex: 1;
+`;
+
 const AttractorName = styled.h4`
-  margin: 0 0 12px 0;
+  margin: 0 0 8px 0;
   font-size: 18px;
   font-weight: 600;
   color: #ffffff;
@@ -326,11 +345,16 @@ const AttractorsTab: React.FC = () => (
     </AttractorCard>
 
     <AttractorCard>
-      <AttractorName>Clifford Attractors</AttractorName>
-      <Paragraph>
-        Named after Clifford Pickover, these attractors create intricate swirling
-        patterns using sine and cosine functions.
-      </Paragraph>
+      <AttractorHeader>
+        <Thumbnail src="/thumbnails/clifford.png" alt="Clifford Attractor" />
+        <AttractorInfo>
+          <AttractorName>Clifford Attractors</AttractorName>
+          <Paragraph style={{ margin: 0 }}>
+            Named after Clifford Pickover, these attractors create intricate swirling
+            patterns using sine and cosine functions.
+          </Paragraph>
+        </AttractorInfo>
+      </AttractorHeader>
       <MathBlock>
         <BlockMath math="x_{n+1} = \sin(a \cdot y_n) + c \cdot \cos(a \cdot x_n)" />
         <BlockMath math="y_{n+1} = \sin(b \cdot x_n) + d \cdot \cos(b \cdot y_n)" />
@@ -344,10 +368,15 @@ const AttractorsTab: React.FC = () => (
     </AttractorCard>
 
     <AttractorCard>
-      <AttractorName>De Jong Attractors</AttractorName>
-      <Paragraph>
-        Peter de Jong's attractor creates beautiful symmetric and asymmetric patterns.
-      </Paragraph>
+      <AttractorHeader>
+        <Thumbnail src="/thumbnails/dejong.png" alt="De Jong Attractor" />
+        <AttractorInfo>
+          <AttractorName>De Jong Attractors</AttractorName>
+          <Paragraph style={{ margin: 0 }}>
+            Peter de Jong's attractor creates beautiful symmetric and asymmetric patterns.
+          </Paragraph>
+        </AttractorInfo>
+      </AttractorHeader>
       <MathBlock>
         <BlockMath math="x_{n+1} = \sin(a \cdot y_n) - \cos(b \cdot x_n)" />
         <BlockMath math="y_{n+1} = \sin(c \cdot x_n) - \cos(d \cdot y_n)" />
@@ -361,10 +390,15 @@ const AttractorsTab: React.FC = () => (
     </AttractorCard>
 
     <AttractorCard>
-      <AttractorName>Svensson Attractors</AttractorName>
-      <Paragraph>
-        Johnny Svensson's attractor creates flowing, ribbon-like patterns with striking symmetry.
-      </Paragraph>
+      <AttractorHeader>
+        <Thumbnail src="/thumbnails/svensson.png" alt="Svensson Attractor" />
+        <AttractorInfo>
+          <AttractorName>Svensson Attractors</AttractorName>
+          <Paragraph style={{ margin: 0 }}>
+            Johnny Svensson's attractor creates flowing, ribbon-like patterns with striking symmetry.
+          </Paragraph>
+        </AttractorInfo>
+      </AttractorHeader>
       <MathBlock>
         <BlockMath math="x_{n+1} = d \cdot \sin(a \cdot x_n) - \sin(b \cdot y_n)" />
         <BlockMath math="y_{n+1} = c \cdot \cos(a \cdot x_n) + \cos(b \cdot y_n)" />
@@ -378,11 +412,16 @@ const AttractorsTab: React.FC = () => (
     </AttractorCard>
 
     <AttractorCard>
-      <AttractorName>Bedhead Attractors</AttractorName>
-      <Paragraph>
-        Creates organic, hair-like flowing patterns. The name comes from its messy,
-        tangled appearance.
-      </Paragraph>
+      <AttractorHeader>
+        <Thumbnail src="/thumbnails/bedhead.png" alt="Bedhead Attractor" />
+        <AttractorInfo>
+          <AttractorName>Bedhead Attractors</AttractorName>
+          <Paragraph style={{ margin: 0 }}>
+            Creates organic, hair-like flowing patterns. The name comes from its messy,
+            tangled appearance.
+          </Paragraph>
+        </AttractorInfo>
+      </AttractorHeader>
       <MathBlock>
         <BlockMath math="x_{n+1} = \sin\left(\frac{x_n \cdot y_n}{b}\right) + \cos(a \cdot x_n - y_n)" />
         <BlockMath math="y_{n+1} = x_n + \frac{\sin(y_n)}{b}" />
@@ -394,11 +433,16 @@ const AttractorsTab: React.FC = () => (
     </AttractorCard>
 
     <AttractorCard>
-      <AttractorName>Fractal Dream Attractors</AttractorName>
-      <Paragraph>
-        From Clifford A. Pickover's book "Chaos In Wonderland". Creates dreamlike,
-        ethereal patterns with smooth curves.
-      </Paragraph>
+      <AttractorHeader>
+        <Thumbnail src="/thumbnails/fractalDream.png" alt="Fractal Dream Attractor" />
+        <AttractorInfo>
+          <AttractorName>Fractal Dream Attractors</AttractorName>
+          <Paragraph style={{ margin: 0 }}>
+            From Clifford A. Pickover's book "Chaos In Wonderland". Creates dreamlike,
+            ethereal patterns with smooth curves.
+          </Paragraph>
+        </AttractorInfo>
+      </AttractorHeader>
       <MathBlock>
         <BlockMath math="x_{n+1} = \sin(y_n \cdot b) + c \cdot \sin(x_n \cdot b)" />
         <BlockMath math="y_{n+1} = \sin(x_n \cdot a) + d \cdot \sin(y_n \cdot a)" />
@@ -412,11 +456,16 @@ const AttractorsTab: React.FC = () => (
     </AttractorCard>
 
     <AttractorCard>
-      <AttractorName>Hopalong Attractors</AttractorName>
-      <Paragraph>
-        Also known as Martin attractor, from Barry Martin. Creates symmetric star-like
-        patterns that seem to hop across the plane.
-      </Paragraph>
+      <AttractorHeader>
+        <Thumbnail src="/thumbnails/hopalong.png" alt="Hopalong Attractor" />
+        <AttractorInfo>
+          <AttractorName>Hopalong Attractors</AttractorName>
+          <Paragraph style={{ margin: 0 }}>
+            Also known as Martin attractor, from Barry Martin. Creates symmetric star-like
+            patterns that seem to hop across the plane.
+          </Paragraph>
+        </AttractorInfo>
+      </AttractorHeader>
       <MathBlock>
         <BlockMath math="x_{n+1} = y_n - \text{sgn}(x_n)\sqrt{|b \cdot x_n - c|}" />
         <BlockMath math="y_{n+1} = a - x_n" />
@@ -429,12 +478,17 @@ const AttractorsTab: React.FC = () => (
     </AttractorCard>
 
     <AttractorCard>
-      <AttractorName>Gumowski-Mira Attractors</AttractorName>
-      <Paragraph>
-        Developed in 1980 at CERN by I. Gumowski and C. Mira to calculate trajectories
-        of sub-atomic particles. Creates stunning symmetric patterns resembling
-        butterflies and flowers.
-      </Paragraph>
+      <AttractorHeader>
+        <Thumbnail src="/thumbnails/gumowskiMira.png" alt="Gumowski-Mira Attractor" />
+        <AttractorInfo>
+          <AttractorName>Gumowski-Mira Attractors</AttractorName>
+          <Paragraph style={{ margin: 0 }}>
+            Developed in 1980 at CERN by I. Gumowski and C. Mira to calculate trajectories
+            of sub-atomic particles. Creates stunning symmetric patterns resembling
+            butterflies and flowers.
+          </Paragraph>
+        </AttractorInfo>
+      </AttractorHeader>
       <MathBlock>
         <BlockMath math="f(x) = \mu x + \frac{2(1-\mu)x^2}{1 + x^2}" />
         <BlockMath math="x_{n+1} = y_n + a(1 - b \cdot y_n^2)y_n + f(x_n)" />
@@ -464,11 +518,16 @@ const AttractorsTab: React.FC = () => (
     </AttractorCard>
 
     <AttractorCard>
-      <AttractorName>Tinkerbell Map</AttractorName>
-      <Paragraph>
-        A discrete-time dynamical system and specialization of the Sprott attractor
-        family. Named after the fairy, it creates delicate wing-like patterns.
-      </Paragraph>
+      <AttractorHeader>
+        <Thumbnail src="/thumbnails/tinkerbell.png" alt="Tinkerbell Attractor" />
+        <AttractorInfo>
+          <AttractorName>Tinkerbell Map</AttractorName>
+          <Paragraph style={{ margin: 0 }}>
+            A discrete-time dynamical system and specialization of the Sprott attractor
+            family. Named after the fairy, it creates delicate wing-like patterns.
+          </Paragraph>
+        </AttractorInfo>
+      </AttractorHeader>
       <MathBlock>
         <BlockMath math="x_{n+1} = x_n^2 - y_n^2 + a \cdot x_n + b \cdot y_n" />
         <BlockMath math="y_{n+1} = 2x_n y_n + c \cdot x_n + d \cdot y_n" />
@@ -482,11 +541,16 @@ const AttractorsTab: React.FC = () => (
     </AttractorCard>
 
     <AttractorCard>
-      <AttractorName>Henon Attractor</AttractorName>
-      <Paragraph>
-        One of the most studied strange attractors, discovered by Michel Henon.
-        Simple but produces complex behavior.
-      </Paragraph>
+      <AttractorHeader>
+        <Thumbnail src="/thumbnails/henon.png" alt="Henon Attractor" />
+        <AttractorInfo>
+          <AttractorName>Henon Attractor</AttractorName>
+          <Paragraph style={{ margin: 0 }}>
+            One of the most studied strange attractors, discovered by Michel Henon.
+            Simple but produces complex behavior.
+          </Paragraph>
+        </AttractorInfo>
+      </AttractorHeader>
       <MathBlock>
         <BlockMath math="x_{n+1} = 1 - a \cdot x_n^2 + y_n" />
         <BlockMath math="y_{n+1} = b \cdot x_n" />
@@ -634,12 +698,17 @@ const FractalsTab: React.FC = () => (
     </Section>
 
     <AttractorCard>
-      <AttractorName>Mandelbrot Set</AttractorName>
-      <Paragraph>
-        The most famous fractal, discovered by Benoit Mandelbrot. It shows
-        infinite complexity at all scales and is the set of complex numbers
-        <InlineMath math="c" /> for which the iteration does not escape.
-      </Paragraph>
+      <AttractorHeader>
+        <Thumbnail src="/thumbnails/mandelbrot.png" alt="Mandelbrot Set" />
+        <AttractorInfo>
+          <AttractorName>Mandelbrot Set</AttractorName>
+          <Paragraph style={{ margin: 0 }}>
+            The most famous fractal, discovered by Benoit Mandelbrot. It shows
+            infinite complexity at all scales and is the set of complex numbers
+            <InlineMath math="c" /> for which the iteration does not escape.
+          </Paragraph>
+        </AttractorInfo>
+      </AttractorHeader>
       <MathBlock>
         <BlockMath math="z_{n+1} = z_n^2 + c" />
         <BlockMath math="\text{Starting with } z_0 = 0" />
@@ -657,12 +726,16 @@ const FractalsTab: React.FC = () => (
     </AttractorCard>
 
     <AttractorCard>
-      <AttractorName>Julia Sets</AttractorName>
-      <Paragraph>
-        Related to the Mandelbrot set but with a fixed <InlineMath math="c" /> parameter.
-        Each value of <InlineMath math="c" /> creates a unique Julia set. Points
-        in the Mandelbrot set correspond to connected Julia sets.
-      </Paragraph>
+      <AttractorHeader>
+        <Thumbnail src="/thumbnails/julia.png" alt="Julia Set" />
+        <AttractorInfo>
+          <AttractorName>Julia Sets</AttractorName>
+          <Paragraph style={{ margin: 0 }}>
+            Related to the Mandelbrot set but with a fixed <InlineMath math="c" /> parameter.
+            Each value of <InlineMath math="c" /> creates a unique Julia set.
+          </Paragraph>
+        </AttractorInfo>
+      </AttractorHeader>
       <MathBlock>
         <BlockMath math="z_{n+1} = z_n^2 + c" />
         <BlockMath math="\text{Starting with } z_0 = \text{pixel coordinate}" />
@@ -676,11 +749,16 @@ const FractalsTab: React.FC = () => (
     </AttractorCard>
 
     <AttractorCard>
-      <AttractorName>Burning Ship</AttractorName>
-      <Paragraph>
-        A variation of the Mandelbrot set using absolute values, creating a
-        distinctive ship-like silhouette.
-      </Paragraph>
+      <AttractorHeader>
+        <Thumbnail src="/thumbnails/burningShip.png" alt="Burning Ship" />
+        <AttractorInfo>
+          <AttractorName>Burning Ship</AttractorName>
+          <Paragraph style={{ margin: 0 }}>
+            A variation of the Mandelbrot set using absolute values, creating a
+            distinctive ship-like silhouette.
+          </Paragraph>
+        </AttractorInfo>
+      </AttractorHeader>
       <MathBlock>
         <BlockMath math="z_{n+1} = (|\text{Re}(z_n)| + i|\text{Im}(z_n)|)^2 + c" />
       </MathBlock>
@@ -693,10 +771,15 @@ const FractalsTab: React.FC = () => (
     </AttractorCard>
 
     <AttractorCard>
-      <AttractorName>Tricorn (Mandelbar)</AttractorName>
-      <Paragraph>
-        Uses the complex conjugate, creating a unique three-horned appearance.
-      </Paragraph>
+      <AttractorHeader>
+        <Thumbnail src="/thumbnails/tricorn.png" alt="Tricorn" />
+        <AttractorInfo>
+          <AttractorName>Tricorn (Mandelbar)</AttractorName>
+          <Paragraph style={{ margin: 0 }}>
+            Uses the complex conjugate, creating a unique three-horned appearance.
+          </Paragraph>
+        </AttractorInfo>
+      </AttractorHeader>
       <MathBlock>
         <BlockMath math="z_{n+1} = \bar{z}_n^2 + c" />
       </MathBlock>
@@ -709,11 +792,16 @@ const FractalsTab: React.FC = () => (
     </AttractorCard>
 
     <AttractorCard>
-      <AttractorName>Multibrot</AttractorName>
-      <Paragraph>
-        Generalization of the Mandelbrot set with variable exponent. Higher powers
-        create more bulbs around the main body.
-      </Paragraph>
+      <AttractorHeader>
+        <Thumbnail src="/thumbnails/multibrot.png" alt="Multibrot" />
+        <AttractorInfo>
+          <AttractorName>Multibrot</AttractorName>
+          <Paragraph style={{ margin: 0 }}>
+            Generalization of the Mandelbrot set with variable exponent. Higher powers
+            create more bulbs around the main body.
+          </Paragraph>
+        </AttractorInfo>
+      </AttractorHeader>
       <MathBlock>
         <BlockMath math="z_{n+1} = z_n^d + c" />
         <BlockMath math="\text{where } d \text{ is the power/degree}" />
@@ -728,11 +816,16 @@ const FractalsTab: React.FC = () => (
     </AttractorCard>
 
     <AttractorCard>
-      <AttractorName>Newton Fractal</AttractorName>
-      <Paragraph>
-        Based on Newton's method for finding polynomial roots. The fractal shows
-        which root each starting point converges to, with intricate basin boundaries.
-      </Paragraph>
+      <AttractorHeader>
+        <Thumbnail src="/thumbnails/newton.png" alt="Newton Fractal" />
+        <AttractorInfo>
+          <AttractorName>Newton Fractal</AttractorName>
+          <Paragraph style={{ margin: 0 }}>
+            Based on Newton's method for finding polynomial roots. The fractal shows
+            which root each starting point converges to, with intricate basin boundaries.
+          </Paragraph>
+        </AttractorInfo>
+      </AttractorHeader>
       <MathBlock>
         <BlockMath math="z_{n+1} = z_n - \frac{f(z_n)}{f'(z_n)}" />
         <BlockMath math="\text{for polynomial } f(z) = z^n - 1" />
