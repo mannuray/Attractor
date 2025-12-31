@@ -1,6 +1,10 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import styled from "styled-components";
+import 'katex/dist/katex.min.css';
+import { InlineMath, BlockMath } from 'react-katex';
+
+// ============= STYLED COMPONENTS =============
 
 const PageContainer = styled.div`
   min-height: 100vh;
@@ -11,15 +15,18 @@ const PageContainer = styled.div`
 const Header = styled.header`
   position: sticky;
   top: 0;
-  background: rgba(0, 0, 0, 0.8);
+  background: rgba(0, 0, 0, 0.9);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
   border-bottom: 1px solid rgba(255, 180, 120, 0.15);
-  padding: 16px 24px;
+  z-index: 100;
+`;
+
+const HeaderTop = styled.div`
   display: flex;
   justify-content: space-between;
   align-items: center;
-  z-index: 100;
+  padding: 16px 24px;
 `;
 
 const BackButton = styled.button`
@@ -52,8 +59,47 @@ const Title = styled.h1`
   background-clip: text;
 `;
 
+const TabNav = styled.nav`
+  display: flex;
+  gap: 4px;
+  padding: 0 24px 12px;
+  overflow-x: auto;
+
+  &::-webkit-scrollbar {
+    height: 4px;
+  }
+  &::-webkit-scrollbar-thumb {
+    background: rgba(255, 180, 120, 0.3);
+    border-radius: 2px;
+  }
+`;
+
+const Tab = styled.button<{ $active: boolean }>`
+  padding: 10px 20px;
+  font-size: 14px;
+  font-weight: 600;
+  background: ${props => props.$active
+    ? "linear-gradient(135deg, #f59e0b 0%, #ea580c 100%)"
+    : "rgba(0, 0, 0, 0.3)"};
+  border: 1px solid ${props => props.$active
+    ? "transparent"
+    : "rgba(255, 180, 120, 0.2)"};
+  border-radius: 8px;
+  color: #ffffff;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+
+  &:hover {
+    background: ${props => props.$active
+      ? "linear-gradient(135deg, #f59e0b 0%, #ea580c 100%)"
+      : "rgba(0, 0, 0, 0.5)"};
+    border-color: rgba(255, 180, 120, 0.4);
+  }
+`;
+
 const Content = styled.main`
-  max-width: 900px;
+  max-width: 1000px;
   margin: 0 auto;
   padding: 32px 24px 64px;
 `;
@@ -61,7 +107,6 @@ const Content = styled.main`
 const Section = styled.section`
   background: rgba(255, 180, 120, 0.06);
   backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
   border: 1px solid rgba(255, 180, 120, 0.2);
   border-radius: 16px;
   padding: 24px;
@@ -70,12 +115,50 @@ const Section = styled.section`
 
 const SectionTitle = styled.h2`
   margin: 0 0 20px 0;
-  font-size: 18px;
+  font-size: 20px;
   font-weight: 700;
   color: rgba(255, 180, 120, 0.9);
-  display: flex;
-  align-items: center;
-  gap: 10px;
+`;
+
+const SubTitle = styled.h3`
+  margin: 24px 0 16px 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: rgba(255, 180, 120, 0.8);
+`;
+
+const Paragraph = styled.p`
+  margin: 0 0 16px 0;
+  font-size: 15px;
+  line-height: 1.7;
+  color: rgba(255, 255, 255, 0.85);
+`;
+
+const MathBlock = styled.div`
+  background: rgba(0, 0, 0, 0.4);
+  padding: 16px 20px;
+  border-radius: 10px;
+  margin: 16px 0;
+  overflow-x: auto;
+
+  .katex {
+    font-size: 1.1em;
+  }
+`;
+
+const AttractorCard = styled.div`
+  background: rgba(0, 0, 0, 0.25);
+  border: 1px solid rgba(255, 180, 120, 0.15);
+  border-radius: 12px;
+  padding: 20px;
+  margin-bottom: 20px;
+`;
+
+const AttractorName = styled.h4`
+  margin: 0 0 12px 0;
+  font-size: 18px;
+  font-weight: 600;
+  color: #ffffff;
 `;
 
 const UsageList = styled.ul`
@@ -110,359 +193,746 @@ const StepNumber = styled.span`
   color: #ffffff;
 `;
 
-const CategoryHeader = styled.div<{ $expanded: boolean }>`
+const ParamList = styled.div`
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 12px 0;
-  cursor: pointer;
-  border-bottom: 1px solid rgba(255, 180, 120, 0.15);
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+`;
+
+const ParamBadge = styled.span`
+  padding: 4px 10px;
+  background: rgba(255, 180, 120, 0.15);
+  border: 1px solid rgba(255, 180, 120, 0.3);
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 500;
+  color: rgba(255, 180, 120, 0.9);
+`;
+
+const CreditSection = styled.div`
+  text-align: center;
+  padding: 20px;
+`;
+
+const CreditLink = styled.a`
+  color: rgba(255, 180, 120, 0.9);
+  text-decoration: none;
 
   &:hover {
-    opacity: 0.9;
+    text-decoration: underline;
   }
 `;
 
-const CategoryTitle = styled.h3`
-  margin: 0;
-  font-size: 14px;
-  font-weight: 600;
-  color: rgba(255, 180, 120, 0.8);
-  text-transform: uppercase;
-  letter-spacing: 1px;
-`;
+// ============= TAB CONTENT COMPONENTS =============
 
-const ExpandIcon = styled.span<{ $expanded: boolean }>`
-  font-size: 12px;
-  color: rgba(255, 180, 120, 0.6);
-  transform: rotate(${props => props.$expanded ? "180deg" : "0"});
-  transition: transform 0.2s ease;
-`;
+const HowToUseTab: React.FC = () => (
+  <>
+    <Section>
+      <SectionTitle>Getting Started</SectionTitle>
+      <Paragraph>
+        Chaos Iterator is a visualization tool for exploring strange attractors,
+        iterated function systems (IFS), and escape-time fractals. Each type of
+        visualization uses different mathematical equations to create stunning
+        patterns from simple rules.
+      </Paragraph>
+      <UsageList>
+        <UsageItem>
+          <StepNumber>1</StepNumber>
+          <span><strong>Select a Type:</strong> Use the dropdown in the sidebar to choose from Attractors, IFS, or Fractals. Each category contains multiple visualization types.</span>
+        </UsageItem>
+        <UsageItem>
+          <StepNumber>2</StepNumber>
+          <span><strong>Choose a Preset:</strong> Each type comes with curated presets that demonstrate interesting parameter combinations. Start here to explore!</span>
+        </UsageItem>
+        <UsageItem>
+          <StepNumber>3</StepNumber>
+          <span><strong>Edit Parameters:</strong> Click "Edit Parameters" to unlock the controls. Adjust values and watch the visualization update in real-time.</span>
+        </UsageItem>
+        <UsageItem>
+          <StepNumber>4</StepNumber>
+          <span><strong>Customize Colors:</strong> Click the palette button to open the color editor. Add, remove, or modify color stops to create your perfect palette.</span>
+        </UsageItem>
+        <UsageItem>
+          <StepNumber>5</StepNumber>
+          <span><strong>Navigate Fractals:</strong> For escape-time fractals, use scroll to zoom and drag to pan. Explore the infinite detail at any scale.</span>
+        </UsageItem>
+        <UsageItem>
+          <StepNumber>6</StepNumber>
+          <span><strong>Save Your Art:</strong> Click the download button to save your creation as a high-resolution PNG image.</span>
+        </UsageItem>
+      </UsageList>
+    </Section>
 
-const AttractorList = styled.div<{ $expanded: boolean }>`
-  display: ${props => props.$expanded ? "block" : "none"};
-  padding-top: 16px;
-`;
+    <Section>
+      <SectionTitle>Understanding the Parameters</SectionTitle>
+      <Paragraph>
+        It's not necessary to understand the mathematics to create beautiful images!
+        You can experiment by using the presets and adjusting parameters to see how
+        changes affect the visualization. However, understanding the math can help
+        you predict how parameter changes will affect the output.
+      </Paragraph>
+      <Paragraph>
+        <strong>Scale:</strong> Controls the zoom level of the attractor rendering.
+        Smaller values zoom out, larger values zoom in.
+      </Paragraph>
+      <Paragraph>
+        <strong>Iterations:</strong> The number of points calculated. More iterations
+        mean more detail but slower rendering.
+      </Paragraph>
+      <Paragraph>
+        <strong>Palette Gamma:</strong> Controls the brightness distribution of the
+        color mapping. Lower values brighten shadows, higher values increase contrast.
+      </Paragraph>
+    </Section>
+  </>
+);
 
-const AttractorCard = styled.div`
-  background: rgba(0, 0, 0, 0.25);
-  border: 1px solid rgba(255, 180, 120, 0.1);
-  border-radius: 12px;
-  padding: 16px;
-  margin-bottom: 12px;
+const AttractorsTab: React.FC = () => (
+  <>
+    <Section>
+      <SectionTitle>Strange Attractors</SectionTitle>
+      <Paragraph>
+        Strange attractors are patterns that emerge from chaotic dynamical systems.
+        Despite the underlying chaos, these systems produce beautiful, structured patterns
+        that reveal order within complexity.
+      </Paragraph>
+    </Section>
 
-  &:last-child {
-    margin-bottom: 0;
-  }
-`;
+    <AttractorCard>
+      <AttractorName>Symmetric Icons</AttractorName>
+      <Paragraph>
+        Introduced in "Symmetry and Chaos" by Field and Golubitsky. These icons are
+        generated using a complex equation derived from the logistic map, one of the
+        simplest equations from which complex behavior arises.
+      </Paragraph>
+      <MathBlock>
+        <BlockMath math="F(z) = (\lambda + \alpha z\bar{z} + \beta \text{Re}(z^n) + \omega i)z + \gamma\bar{z}^{n-1}" />
+      </MathBlock>
+      <Paragraph>
+        The parameter <InlineMath math="n" /> (degree) controls the rotational symmetry.
+        Setting <InlineMath math="\omega = 0" /> gives dihedral symmetry; non-zero values
+        break it to cyclic symmetry.
+      </Paragraph>
+      <ParamList>
+        <ParamBadge>lambda</ParamBadge>
+        <ParamBadge>alpha</ParamBadge>
+        <ParamBadge>beta</ParamBadge>
+        <ParamBadge>gamma</ParamBadge>
+        <ParamBadge>omega</ParamBadge>
+        <ParamBadge>delta</ParamBadge>
+        <ParamBadge>degree</ParamBadge>
+      </ParamList>
+    </AttractorCard>
 
-const AttractorName = styled.h4`
-  margin: 0 0 8px 0;
-  font-size: 16px;
-  font-weight: 600;
-  color: #ffffff;
-`;
+    <AttractorCard>
+      <AttractorName>Clifford Attractors</AttractorName>
+      <Paragraph>
+        Named after Clifford Pickover, these attractors create intricate swirling
+        patterns using sine and cosine functions.
+      </Paragraph>
+      <MathBlock>
+        <BlockMath math="x_{n+1} = \sin(a \cdot y_n) + c \cdot \cos(a \cdot x_n)" />
+        <BlockMath math="y_{n+1} = \sin(b \cdot x_n) + d \cdot \cos(b \cdot y_n)" />
+      </MathBlock>
+      <ParamList>
+        <ParamBadge>a (alpha)</ParamBadge>
+        <ParamBadge>b (beta)</ParamBadge>
+        <ParamBadge>c (gamma)</ParamBadge>
+        <ParamBadge>d (delta)</ParamBadge>
+      </ParamList>
+    </AttractorCard>
 
-const AttractorDescription = styled.p`
-  margin: 0 0 12px 0;
-  font-size: 14px;
-  line-height: 1.6;
-  color: rgba(255, 255, 255, 0.7);
-`;
+    <AttractorCard>
+      <AttractorName>De Jong Attractors</AttractorName>
+      <Paragraph>
+        Peter de Jong's attractor creates beautiful symmetric and asymmetric patterns.
+      </Paragraph>
+      <MathBlock>
+        <BlockMath math="x_{n+1} = \sin(a \cdot y_n) - \cos(b \cdot x_n)" />
+        <BlockMath math="y_{n+1} = \sin(c \cdot x_n) - \cos(d \cdot y_n)" />
+      </MathBlock>
+      <ParamList>
+        <ParamBadge>a (alpha)</ParamBadge>
+        <ParamBadge>b (beta)</ParamBadge>
+        <ParamBadge>c (gamma)</ParamBadge>
+        <ParamBadge>d (delta)</ParamBadge>
+      </ParamList>
+    </AttractorCard>
 
-const Formula = styled.code`
-  display: block;
-  background: rgba(0, 0, 0, 0.4);
-  padding: 12px;
-  border-radius: 8px;
-  font-family: "Monaco", "Consolas", monospace;
-  font-size: 13px;
-  color: rgba(255, 180, 120, 0.9);
-  margin-bottom: 12px;
-  overflow-x: auto;
-  white-space: pre-wrap;
-`;
+    <AttractorCard>
+      <AttractorName>Svensson Attractors</AttractorName>
+      <Paragraph>
+        Johnny Svensson's attractor creates flowing, ribbon-like patterns with striking symmetry.
+      </Paragraph>
+      <MathBlock>
+        <BlockMath math="x_{n+1} = d \cdot \sin(a \cdot x_n) - \sin(b \cdot y_n)" />
+        <BlockMath math="y_{n+1} = c \cdot \cos(a \cdot x_n) + \cos(b \cdot y_n)" />
+      </MathBlock>
+      <ParamList>
+        <ParamBadge>a (alpha)</ParamBadge>
+        <ParamBadge>b (beta)</ParamBadge>
+        <ParamBadge>c (gamma)</ParamBadge>
+        <ParamBadge>d (delta)</ParamBadge>
+      </ParamList>
+    </AttractorCard>
 
-const Parameters = styled.div`
-  font-size: 12px;
-  color: rgba(255, 255, 255, 0.5);
-`;
+    <AttractorCard>
+      <AttractorName>Bedhead Attractors</AttractorName>
+      <Paragraph>
+        Creates organic, hair-like flowing patterns. The name comes from its messy,
+        tangled appearance.
+      </Paragraph>
+      <MathBlock>
+        <BlockMath math="x_{n+1} = \sin\left(\frac{x_n \cdot y_n}{b}\right) + \cos(a \cdot x_n - y_n)" />
+        <BlockMath math="y_{n+1} = x_n + \frac{\sin(y_n)}{b}" />
+      </MathBlock>
+      <ParamList>
+        <ParamBadge>a (alpha)</ParamBadge>
+        <ParamBadge>b (beta)</ParamBadge>
+      </ParamList>
+    </AttractorCard>
 
-// Attractor data
-const attractorData = [
-  {
-    name: "Clifford",
-    description: "A strange attractor discovered by Clifford Pickover. Creates intricate swirling patterns using sine and cosine functions.",
-    formula: "x' = sin(a*y) + c*cos(a*x)\ny' = sin(b*x) + d*cos(b*y)",
-    params: "a (alpha), b (beta), c (gamma), d (delta)"
-  },
-  {
-    name: "De Jong",
-    description: "Peter de Jong's attractor creates beautiful symmetric and asymmetric patterns with four parameters.",
-    formula: "x' = sin(a*y) - cos(b*x)\ny' = sin(c*x) - cos(d*y)",
-    params: "a (alpha), b (beta), c (gamma), d (delta)"
-  },
-  {
-    name: "Tinkerbell",
-    description: "Named after the fairy, this attractor creates delicate wing-like patterns. Very sensitive to parameter changes.",
-    formula: "x' = x² - y² + a*x + b*y\ny' = 2*x*y + c*x + d*y",
-    params: "a (alpha), b (beta), c (gamma), d (delta)"
-  },
-  {
-    name: "Henon",
-    description: "One of the most studied strange attractors, discovered by Michel Hénon. Simple but produces complex behavior.",
-    formula: "x' = 1 - a*x² + y\ny' = b*x",
-    params: "a (alpha), b (beta)"
-  },
-  {
-    name: "Bedhead",
-    description: "Creates organic, hair-like flowing patterns. The name comes from its messy, tangled appearance.",
-    formula: "x' = sin(x*y/b) + cos(a*x - y)\ny' = x + sin(y)/b",
-    params: "a (alpha), b (beta)"
-  },
-  {
-    name: "Svensson",
-    description: "Johnny Svensson's attractor creates flowing, ribbon-like patterns with striking symmetry.",
-    formula: "x' = d*sin(a*x) - sin(b*y)\ny' = c*cos(a*x) + cos(b*y)",
-    params: "a (alpha), b (beta), c (gamma), d (delta)"
-  },
-  {
-    name: "Fractal Dream",
-    description: "Creates dreamlike, ethereal patterns with smooth curves and delicate details.",
-    formula: "x' = sin(y*b) + c*sin(x*b)\ny' = sin(x*a) + d*sin(y*a)",
-    params: "a (alpha), b (beta), c (gamma), d (delta)"
-  },
-  {
-    name: "Hopalong",
-    description: "Also known as Martin attractor. Creates symmetric star-like patterns that seem to hop across the plane.",
-    formula: "x' = y - sqrt(|b*x - c|) * sign(x)\ny' = a - x",
-    params: "a (alpha), b (beta), c (gamma)"
-  },
-  {
-    name: "Gumowski-Mira",
-    description: "Creates stunning symmetric patterns resembling butterflies and flowers. Discovered by Gumowski and Mira.",
-    formula: "x' = y + a*y*(1-0.05*y²) + f(x)\ny' = -x + f(x')\nwhere f(x) = mu*x + 2*(1-mu)*x²/(1+x²)",
-    params: "mu, alpha, sigma"
-  },
-  {
-    name: "Sprott",
-    description: "J.C. Sprott's quadratic attractor system. Uses 12 parameters for highly variable patterns.",
-    formula: "x' = a1 + a2*x + a3*x² + a4*x*y + a5*y + a6*y²\ny' = a7 + a8*x + a9*x² + a10*x*y + a11*y + a12*y²",
-    params: "a1 through a12"
-  },
-  {
-    name: "Symmetric Icon",
-    description: "Creates beautiful n-fold symmetric patterns resembling icons or mandalas. Based on complex number rotations.",
-    formula: "Complex iteration with n-fold rotational symmetry",
-    params: "alpha, beta, gamma, delta, omega, lambda, degree"
-  },
-  {
-    name: "Symmetric Quilt",
-    description: "Similar to Symmetric Icon but with additional parameters creating quilt-like tiled patterns.",
-    formula: "Complex iteration with quilt-like symmetry",
-    params: "alpha, beta, gamma, delta, omega, lambda, degree"
-  },
-  {
-    name: "Jason Rampe 1",
-    description: "First of three attractors by Jason Rampe. Creates smooth, flowing curves.",
-    formula: "x' = cos(y*b) + c*sin(x*b)\ny' = cos(x*a) + d*sin(y*a)",
-    params: "a (alpha), b (beta), c (gamma), d (delta)"
-  },
-  {
-    name: "Jason Rampe 2",
-    description: "Second Rampe attractor variant using only cosine functions for smoother patterns.",
-    formula: "x' = cos(y*b) + c*cos(x*b)\ny' = cos(x*a) + d*cos(y*a)",
-    params: "a (alpha), b (beta), c (gamma), d (delta)"
-  },
-  {
-    name: "Jason Rampe 3",
-    description: "Third Rampe attractor mixing sine and cosine for unique wave-like patterns.",
-    formula: "x' = sin(y*b) + c*cos(x*b)\ny' = cos(x*a) + d*sin(y*a)",
-    params: "a (alpha), b (beta), c (gamma), d (delta)"
-  }
-];
+    <AttractorCard>
+      <AttractorName>Fractal Dream Attractors</AttractorName>
+      <Paragraph>
+        From Clifford A. Pickover's book "Chaos In Wonderland". Creates dreamlike,
+        ethereal patterns with smooth curves.
+      </Paragraph>
+      <MathBlock>
+        <BlockMath math="x_{n+1} = \sin(y_n \cdot b) + c \cdot \sin(x_n \cdot b)" />
+        <BlockMath math="y_{n+1} = \sin(x_n \cdot a) + d \cdot \sin(y_n \cdot a)" />
+      </MathBlock>
+      <ParamList>
+        <ParamBadge>a (alpha)</ParamBadge>
+        <ParamBadge>b (beta)</ParamBadge>
+        <ParamBadge>c (gamma)</ParamBadge>
+        <ParamBadge>d (delta)</ParamBadge>
+      </ParamList>
+    </AttractorCard>
 
-const ifsData = [
-  {
-    name: "Symmetric Fractal",
-    description: "Iterated Function System creating symmetric fractal patterns through repeated transformations.",
-    formula: "Multiple affine transformations with probabilities",
-    params: "Symmetry order, transformation coefficients"
-  },
-  {
-    name: "De Rham Curves",
-    description: "Named after Georges de Rham. Creates smooth curves through iterated function systems.",
-    formula: "Bezier-like curve generation through IFS",
-    params: "Control points, iteration depth"
-  },
-  {
-    name: "Conradi",
-    description: "Creates intricate branching patterns resembling coral or tree structures.",
-    formula: "Branching IFS with multiple transformations",
-    params: "Branch angle, scale factors"
-  },
-  {
-    name: "Mobius",
-    description: "Uses Mobius transformations to create swirling, hyperbolic patterns.",
-    formula: "f(z) = (az + b) / (cz + d) in complex plane",
-    params: "Complex coefficients a, b, c, d"
-  }
-];
+    <AttractorCard>
+      <AttractorName>Hopalong Attractors</AttractorName>
+      <Paragraph>
+        Also known as Martin attractor, from Barry Martin. Creates symmetric star-like
+        patterns that seem to hop across the plane.
+      </Paragraph>
+      <MathBlock>
+        <BlockMath math="x_{n+1} = y_n - \text{sgn}(x_n)\sqrt{|b \cdot x_n - c|}" />
+        <BlockMath math="y_{n+1} = a - x_n" />
+      </MathBlock>
+      <ParamList>
+        <ParamBadge>a (alpha)</ParamBadge>
+        <ParamBadge>b (beta)</ParamBadge>
+        <ParamBadge>c (gamma)</ParamBadge>
+      </ParamList>
+    </AttractorCard>
 
-const fractalData = [
-  {
-    name: "Mandelbrot",
-    description: "The most famous fractal, discovered by Benoit Mandelbrot. Shows infinite complexity at all scales.",
-    formula: "z' = z² + c, starting with z = 0\nColored by escape iteration count",
-    params: "Center X, Center Y, Zoom, Max iterations"
-  },
-  {
-    name: "Julia",
-    description: "Related to Mandelbrot but with fixed c parameter. Each c value creates a unique Julia set.",
-    formula: "z' = z² + c, starting with z = pixel\nColored by escape iteration count",
-    params: "c (real), c (imaginary), Zoom, Max iterations"
-  },
-  {
-    name: "Burning Ship",
-    description: "A variation of Mandelbrot with absolute values, creating a ship-like silhouette.",
-    formula: "z' = (|Re(z)| + i|Im(z)|)² + c",
-    params: "Center X, Center Y, Zoom, Max iterations"
-  },
-  {
-    name: "Tricorn",
-    description: "Also called Mandelbar. Uses complex conjugate for unique three-horned appearance.",
-    formula: "z' = conj(z)² + c",
-    params: "Center X, Center Y, Zoom, Max iterations"
-  },
-  {
-    name: "Multibrot",
-    description: "Generalization of Mandelbrot with variable exponent. Higher powers create more bulbs.",
-    formula: "z' = z^n + c, where n is the power",
-    params: "Power (n), Center X, Center Y, Zoom, Max iterations"
-  },
-  {
-    name: "Newton",
-    description: "Based on Newton's method for finding roots. Creates intricate basin boundaries.",
-    formula: "z' = z - f(z)/f'(z) for polynomial f",
-    params: "Polynomial coefficients, Zoom, Max iterations"
-  },
-  {
-    name: "Phoenix",
-    description: "A variation using previous iteration values, creating phoenix-like patterns.",
-    formula: "z' = z² + c + p*z_prev\nwhere p is the phoenix parameter",
-    params: "c, p (phoenix), Zoom, Max iterations"
-  },
-  {
-    name: "Lyapunov",
-    description: "Based on Lyapunov exponents of logistic map sequences. Creates unique striped patterns.",
-    formula: "x' = r*x*(1-x), r cycles through sequence\nColored by Lyapunov exponent",
-    params: "Sequence (e.g., 'AB'), r range"
-  }
-];
+    <AttractorCard>
+      <AttractorName>Gumowski-Mira Attractors</AttractorName>
+      <Paragraph>
+        Developed in 1980 at CERN by I. Gumowski and C. Mira to calculate trajectories
+        of sub-atomic particles. Creates stunning symmetric patterns resembling
+        butterflies and flowers.
+      </Paragraph>
+      <MathBlock>
+        <BlockMath math="f(x) = \mu x + \frac{2(1-\mu)x^2}{1 + x^2}" />
+        <BlockMath math="x_{n+1} = y_n + a(1 - b \cdot y_n^2)y_n + f(x_n)" />
+        <BlockMath math="y_{n+1} = -x_n + f(x_{n+1})" />
+      </MathBlock>
+      <ParamList>
+        <ParamBadge>mu</ParamBadge>
+        <ParamBadge>alpha</ParamBadge>
+        <ParamBadge>sigma</ParamBadge>
+      </ParamList>
+    </AttractorCard>
+
+    <AttractorCard>
+      <AttractorName>Sprott Attractors</AttractorName>
+      <Paragraph>
+        J.C. Sprott's complex 12-parameter discrete-time dynamical system, from a
+        method of automatically finding potentially interesting attractors based
+        on their Lyapunov exponent.
+      </Paragraph>
+      <MathBlock>
+        <BlockMath math="x_{n+1} = a_1 + a_2 x_n + a_3 x_n^2 + a_4 x_n y_n + a_5 y_n + a_6 y_n^2" />
+        <BlockMath math="y_{n+1} = a_7 + a_8 x_n + a_9 x_n^2 + a_{10} x_n y_n + a_{11} y_n + a_{12} y_n^2" />
+      </MathBlock>
+      <ParamList>
+        <ParamBadge>a1-a12</ParamBadge>
+      </ParamList>
+    </AttractorCard>
+
+    <AttractorCard>
+      <AttractorName>Tinkerbell Map</AttractorName>
+      <Paragraph>
+        A discrete-time dynamical system and specialization of the Sprott attractor
+        family. Named after the fairy, it creates delicate wing-like patterns.
+      </Paragraph>
+      <MathBlock>
+        <BlockMath math="x_{n+1} = x_n^2 - y_n^2 + a \cdot x_n + b \cdot y_n" />
+        <BlockMath math="y_{n+1} = 2x_n y_n + c \cdot x_n + d \cdot y_n" />
+      </MathBlock>
+      <ParamList>
+        <ParamBadge>a (alpha)</ParamBadge>
+        <ParamBadge>b (beta)</ParamBadge>
+        <ParamBadge>c (gamma)</ParamBadge>
+        <ParamBadge>d (delta)</ParamBadge>
+      </ParamList>
+    </AttractorCard>
+
+    <AttractorCard>
+      <AttractorName>Henon Attractor</AttractorName>
+      <Paragraph>
+        One of the most studied strange attractors, discovered by Michel Henon.
+        Simple but produces complex behavior.
+      </Paragraph>
+      <MathBlock>
+        <BlockMath math="x_{n+1} = 1 - a \cdot x_n^2 + y_n" />
+        <BlockMath math="y_{n+1} = b \cdot x_n" />
+      </MathBlock>
+      <ParamList>
+        <ParamBadge>a (alpha)</ParamBadge>
+        <ParamBadge>b (beta)</ParamBadge>
+      </ParamList>
+    </AttractorCard>
+
+    <AttractorCard>
+      <AttractorName>Jason Rampe Attractors (1, 2, 3)</AttractorName>
+      <Paragraph>
+        Three related attractors by Jason Rampe, each with variations on sine and
+        cosine combinations creating unique patterns.
+      </Paragraph>
+      <SubTitle>Jason Rampe 1:</SubTitle>
+      <MathBlock>
+        <BlockMath math="x_{n+1} = \cos(y_n \cdot b) + c \cdot \sin(x_n \cdot b)" />
+        <BlockMath math="y_{n+1} = \cos(x_n \cdot a) + d \cdot \sin(y_n \cdot a)" />
+      </MathBlock>
+      <SubTitle>Jason Rampe 2:</SubTitle>
+      <MathBlock>
+        <BlockMath math="x_{n+1} = \cos(y_n \cdot b) + c \cdot \cos(x_n \cdot b)" />
+        <BlockMath math="y_{n+1} = \cos(x_n \cdot a) + d \cdot \cos(y_n \cdot a)" />
+      </MathBlock>
+      <SubTitle>Jason Rampe 3:</SubTitle>
+      <MathBlock>
+        <BlockMath math="x_{n+1} = \sin(y_n \cdot b) + c \cdot \cos(x_n \cdot b)" />
+        <BlockMath math="y_{n+1} = \cos(x_n \cdot a) + d \cdot \sin(y_n \cdot a)" />
+      </MathBlock>
+      <ParamList>
+        <ParamBadge>a (alpha)</ParamBadge>
+        <ParamBadge>b (beta)</ParamBadge>
+        <ParamBadge>c (gamma)</ParamBadge>
+        <ParamBadge>d (delta)</ParamBadge>
+      </ParamList>
+    </AttractorCard>
+  </>
+);
+
+const IFSTab: React.FC = () => (
+  <>
+    <Section>
+      <SectionTitle>Iterated Function Systems (IFS)</SectionTitle>
+      <Paragraph>
+        IFS are a method of constructing fractals using a set of contracting maps.
+        The resulting fractal is the unique fixed point of the system, often
+        visualized using the "chaos game" - repeatedly applying random
+        transformations to a point.
+      </Paragraph>
+    </Section>
+
+    <AttractorCard>
+      <AttractorName>Symmetric Fractals</AttractorName>
+      <Paragraph>
+        Based on an affine transform combined with random rotations in the symmetry
+        group <InlineMath math="Z_p" /> or <InlineMath math="D_p" />, depending
+        on the reflect parameter.
+      </Paragraph>
+      <MathBlock>
+        <BlockMath math="\begin{pmatrix} x' \\ y' \end{pmatrix} = \begin{pmatrix} a & b \\ c & d \end{pmatrix} \begin{pmatrix} x \\ y \end{pmatrix} + \begin{pmatrix} \alpha \\ \beta \end{pmatrix}" />
+      </MathBlock>
+      <Paragraph>
+        The most familiar forms are Sierpinski gaskets of various symmetries,
+        formed with a transform moving the current point halfway to a fixed point.
+      </Paragraph>
+      <ParamList>
+        <ParamBadge>a, b, c, d</ParamBadge>
+        <ParamBadge>alpha</ParamBadge>
+        <ParamBadge>beta</ParamBadge>
+        <ParamBadge>p (symmetry)</ParamBadge>
+        <ParamBadge>reflect</ParamBadge>
+      </ParamList>
+    </AttractorCard>
+
+    <AttractorCard>
+      <AttractorName>De Rham Curves</AttractorName>
+      <Paragraph>
+        Named after Georges de Rham, these are IFS transformations given by two
+        contracting maps. Includes Cesaro curves (orientation conserving) and
+        Koch-Peano curves (orientation reversing).
+      </Paragraph>
+      <SubTitle>Cesaro Curves (Levy C-curve):</SubTitle>
+      <MathBlock>
+        <BlockMath math="d_0(z) = az, \quad d_1(z) = a + (1-a)z" />
+        <BlockMath math="a = \alpha + \beta i, \quad |a| < 1, \quad |1-a| < 1" />
+      </MathBlock>
+      <SubTitle>Koch-Peano Curves:</SubTitle>
+      <MathBlock>
+        <BlockMath math="d_0(z) = a\bar{z}, \quad d_1(z) = a + (1-a)\bar{z}" />
+      </MathBlock>
+      <ParamList>
+        <ParamBadge>alpha</ParamBadge>
+        <ParamBadge>beta</ParamBadge>
+        <ParamBadge>type</ParamBadge>
+      </ParamList>
+    </AttractorCard>
+
+    <AttractorCard>
+      <AttractorName>Conradi Attractors</AttractorName>
+      <Paragraph>
+        Found in Simone Conradi's work, these use complex-number rotational
+        transformations combined with inversions.
+      </Paragraph>
+      <MathBlock>
+        <BlockMath math="f(z) = \left(r_1 e^{i\theta_1} \frac{1}{z} + r_2 e^{i\theta_2} \bar{z} + a\right) e^{2\pi i k/n}" />
+      </MathBlock>
+      <ParamList>
+        <ParamBadge>r1, r2</ParamBadge>
+        <ParamBadge>theta1, theta2</ParamBadge>
+        <ParamBadge>a</ParamBadge>
+        <ParamBadge>n (symmetry)</ParamBadge>
+      </ParamList>
+    </AttractorCard>
+
+    <AttractorCard>
+      <AttractorName>Mobius Attractors</AttractorName>
+      <Paragraph>
+        Another attractor from Simone Conradi, using Mobius transformations
+        before the random rotation.
+      </Paragraph>
+      <MathBlock>
+        <BlockMath math="f(z) = \frac{az + b}{cz + d} \cdot e^{2\pi i m/n}" />
+        <BlockMath math="m = 0, 1, 2, \ldots, n-1" />
+      </MathBlock>
+      <ParamList>
+        <ParamBadge>a, b, c, d</ParamBadge>
+        <ParamBadge>n (symmetry)</ParamBadge>
+      </ParamList>
+    </AttractorCard>
+  </>
+);
+
+const FractalsTab: React.FC = () => (
+  <>
+    <Section>
+      <SectionTitle>Escape-Time Fractals</SectionTitle>
+      <Paragraph>
+        Escape-time fractals are generated by iterating a function for each point
+        in the complex plane and coloring based on how quickly the iteration
+        "escapes" to infinity. The boundary between escaping and non-escaping
+        points creates intricate, infinitely detailed patterns.
+      </Paragraph>
+    </Section>
+
+    <AttractorCard>
+      <AttractorName>Mandelbrot Set</AttractorName>
+      <Paragraph>
+        The most famous fractal, discovered by Benoit Mandelbrot. It shows
+        infinite complexity at all scales and is the set of complex numbers
+        <InlineMath math="c" /> for which the iteration does not escape.
+      </Paragraph>
+      <MathBlock>
+        <BlockMath math="z_{n+1} = z_n^2 + c" />
+        <BlockMath math="\text{Starting with } z_0 = 0" />
+      </MathBlock>
+      <Paragraph>
+        Points are colored by the number of iterations before <InlineMath math="|z| > 2" />,
+        indicating escape.
+      </Paragraph>
+      <ParamList>
+        <ParamBadge>centerX</ParamBadge>
+        <ParamBadge>centerY</ParamBadge>
+        <ParamBadge>zoom</ParamBadge>
+        <ParamBadge>maxIter</ParamBadge>
+      </ParamList>
+    </AttractorCard>
+
+    <AttractorCard>
+      <AttractorName>Julia Sets</AttractorName>
+      <Paragraph>
+        Related to the Mandelbrot set but with a fixed <InlineMath math="c" /> parameter.
+        Each value of <InlineMath math="c" /> creates a unique Julia set. Points
+        in the Mandelbrot set correspond to connected Julia sets.
+      </Paragraph>
+      <MathBlock>
+        <BlockMath math="z_{n+1} = z_n^2 + c" />
+        <BlockMath math="\text{Starting with } z_0 = \text{pixel coordinate}" />
+      </MathBlock>
+      <ParamList>
+        <ParamBadge>c (real)</ParamBadge>
+        <ParamBadge>c (imaginary)</ParamBadge>
+        <ParamBadge>zoom</ParamBadge>
+        <ParamBadge>maxIter</ParamBadge>
+      </ParamList>
+    </AttractorCard>
+
+    <AttractorCard>
+      <AttractorName>Burning Ship</AttractorName>
+      <Paragraph>
+        A variation of the Mandelbrot set using absolute values, creating a
+        distinctive ship-like silhouette.
+      </Paragraph>
+      <MathBlock>
+        <BlockMath math="z_{n+1} = (|\text{Re}(z_n)| + i|\text{Im}(z_n)|)^2 + c" />
+      </MathBlock>
+      <ParamList>
+        <ParamBadge>centerX</ParamBadge>
+        <ParamBadge>centerY</ParamBadge>
+        <ParamBadge>zoom</ParamBadge>
+        <ParamBadge>maxIter</ParamBadge>
+      </ParamList>
+    </AttractorCard>
+
+    <AttractorCard>
+      <AttractorName>Tricorn (Mandelbar)</AttractorName>
+      <Paragraph>
+        Uses the complex conjugate, creating a unique three-horned appearance.
+      </Paragraph>
+      <MathBlock>
+        <BlockMath math="z_{n+1} = \bar{z}_n^2 + c" />
+      </MathBlock>
+      <ParamList>
+        <ParamBadge>centerX</ParamBadge>
+        <ParamBadge>centerY</ParamBadge>
+        <ParamBadge>zoom</ParamBadge>
+        <ParamBadge>maxIter</ParamBadge>
+      </ParamList>
+    </AttractorCard>
+
+    <AttractorCard>
+      <AttractorName>Multibrot</AttractorName>
+      <Paragraph>
+        Generalization of the Mandelbrot set with variable exponent. Higher powers
+        create more bulbs around the main body.
+      </Paragraph>
+      <MathBlock>
+        <BlockMath math="z_{n+1} = z_n^d + c" />
+        <BlockMath math="\text{where } d \text{ is the power/degree}" />
+      </MathBlock>
+      <ParamList>
+        <ParamBadge>power (d)</ParamBadge>
+        <ParamBadge>centerX</ParamBadge>
+        <ParamBadge>centerY</ParamBadge>
+        <ParamBadge>zoom</ParamBadge>
+        <ParamBadge>maxIter</ParamBadge>
+      </ParamList>
+    </AttractorCard>
+
+    <AttractorCard>
+      <AttractorName>Newton Fractal</AttractorName>
+      <Paragraph>
+        Based on Newton's method for finding polynomial roots. The fractal shows
+        which root each starting point converges to, with intricate basin boundaries.
+      </Paragraph>
+      <MathBlock>
+        <BlockMath math="z_{n+1} = z_n - \frac{f(z_n)}{f'(z_n)}" />
+        <BlockMath math="\text{for polynomial } f(z) = z^n - 1" />
+      </MathBlock>
+      <ParamList>
+        <ParamBadge>power</ParamBadge>
+        <ParamBadge>zoom</ParamBadge>
+        <ParamBadge>maxIter</ParamBadge>
+      </ParamList>
+    </AttractorCard>
+
+    <AttractorCard>
+      <AttractorName>Phoenix Fractal</AttractorName>
+      <Paragraph>
+        A variation using the previous iteration value, creating phoenix-like patterns.
+      </Paragraph>
+      <MathBlock>
+        <BlockMath math="z_{n+1} = z_n^2 + c + p \cdot z_{n-1}" />
+        <BlockMath math="\text{where } p \text{ is the phoenix parameter}" />
+      </MathBlock>
+      <ParamList>
+        <ParamBadge>c</ParamBadge>
+        <ParamBadge>p (phoenix)</ParamBadge>
+        <ParamBadge>zoom</ParamBadge>
+        <ParamBadge>maxIter</ParamBadge>
+      </ParamList>
+    </AttractorCard>
+
+    <AttractorCard>
+      <AttractorName>Lyapunov Fractal</AttractorName>
+      <Paragraph>
+        Based on Lyapunov exponents of logistic map sequences. Creates unique
+        striped patterns based on the sequence string (e.g., "AB", "AABB").
+      </Paragraph>
+      <MathBlock>
+        <BlockMath math="x_{n+1} = r_n \cdot x_n(1 - x_n)" />
+        <BlockMath math="\text{where } r_n \text{ cycles through sequence values}" />
+      </MathBlock>
+      <Paragraph>
+        The Lyapunov exponent determines the color:
+      </Paragraph>
+      <MathBlock>
+        <BlockMath math="\lambda = \lim_{n \to \infty} \frac{1}{n} \sum_{i=1}^{n} \log|r_i(1 - 2x_i)|" />
+      </MathBlock>
+      <ParamList>
+        <ParamBadge>sequence</ParamBadge>
+        <ParamBadge>r range</ParamBadge>
+      </ParamList>
+    </AttractorCard>
+  </>
+);
+
+const AboutTab: React.FC = () => (
+  <>
+    <Section>
+      <SectionTitle>About Chaos Iterator</SectionTitle>
+      <Paragraph>
+        Chaos Iterator is a web-based tool for exploring the beautiful mathematics
+        of chaos theory, strange attractors, and fractals. It brings together
+        decades of mathematical discovery into an accessible, interactive
+        visualization platform.
+      </Paragraph>
+      <Paragraph>
+        The project is inspired by the work of many mathematicians and programmers
+        who have explored these fascinating patterns, including the books
+        "Symmetry and Chaos" by Field and Golubitsky, and "Chaos in Wonderland"
+        by Clifford Pickover.
+      </Paragraph>
+    </Section>
+
+    <Section>
+      <SectionTitle>Credits & References</SectionTitle>
+
+      <SubTitle>Mathematical Foundations</SubTitle>
+      <Paragraph>
+        <strong>"Symmetry and Chaos"</strong> by Michael Field and Martin Golubitsky -
+        The primary reference for Symmetric Icons and Quilts.
+      </Paragraph>
+      <Paragraph>
+        <strong>"Chaos in Wonderland"</strong> by Clifford A. Pickover -
+        Source for Fractal Dream attractors and various chaos visualizations.
+      </Paragraph>
+      <Paragraph>
+        <strong>J.C. Sprott</strong> - Research on automatic discovery of strange
+        attractors using Lyapunov exponents.
+      </Paragraph>
+
+      <SubTitle>Attractor Presets</SubTitle>
+      <Paragraph>
+        <CreditLink href="https://paulbourke.net/fractals/" target="_blank" rel="noopener noreferrer">
+          Paul Bourke
+        </CreditLink> - Extensive documentation on Clifford, De Jong, and other attractors.
+      </Paragraph>
+      <Paragraph>
+        <CreditLink href="https://softologyblog.wordpress.com/" target="_blank" rel="noopener noreferrer">
+          Softology Blog
+        </CreditLink> - Source for many attractor presets and parameters.
+      </Paragraph>
+      <Paragraph>
+        <strong>Jason Rampe</strong> - Creator of the Jason Rampe attractor variants.
+      </Paragraph>
+      <Paragraph>
+        <strong>Simone Conradi</strong> - Creator of the Conradi and Mobius IFS attractors.
+      </Paragraph>
+
+      <SubTitle>Historical Attributions</SubTitle>
+      <Paragraph>
+        <strong>Benoit Mandelbrot</strong> - Discovery and popularization of fractal geometry.
+      </Paragraph>
+      <Paragraph>
+        <strong>Gaston Julia</strong> - Early work on iterative functions in the complex plane.
+      </Paragraph>
+      <Paragraph>
+        <strong>Michel Henon</strong> - The Henon map and attractor.
+      </Paragraph>
+      <Paragraph>
+        <strong>Barry Martin</strong> - The Hopalong attractor.
+      </Paragraph>
+      <Paragraph>
+        <strong>I. Gumowski & C. Mira</strong> - CERN research leading to the Gumowski-Mira attractor.
+      </Paragraph>
+      <Paragraph>
+        <strong>Georges de Rham</strong> - De Rham curves.
+      </Paragraph>
+    </Section>
+
+    <Section>
+      <SectionTitle>Technology</SectionTitle>
+      <Paragraph>
+        Built with React, TypeScript, and styled-components. Mathematical
+        visualizations are rendered using HTML5 Canvas with Web Workers for
+        performance. Mathematical formulas rendered with KaTeX.
+      </Paragraph>
+    </Section>
+
+    <CreditSection>
+      <Paragraph style={{ opacity: 0.6, fontSize: "14px" }}>
+        Chaos Iterator - Exploring Order in Chaos
+      </Paragraph>
+    </CreditSection>
+  </>
+);
+
+// ============= MAIN COMPONENT =============
+
+type TabType = "usage" | "attractors" | "ifs" | "fractals" | "about";
 
 const Info: React.FC = () => {
   const navigate = useNavigate();
-  const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({
-    attractors: true,
-    ifs: false,
-    fractals: false
-  });
+  const [activeTab, setActiveTab] = useState<TabType>("usage");
 
-  const toggleSection = (section: string) => {
-    setExpandedSections(prev => ({
-      ...prev,
-      [section]: !prev[section]
-    }));
+  const tabs: { id: TabType; label: string }[] = [
+    { id: "usage", label: "How to Use" },
+    { id: "attractors", label: "Attractors" },
+    { id: "ifs", label: "IFS" },
+    { id: "fractals", label: "Fractals" },
+    { id: "about", label: "About" },
+  ];
+
+  const renderTabContent = () => {
+    switch (activeTab) {
+      case "usage":
+        return <HowToUseTab />;
+      case "attractors":
+        return <AttractorsTab />;
+      case "ifs":
+        return <IFSTab />;
+      case "fractals":
+        return <FractalsTab />;
+      case "about":
+        return <AboutTab />;
+      default:
+        return <HowToUseTab />;
+    }
   };
 
   return (
     <PageContainer>
       <Header>
-        <BackButton onClick={() => navigate("/")}>
-          <span>←</span> Back to Generator
-        </BackButton>
-        <Title>Chaos Iterator</Title>
+        <HeaderTop>
+          <BackButton onClick={() => navigate("/")}>
+            <span>←</span> Back to Generator
+          </BackButton>
+          <Title>Chaos Iterator</Title>
+        </HeaderTop>
+        <TabNav>
+          {tabs.map(tab => (
+            <Tab
+              key={tab.id}
+              $active={activeTab === tab.id}
+              onClick={() => setActiveTab(tab.id)}
+            >
+              {tab.label}
+            </Tab>
+          ))}
+        </TabNav>
       </Header>
 
       <Content>
-        <Section>
-          <SectionTitle>How to Use</SectionTitle>
-          <UsageList>
-            <UsageItem>
-              <StepNumber>1</StepNumber>
-              <span><strong>Select an attractor type</strong> from the dropdown menu in the sidebar. Choose from Attractors, IFS (Iterated Function Systems), or Fractals.</span>
-            </UsageItem>
-            <UsageItem>
-              <StepNumber>2</StepNumber>
-              <span><strong>Choose a preset</strong> to start with interesting parameters, or click "Edit Parameters" to customize values manually.</span>
-            </UsageItem>
-            <UsageItem>
-              <StepNumber>3</StepNumber>
-              <span><strong>Adjust the color palette</strong> by clicking the palette button. Add, remove, or modify color stops to create your desired color scheme.</span>
-            </UsageItem>
-            <UsageItem>
-              <StepNumber>4</StepNumber>
-              <span><strong>Control the iteration</strong> using Play/Stop. The attractor builds up over time as more points are calculated.</span>
-            </UsageItem>
-            <UsageItem>
-              <StepNumber>5</StepNumber>
-              <span><strong>For fractals</strong>, use mouse scroll to zoom and click-drag to pan around. The Reset View button restores the default view.</span>
-            </UsageItem>
-            <UsageItem>
-              <StepNumber>6</StepNumber>
-              <span><strong>Save your creation</strong> by clicking the download button. Images are saved as PNG at the selected canvas resolution.</span>
-            </UsageItem>
-          </UsageList>
-        </Section>
-
-        <Section>
-          <SectionTitle>Attractor & Fractal Guide</SectionTitle>
-
-          <CategoryHeader $expanded={expandedSections.attractors} onClick={() => toggleSection("attractors")}>
-            <CategoryTitle>Strange Attractors ({attractorData.length})</CategoryTitle>
-            <ExpandIcon $expanded={expandedSections.attractors}>▼</ExpandIcon>
-          </CategoryHeader>
-          <AttractorList $expanded={expandedSections.attractors}>
-            {attractorData.map(item => (
-              <AttractorCard key={item.name}>
-                <AttractorName>{item.name}</AttractorName>
-                <AttractorDescription>{item.description}</AttractorDescription>
-                <Formula>{item.formula}</Formula>
-                <Parameters><strong>Parameters:</strong> {item.params}</Parameters>
-              </AttractorCard>
-            ))}
-          </AttractorList>
-
-          <CategoryHeader $expanded={expandedSections.ifs} onClick={() => toggleSection("ifs")}>
-            <CategoryTitle>IFS - Iterated Function Systems ({ifsData.length})</CategoryTitle>
-            <ExpandIcon $expanded={expandedSections.ifs}>▼</ExpandIcon>
-          </CategoryHeader>
-          <AttractorList $expanded={expandedSections.ifs}>
-            {ifsData.map(item => (
-              <AttractorCard key={item.name}>
-                <AttractorName>{item.name}</AttractorName>
-                <AttractorDescription>{item.description}</AttractorDescription>
-                <Formula>{item.formula}</Formula>
-                <Parameters><strong>Parameters:</strong> {item.params}</Parameters>
-              </AttractorCard>
-            ))}
-          </AttractorList>
-
-          <CategoryHeader $expanded={expandedSections.fractals} onClick={() => toggleSection("fractals")}>
-            <CategoryTitle>Escape-Time Fractals ({fractalData.length})</CategoryTitle>
-            <ExpandIcon $expanded={expandedSections.fractals}>▼</ExpandIcon>
-          </CategoryHeader>
-          <AttractorList $expanded={expandedSections.fractals}>
-            {fractalData.map(item => (
-              <AttractorCard key={item.name}>
-                <AttractorName>{item.name}</AttractorName>
-                <AttractorDescription>{item.description}</AttractorDescription>
-                <Formula>{item.formula}</Formula>
-                <Parameters><strong>Parameters:</strong> {item.params}</Parameters>
-              </AttractorCard>
-            ))}
-          </AttractorList>
-        </Section>
+        {renderTabContent()}
       </Content>
     </PageContainer>
   );
