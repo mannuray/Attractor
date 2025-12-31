@@ -49,21 +49,21 @@ import { CONFIG, AttractorType } from "../../attractors/shared/types";
 // Helper to generate download filename
 const getPresetName = (type: AttractorType, presetIndex: number): string => {
   const presetDataMap: Record<string, any[]> = {
-    symmetricIcon: symmetricIconData,
-    symmetricQuilt: symmetricQuiltData,
+    symmetric_icon: symmetricIconData,
+    symmetric_quilt: symmetricQuiltData,
     clifford: cliffordData,
-    deJong: deJongData,
+    dejong: deJongData,
     tinkerbell: tinkerbellData,
     henon: henonData,
     bedhead: bedheadData,
     svensson: svenssonData,
-    fractalDream: fractalDreamData,
+    fractal_dream: fractalDreamData,
     hopalong: hopalongData,
     mandelbrot: mandelbrotData,
     julia: juliaData,
-    jasonRampe1: jasonRampe1Data,
-    jasonRampe2: jasonRampe2Data,
-    jasonRampe3: jasonRampe3Data,
+    jason_rampe1: jasonRampe1Data,
+    jason_rampe2: jasonRampe2Data,
+    jason_rampe3: jasonRampe3Data,
   };
 
   const data = presetDataMap[type];
@@ -117,26 +117,32 @@ function Home() {
   const getFilename = useCallback((): string => {
     const type = attractor.attractorType;
     const presetMap: Record<string, number> = {
-      symmetricIcon: attractor.iconPreset,
-      symmetricQuilt: attractor.symmetricQuiltPreset,
+      symmetric_icon: attractor.iconPreset,
+      symmetric_quilt: attractor.symmetricQuiltPreset,
       clifford: attractor.cliffordPreset,
-      deJong: attractor.deJongPreset,
+      dejong: attractor.deJongPreset,
       tinkerbell: attractor.tinkerbellPreset,
       henon: attractor.henonPreset,
       bedhead: attractor.bedheadPreset,
       svensson: attractor.svenssonPreset,
-      fractalDream: attractor.fractalDreamPreset,
+      fractal_dream: attractor.fractalDreamPreset,
       hopalong: attractor.hopalongPreset,
       mandelbrot: attractor.mandelbrotPreset,
       julia: attractor.juliaPreset,
-      jasonRampe1: attractor.jasonRampe1Preset,
-      jasonRampe2: attractor.jasonRampe2Preset,
-      jasonRampe3: attractor.jasonRampe3Preset,
+      jason_rampe1: attractor.jasonRampe1Preset,
+      jason_rampe2: attractor.jasonRampe2Preset,
+      jason_rampe3: attractor.jasonRampe3Preset,
+      gumowski_mira: attractor.gumowskiMiraPreset,
+      sprott: attractor.sprottPreset,
+      symmetric_fractal: attractor.symmetricFractalPreset,
+      derham: attractor.deRhamPreset,
+      conradi: attractor.conradiPreset,
+      mobius: attractor.mobiusPreset,
     };
 
     const presetIndex = presetMap[type] ?? -1;
     const presetName = getPresetName(type, presetIndex);
-    const typeSlug = slugify(type.replace(/([A-Z])/g, "-$1"));
+    const typeSlug = type.replace(/_/g, "-");
     const presetSlug = slugify(presetName);
 
     return `${typeSlug}-${presetSlug}.png`;
