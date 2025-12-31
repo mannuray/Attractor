@@ -161,12 +161,13 @@ const AttractorHeader = styled.div`
 `;
 
 const Thumbnail = styled.img`
-  width: 80px;
-  height: 80px;
-  border-radius: 8px;
+  width: 150px;
+  height: 150px;
+  border-radius: 12px;
   object-fit: cover;
-  border: 1px solid rgba(255, 180, 120, 0.2);
+  border: 1px solid rgba(255, 180, 120, 0.3);
   flex-shrink: 0;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
 `;
 
 const AttractorInfo = styled.div`

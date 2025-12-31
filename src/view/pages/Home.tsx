@@ -46,6 +46,40 @@ import symmetricIconData, {
 // Types
 import { CONFIG, AttractorType } from "../../attractors/shared/types";
 
+// Helper to generate download filename
+const getPresetName = (type: AttractorType, presetIndex: number): string => {
+  const presetDataMap: Record<string, any[]> = {
+    symmetricIcon: symmetricIconData,
+    symmetricQuilt: symmetricQuiltData,
+    clifford: cliffordData,
+    deJong: deJongData,
+    tinkerbell: tinkerbellData,
+    henon: henonData,
+    bedhead: bedheadData,
+    svensson: svenssonData,
+    fractalDream: fractalDreamData,
+    hopalong: hopalongData,
+    mandelbrot: mandelbrotData,
+    julia: juliaData,
+    jasonRampe1: jasonRampe1Data,
+    jasonRampe2: jasonRampe2Data,
+    jasonRampe3: jasonRampe3Data,
+  };
+
+  const data = presetDataMap[type];
+  if (data && data[presetIndex]?.name) {
+    return data[presetIndex].name;
+  }
+  return "custom";
+};
+
+const slugify = (text: string): string => {
+  return text
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+};
+
 // Styled components
 const PageContainer = styled.div`
   display: flex;
@@ -78,6 +112,35 @@ function Home() {
 
   // Palette modal state
   const [paletteModalOpen, setPaletteModalOpen] = React.useState(false);
+
+  // Generate filename for download
+  const getFilename = useCallback((): string => {
+    const type = attractor.attractorType;
+    const presetMap: Record<string, number> = {
+      symmetricIcon: attractor.iconPreset,
+      symmetricQuilt: attractor.symmetricQuiltPreset,
+      clifford: attractor.cliffordPreset,
+      deJong: attractor.deJongPreset,
+      tinkerbell: attractor.tinkerbellPreset,
+      henon: attractor.henonPreset,
+      bedhead: attractor.bedheadPreset,
+      svensson: attractor.svenssonPreset,
+      fractalDream: attractor.fractalDreamPreset,
+      hopalong: attractor.hopalongPreset,
+      mandelbrot: attractor.mandelbrotPreset,
+      julia: attractor.juliaPreset,
+      jasonRampe1: attractor.jasonRampe1Preset,
+      jasonRampe2: attractor.jasonRampe2Preset,
+      jasonRampe3: attractor.jasonRampe3Preset,
+    };
+
+    const presetIndex = presetMap[type] ?? -1;
+    const presetName = getPresetName(type, presetIndex);
+    const typeSlug = slugify(type.replace(/([A-Z])/g, "-$1"));
+    const presetSlug = slugify(presetName);
+
+    return `${typeSlug}-${presetSlug}.png`;
+  }, [attractor]);
 
   // Get color from LUT with anti-aliasing
   const getColorRGB = useCallback((
@@ -379,7 +442,7 @@ function Home() {
             const blob = payload.blob;
             const url = URL.createObjectURL(blob);
             const link = document.createElement("a");
-            link.download = `attractor-${Date.now()}.png`;
+            link.download = getFilename();
             link.href = url;
             link.click();
             URL.revokeObjectURL(url);
@@ -435,7 +498,7 @@ function Home() {
 
     canvas.setMaxHits(0);
     canvas.setTotalIterations(0);
-  }, [attractor, palette, canvas, draw, clearCanvas]);
+  }, [attractor, palette, canvas, draw, clearCanvas, getFilename]);
 
   // Initialize on mount
   useEffect(() => {
@@ -533,10 +596,10 @@ function Home() {
     const canvasEl = canvas.canvasRef.current;
     if (!canvasEl) return;
     const link = document.createElement("a");
-    link.download = `attractor-${Date.now()}.png`;
+    link.download = getFilename();
     link.href = canvasEl.toDataURL("image/png");
     link.click();
-  }, [canvas]);
+  }, [canvas, getFilename]);
 
   const handleCanvasSizeChange = useCallback((size: number) => {
     canvas.setCanvasSize(size);
