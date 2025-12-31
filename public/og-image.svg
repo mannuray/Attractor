@@ -1,0 +1,59 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 630">
+  <defs>
+    <linearGradient id="orangeGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#f59e0b"/>
+      <stop offset="100%" style="stop-color:#ea580c"/>
+    </linearGradient>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#0a0a0f"/>
+      <stop offset="50%" style="stop-color:#1a1a2e"/>
+      <stop offset="100%" style="stop-color:#0f0f1a"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Background -->
+  <rect width="1200" height="630" fill="url(#bgGrad)"/>
+
+  <!-- Decorative attractor pattern on the right -->
+  <g transform="translate(850, 315)" opacity="0.4">
+    <path d="M 0,-200
+             Q 100,-200 140,-100
+             Q 180,0 100,80
+             Q 20,160 -80,100
+             Q -180,40 -140,-40
+             Q -100,-120 0,-100
+             Q 80,-80 60,0
+             Q 40,60 -20,40
+             Q -80,20 -60,-40
+             Q -40,-80 20,-60
+             Q 60,-40 40,20"
+          fill="none"
+          stroke="url(#orangeGrad)"
+          stroke-width="16"
+          stroke-linecap="round"/>
+    <circle cx="0" cy="0" r="25" fill="url(#orangeGrad)"/>
+    <circle cx="120" cy="-120" r="15" fill="url(#orangeGrad)" opacity="0.7"/>
+    <circle cx="-100" cy="100" r="12" fill="url(#orangeGrad)" opacity="0.6"/>
+    <circle cx="80" cy="120" r="10" fill="url(#orangeGrad)" opacity="0.5"/>
+  </g>
+
+  <!-- Title -->
+  <text x="80" y="260" font-family="system-ui, -apple-system, sans-serif" font-size="72" font-weight="700" fill="url(#orangeGrad)">
+    Chaos Iterator
+  </text>
+
+  <!-- Subtitle -->
+  <text x="80" y="340" font-family="system-ui, -apple-system, sans-serif" font-size="32" fill="#ffffff" opacity="0.8">
+    Strange Attractors &amp; Fractal Generator
+  </text>
+
+  <!-- Features list -->
+  <text x="80" y="420" font-family="system-ui, -apple-system, sans-serif" font-size="22" fill="#ffffff" opacity="0.6">
+    Mandelbrot | Julia | Clifford | De Jong | 20+ Visualizations
+  </text>
+
+  <!-- URL -->
+  <text x="80" y="560" font-family="system-ui, -apple-system, sans-serif" font-size="20" fill="url(#orangeGrad)" opacity="0.8">
+    chaos-iterator.vercel.app
+  </text>
+</svg>

@@ -1,17 +1,22 @@
-# Attractor
+# Chaos Iterator
 
-A real-time strange attractor visualization tool built with React and Web Workers. Generate beautiful mathematical art by exploring chaotic dynamical systems.
+A real-time strange attractor and fractal visualization tool built with React and Web Workers. Generate beautiful mathematical art by exploring chaotic dynamical systems.
 
 ## Features
 
-- **Multiple Attractor Types**: Symmetric Icon, Symmetric Quilt, Clifford, De Jong, Tinkerbell, Henon, Bedhead, Svensson, Fractal Dream, and Hopalong
+- **Multiple Attractor Types**: 12 strange attractors including Clifford, De Jong, Gumowski-Mira, Sprott, and more
+- **IFS Fractals**: Symmetric Fractals, De Rham curves, Conradi, and Mobius transformations
+- **Escape-Time Fractals**: Mandelbrot, Julia, Burning Ship, Tricorn, Multibrot, Newton, Phoenix, and Lyapunov
 - **Real-time Rendering**: Uses Web Workers and OffscreenCanvas for smooth, non-blocking iteration
 - **Custom Palettes**: Built-in palette editor with gamma correction and scaling options
-- **Presets**: Each attractor type comes with curated presets to explore
+- **Presets**: Each type comes with curated presets to explore
 - **High Resolution**: Configurable canvas sizes up to 4096x4096 with anti-aliasing
+- **Fractal Zoom**: Click and drag to zoom into escape-time fractals
 - **Export**: Save your creations as PNG images
 
 ## Attractor Types
+
+### Strange Attractors
 
 | Type | Formula | Parameters |
 |------|---------|------------|
@@ -25,6 +30,30 @@ A real-time strange attractor visualization tool built with React and Web Worker
 | **Henon** | `x' = 1 - a*x² + y` | a, b |
 | **Bedhead** | `x' = sin(x*y/b)*y + cos(a*x - y)` | a, b |
 | **Hopalong** | `x' = y - sign(x)*sqrt(abs(b*x - c))` | a, b, c |
+| **Gumowski-Mira** | `x' = y + a*(1 - σ*y²)*y + f(x)` | mu, alpha, sigma |
+| **Sprott** | 12-parameter quadratic map | a1-a12 |
+
+### IFS (Iterated Function Systems)
+
+| Type | Description | Parameters |
+|------|-------------|------------|
+| **Symmetric Fractal** | Affine transforms with rotational symmetry | a, b, c, d, alpha, beta, p, reflect |
+| **De Rham** | Cesaro and Koch-Peano curves | alpha, beta, curve type |
+| **Conradi** | Complex IFS with rotational symmetry | r1, theta1, r2, theta2, a, n, variant |
+| **Mobius** | Mobius transformation IFS | a, b, c, d (complex), n |
+
+### Escape-Time Fractals
+
+| Type | Formula | Parameters |
+|------|---------|------------|
+| **Mandelbrot** | `z' = z² + c` | center, zoom, max iterations |
+| **Julia** | `z' = z² + c` (fixed c) | c (real/imag), center, zoom |
+| **Burning Ship** | `z' = (|Re(z)| + i|Im(z)|)² + c` | center, zoom |
+| **Tricorn** | `z' = conj(z)² + c` | center, zoom |
+| **Multibrot** | `z' = z^n + c` | power, center, zoom |
+| **Newton** | Newton's method for z³ - 1 = 0 | center, zoom |
+| **Phoenix** | `z' = z² + c + p*z_prev` | c, p, center, zoom |
+| **Lyapunov** | Lyapunov exponent visualization | a/b range, sequence |
 
 ## Getting Started
 
@@ -57,31 +86,49 @@ npm run build
 
 ## Usage
 
-1. **Select Attractor Type**: Choose from the dropdown menu
+1. **Select Type**: Choose from Attractors, IFS, or Fractals in the dropdown menu
 2. **Choose a Preset**: Each type has curated presets with interesting parameters
-3. **Start Iteration**: Click "Start" to begin generating the attractor
-4. **Adjust Parameters**: Click "Edit" to modify parameters, then "Apply" to regenerate
-5. **Customize Colors**: Open the Palette editor to create custom color schemes
-6. **Export**: Click "Save Image" to download your creation as PNG
+3. **Start Iteration**: Click "Start" to begin generating (attractors iterate continuously)
+4. **Adjust Parameters**: Click "Edit Parameters" to modify values
+5. **Zoom (Fractals)**: Click and drag on the canvas to zoom into a region
+6. **Customize Colors**: Open the Palette editor to create custom color schemes
+7. **Export**: Click "Save Image" to download your creation as PNG
 
 ### Palette Settings
 
 - **Gamma**: Adjusts color distribution (lower = more contrast)
 - **Scale Mode**: Dynamic (based on max hits) or Fixed (manual threshold)
 - **Pal Max**: Fixed threshold value for color scaling
+- **Background**: Custom background color for zero-hit pixels
 
 ## Architecture
 
 ```
 src/
 ├── view/pages/Home.tsx      # Main UI component
-├── model-controller/
-│   └── Attractor/
-│       └── palette.ts       # Color palette management
-└── Parametersets.ts         # Preset data for all attractors
+├── hooks/
+│   ├── useAttractorState.ts # State management for all attractor types
+│   ├── usePalette.ts        # Color palette state
+│   ├── useCanvasWorker.ts   # Web Worker communication
+│   └── useFractalZoom.ts    # Fractal zoom/pan controls
+├── attractors/
+│   ├── shared/              # Shared components and types
+│   ├── symmetricIcon/       # Each attractor has its own module
+│   ├── clifford/
+│   ├── gumowskiMira/
+│   ├── sprott/
+│   ├── symmetricFractal/
+│   ├── deRham/
+│   ├── conradi/
+│   ├── mobius/
+│   └── ...
+└── components/
+    ├── Sidebar.tsx          # Main controls panel
+    ├── CanvasArea.tsx       # Canvas display
+    └── PaletteModal.tsx     # Palette editor
 
 public/
-└── worker.js                # Web Worker with iterator implementations
+└── worker.js                # Web Worker with all iterator implementations
 ```
 
 ## Performance
@@ -89,7 +136,8 @@ public/
 - Uses **OffscreenCanvas** for GPU-accelerated rendering in supported browsers
 - Falls back to main-thread rendering for compatibility
 - **Color LUT** (lookup table) for fast palette interpolation
-- **Anti-aliasing** via supersampling
+- **Anti-aliasing** via 2x supersampling
+- Fractals render once; attractors iterate continuously for progressive detail
 
 ## License
 
@@ -98,4 +146,5 @@ MIT
 ## Acknowledgments
 
 - Mathematical formulas based on research in chaotic dynamical systems
-- Inspired by the work of Clifford Pickover and other chaos mathematicians
+- Inspired by the work of Clifford Pickover, Julien C. Sprott, and other chaos mathematicians
+- IFS algorithms based on "Symmetry in Chaos" by Field and Golubitsky

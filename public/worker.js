@@ -149,7 +149,7 @@ function render() {
   const iteratorSize = iterCanvas.iterator_size;
 
   if (maxHits === 0) {
-    ctx.fillStyle = "#ffffff";
+    ctx.fillStyle = `rgb(${bgColor.r}, ${bgColor.g}, ${bgColor.b})`;
     ctx.fillRect(0, 0, size, size);
     return;
   }
@@ -371,7 +371,7 @@ function renderFinal() {
   const iteratorSize = iterCanvas.iterator_size;
 
   if (maxHits === 0) {
-    ctx.fillStyle = "#ffffff";
+    ctx.fillStyle = `rgb(${bgColor.r}, ${bgColor.g}, ${bgColor.b})`;
     ctx.fillRect(0, 0, size, size);
     return;
   }
@@ -1086,6 +1086,54 @@ class DeJongIterator {
   }
 }
 
+class JasonRampe1Iterator {
+  constructor(alpha, beta, gamma, delta) {
+    this.alpha = alpha;
+    this.beta = beta;
+    this.gamma = gamma;
+    this.delta = delta;
+  }
+  iterate(point) {
+    const { xpos, ypos } = point;
+    return {
+      xpos: Math.cos(ypos * this.beta) + this.gamma * Math.sin(xpos * this.beta),
+      ypos: Math.cos(xpos * this.alpha) + this.delta * Math.sin(ypos * this.alpha),
+    };
+  }
+}
+
+class JasonRampe2Iterator {
+  constructor(alpha, beta, gamma, delta) {
+    this.alpha = alpha;
+    this.beta = beta;
+    this.gamma = gamma;
+    this.delta = delta;
+  }
+  iterate(point) {
+    const { xpos, ypos } = point;
+    return {
+      xpos: Math.cos(ypos * this.beta) + this.gamma * Math.cos(xpos * this.beta),
+      ypos: Math.cos(xpos * this.alpha) + this.delta * Math.cos(ypos * this.alpha),
+    };
+  }
+}
+
+class JasonRampe3Iterator {
+  constructor(alpha, beta, gamma, delta) {
+    this.alpha = alpha;
+    this.beta = beta;
+    this.gamma = gamma;
+    this.delta = delta;
+  }
+  iterate(point) {
+    const { xpos, ypos } = point;
+    return {
+      xpos: Math.sin(ypos * this.beta) + this.gamma * Math.cos(xpos * this.beta),
+      ypos: Math.cos(xpos * this.alpha) + this.delta * Math.sin(ypos * this.alpha),
+    };
+  }
+}
+
 class TinkerbellIterator {
   constructor(alpha, beta, gamma, delta) {
     this.alpha = alpha;
@@ -1175,6 +1223,195 @@ class HopalongIterator {
       xpos: ypos - sign * Math.sqrt(Math.abs(this.beta * xpos - this.gamma)),
       ypos: this.alpha - xpos,
     };
+  }
+}
+
+class GumowskiMiraIterator {
+  constructor(mu, alpha, sigma) {
+    this.mu = mu;
+    this.alpha = alpha;
+    this.sigma = sigma;
+  }
+  f(x) {
+    return this.mu * x + (2 * (1 - this.mu) * x * x) / (1 + x * x);
+  }
+  iterate(point) {
+    const { xpos, ypos } = point;
+    const fx = this.f(xpos);
+    const nxpos = ypos + this.alpha * (1 - this.sigma * ypos * ypos) * ypos + fx;
+    const nypos = -xpos + this.f(nxpos);
+    return { xpos: nxpos, ypos: nypos };
+  }
+}
+
+class SprottIterator {
+  constructor(a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12) {
+    this.a = [a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12];
+  }
+  iterate(point) {
+    const { xpos, ypos } = point;
+    const a = this.a;
+    return {
+      xpos: a[0] + a[1]*xpos + a[2]*xpos*xpos + a[3]*xpos*ypos + a[4]*ypos + a[5]*ypos*ypos,
+      ypos: a[6] + a[7]*xpos + a[8]*xpos*xpos + a[9]*xpos*ypos + a[10]*ypos + a[11]*ypos*ypos,
+    };
+  }
+}
+
+class SymmetricFractalIterator {
+  constructor(a, b, c, d, alpha, beta, p, reflect) {
+    this.a = a; this.b = b; this.c = c; this.d = d;
+    this.alpha = alpha; this.beta = beta;
+    this.p = p; this.reflect = reflect;
+    this.angles = [];
+    for (let i = 0; i < p; i++) {
+      this.angles.push(2 * Math.PI * i / p);
+    }
+  }
+  iterate(point) {
+    let { xpos, ypos } = point;
+    // Apply affine transform
+    let nx = this.a * xpos + this.b * ypos + this.alpha;
+    let ny = this.c * xpos + this.d * ypos + this.beta;
+    // Apply random rotation from symmetry group
+    const angle = this.angles[Math.floor(Math.random() * this.p)];
+    const cos = Math.cos(angle);
+    const sin = Math.sin(angle);
+    let rx = nx * cos - ny * sin;
+    let ry = nx * sin + ny * cos;
+    // Optionally reflect for dihedral symmetry
+    if (this.reflect && Math.random() < 0.5) {
+      rx = -rx;
+    }
+    return { xpos: rx, ypos: ry };
+  }
+}
+
+class DeRhamIterator {
+  constructor(alpha, beta, curveType) {
+    this.alpha = alpha;
+    this.beta = beta;
+    this.curveType = curveType;
+  }
+  iterate(point) {
+    let { xpos, ypos } = point;
+    // Complex number representation: z = xpos + i*ypos
+    const a = this.alpha;
+    const b = this.beta;
+    const choice = Math.random() < 0.5 ? 0 : 1;
+
+    if (this.curveType === "cesaro") {
+      // Cesaro curves (orientation preserving)
+      if (choice === 0) {
+        // d0(z) = a*z where a = alpha + i*beta
+        return { xpos: a * xpos - b * ypos, ypos: a * ypos + b * xpos };
+      } else {
+        // d1(z) = a + (1-a)*z
+        const ra = 1 - a, rb = -b;
+        return { xpos: a + ra * xpos - rb * ypos, ypos: b + ra * ypos + rb * xpos };
+      }
+    } else if (this.curveType === "koch") {
+      // Koch-Peano curves (orientation reversing)
+      if (choice === 0) {
+        // d0(z) = a*conj(z)
+        return { xpos: a * xpos + b * ypos, ypos: -a * ypos + b * xpos };
+      } else {
+        // d1(z) = a + (1-a)*conj(z)
+        const ra = 1 - a, rb = -b;
+        return { xpos: a + ra * xpos + rb * ypos, ypos: b - ra * ypos + rb * xpos };
+      }
+    } else {
+      // General case
+      if (choice === 0) {
+        return { xpos: a * xpos - b * ypos, ypos: b * xpos + a * ypos };
+      } else {
+        return { xpos: a + (1-a) * xpos + b * ypos, ypos: b + -b * xpos + (1-a) * ypos };
+      }
+    }
+  }
+}
+
+class ConradiIterator {
+  constructor(r1, theta1, r2, theta2, a, n, variant) {
+    this.r1 = r1; this.theta1 = theta1;
+    this.r2 = r2; this.theta2 = theta2;
+    this.a = a; this.n = n; this.variant = variant;
+    this.angles = [];
+    for (let i = 0; i < n; i++) {
+      this.angles.push(2 * Math.PI * i / n);
+    }
+  }
+  iterate(point) {
+    let { xpos, ypos } = point;
+    // Complex multiplication helpers
+    const c1r = this.r1 * Math.cos(this.theta1 * Math.PI);
+    const c1i = this.r1 * Math.sin(this.theta1 * Math.PI);
+    const c2r = this.r2 * Math.cos(this.theta2 * Math.PI);
+    const c2i = this.r2 * Math.sin(this.theta2 * Math.PI);
+
+    let zr, zi;
+    if (this.variant === 1) {
+      // 1/z
+      const denom = xpos*xpos + ypos*ypos + 0.0001;
+      const invr = xpos / denom, invi = -ypos / denom;
+      // c1 * (1/z)
+      const t1r = c1r * invr - c1i * invi;
+      const t1i = c1r * invi + c1i * invr;
+      // c2 * conj(z)
+      const t2r = c2r * xpos + c2i * ypos;
+      const t2i = c2r * ypos - c2i * xpos;
+      zr = t1r + t2r + this.a;
+      zi = t1i + t2i;
+    } else {
+      // 1 / (c1*z + c2*(1/conj(z)) + a)
+      const denom = xpos*xpos + ypos*ypos + 0.0001;
+      const t1r = c1r * xpos - c1i * ypos;
+      const t1i = c1r * ypos + c1i * xpos;
+      const t2r = c2r * xpos / denom + c2i * ypos / denom;
+      const t2i = c2r * ypos / denom - c2i * xpos / denom;
+      const dr = t1r + t2r + this.a;
+      const di = t1i + t2i;
+      const d2 = dr*dr + di*di + 0.0001;
+      zr = dr / d2;
+      zi = -di / d2;
+    }
+
+    // Apply random rotation
+    const angle = this.angles[Math.floor(Math.random() * this.n)];
+    const cos = Math.cos(angle), sin = Math.sin(angle);
+    return { xpos: zr * cos - zi * sin, ypos: zr * sin + zi * cos };
+  }
+}
+
+class MobiusIterator {
+  constructor(aRe, aIm, bRe, bIm, cRe, cIm, dRe, dIm, n) {
+    this.ar = aRe; this.ai = aIm;
+    this.br = bRe; this.bi = bIm;
+    this.cr = cRe; this.ci = cIm;
+    this.dr = dRe; this.di = dIm;
+    this.n = n;
+    this.angles = [];
+    for (let i = 0; i < n; i++) {
+      this.angles.push(2 * Math.PI * i / n);
+    }
+  }
+  iterate(point) {
+    let { xpos, ypos } = point;
+    // f(z) = (az + b) / (cz + d)
+    // Numerator: (ar + i*ai)(x + i*y) + (br + i*bi)
+    const numr = this.ar * xpos - this.ai * ypos + this.br;
+    const numi = this.ar * ypos + this.ai * xpos + this.bi;
+    // Denominator: (cr + i*ci)(x + i*y) + (dr + i*di)
+    const denr = this.cr * xpos - this.ci * ypos + this.dr;
+    const deni = this.cr * ypos + this.ci * xpos + this.di;
+    // Division
+    const d2 = denr*denr + deni*deni + 0.0001;
+    const zr = (numr * denr + numi * deni) / d2;
+    const zi = (numi * denr - numr * deni) / d2;
+    // Apply random rotation
+    const angle = this.angles[Math.floor(Math.random() * this.n)];
+    const cos = Math.cos(angle), sin = Math.sin(angle);
+    return { xpos: zr * cos - zi * sin, ypos: zr * sin + zi * cos };
   }
 }
 
@@ -1319,6 +1556,12 @@ function iteratorBuilder(iterator) {
       return new CliffordIterator(parameters.alpha, parameters.beta, parameters.gamma, parameters.delta);
     case "dejong_iterator":
       return new DeJongIterator(parameters.alpha, parameters.beta, parameters.gamma, parameters.delta);
+    case "jason_rampe1_iterator":
+      return new JasonRampe1Iterator(parameters.alpha, parameters.beta, parameters.gamma, parameters.delta);
+    case "jason_rampe2_iterator":
+      return new JasonRampe2Iterator(parameters.alpha, parameters.beta, parameters.gamma, parameters.delta);
+    case "jason_rampe3_iterator":
+      return new JasonRampe3Iterator(parameters.alpha, parameters.beta, parameters.gamma, parameters.delta);
     case "tinkerbell_iterator":
       return new TinkerbellIterator(parameters.alpha, parameters.beta, parameters.gamma, parameters.delta);
     case "henon_iterator":
@@ -1331,6 +1574,31 @@ function iteratorBuilder(iterator) {
       return new FractalDreamIterator(parameters.alpha, parameters.beta, parameters.gamma, parameters.delta);
     case "hopalong_iterator":
       return new HopalongIterator(parameters.alpha, parameters.beta, parameters.gamma);
+    case "gumowski_mira_iterator":
+      return new GumowskiMiraIterator(parameters.mu, parameters.alpha, parameters.sigma);
+    case "sprott_iterator":
+      return new SprottIterator(
+        parameters.a1, parameters.a2, parameters.a3, parameters.a4,
+        parameters.a5, parameters.a6, parameters.a7, parameters.a8,
+        parameters.a9, parameters.a10, parameters.a11, parameters.a12
+      );
+    case "symmetric_fractal_iterator":
+      return new SymmetricFractalIterator(
+        parameters.a, parameters.b, parameters.c, parameters.d,
+        parameters.alpha, parameters.beta, parameters.p, parameters.reflect
+      );
+    case "derham_iterator":
+      return new DeRhamIterator(parameters.alpha, parameters.beta, parameters.curveType);
+    case "conradi_iterator":
+      return new ConradiIterator(
+        parameters.r1, parameters.theta1, parameters.r2, parameters.theta2,
+        parameters.a, parameters.n, parameters.variant
+      );
+    case "mobius_iterator":
+      return new MobiusIterator(
+        parameters.aRe, parameters.aIm, parameters.bRe, parameters.bIm,
+        parameters.cRe, parameters.cIm, parameters.dRe, parameters.dIm, parameters.n
+      );
     case "symmetric_quilt":
       return new SymmetricQuiltIterator(
         parameters.lambda,

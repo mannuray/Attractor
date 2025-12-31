@@ -1,10 +1,11 @@
 import React, { useEffect, useRef, useState, useCallback } from "react";
+import { createPortal } from "react-dom";
 
 // =============================================================================
 // Color Conversion Utilities
 // =============================================================================
 
-interface RGB {
+export interface RGB {
   red: number;
   green: number;
   blue: number;
@@ -100,7 +101,7 @@ interface ColorPickerProps {
   onClose: () => void;
 }
 
-function ColorPickerPopup({
+export function ColorPickerPopup({
   color,
   position,
   canDelete,
@@ -209,14 +210,10 @@ function ColorPickerPopup({
     <div
       data-picker="true"
       style={{
-        position: "fixed",
-        left: Math.min(position.x, window.innerWidth - 320),
-        top: Math.min(position.y, window.innerHeight - 450),
         background: "linear-gradient(135deg, #f59e0b 0%, #ea580c 100%)",
         borderRadius: "18px",
         padding: "2px",
         boxShadow: "0 25px 80px rgba(0,0,0,0.6), 0 0 40px rgba(245, 158, 11, 0.25)",
-        zIndex: 2000,
       }}
       onClick={(e) => e.stopPropagation()}
       onMouseDown={(e) => e.stopPropagation()}
@@ -352,6 +349,42 @@ function ColorPickerPopup({
           }} />
         </div>
 
+        {/* Preset Colors */}
+        <div style={{ marginBottom: "16px" }}>
+          <div style={{ color: "rgba(255, 255, 255, 0.5)", fontSize: "11px", marginBottom: "8px", textTransform: "uppercase", letterSpacing: "1px" }}>Quick Colors</div>
+          <div style={{ display: "flex", gap: "6px", flexWrap: "wrap" }}>
+            {[
+              "#000000", "#ffffff", "#ef4444", "#f97316", "#eab308", "#22c55e",
+              "#06b6d4", "#3b82f6", "#8b5cf6", "#ec4899", "#6b7280", "#78350f",
+            ].map((presetHex) => (
+              <button
+                key={presetHex}
+                onClick={() => {
+                  const rgb = hexToRgb(presetHex);
+                  setHsv(rgbToHsv(rgb.red, rgb.green, rgb.blue));
+                }}
+                style={{
+                  width: "28px",
+                  height: "28px",
+                  borderRadius: "6px",
+                  background: presetHex,
+                  border: "2px solid rgba(255, 255, 255, 0.2)",
+                  cursor: "pointer",
+                  transition: "transform 0.1s ease, border-color 0.1s ease",
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.transform = "scale(1.1)";
+                  e.currentTarget.style.borderColor = "rgba(255, 255, 255, 0.5)";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.transform = "scale(1)";
+                  e.currentTarget.style.borderColor = "rgba(255, 255, 255, 0.2)";
+                }}
+              />
+            ))}
+          </div>
+        </div>
+
         {/* RGB Inputs */}
         <div style={{ display: "flex", gap: "10px", marginBottom: "16px" }}>
           {[
@@ -459,9 +492,9 @@ function ColorBar({ palletteArg, changePalletCallback }: ColorBarProps) {
   const [containerWidth, setContainerWidth] = useState(0);
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
   const [pickerOpen, setPickerOpen] = useState(false);
-  const [pickerPosition, setPickerPosition] = useState({ x: 0, y: 0 });
   const [draggingIndex, setDraggingIndex] = useState<number | null>(null);
   const hasMoved = useRef(false);
+  const clickTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     const updateWidth = () => {
@@ -474,13 +507,22 @@ function ColorBar({ palletteArg, changePalletCallback }: ColorBarProps) {
     return () => window.removeEventListener("resize", updateWidth);
   }, []);
 
+  // Cleanup click timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (clickTimeoutRef.current) {
+        clearTimeout(clickTimeoutRef.current);
+      }
+    };
+  }, []);
+
   useEffect(() => {
     if (!pickerOpen) return;
 
     let timeoutId: NodeJS.Timeout;
     const handleClickOutside = (e: MouseEvent) => {
       const target = e.target as HTMLElement;
-      if (target.closest('[data-picker]') || target.closest('[data-handle]')) return;
+      if (target.closest('[data-picker]') || target.closest('[data-handle]') || target.closest('[data-colorbar]')) return;
       setPickerOpen(false);
       setSelectedIndex(null);
     };
@@ -536,10 +578,6 @@ function ColorBar({ palletteArg, changePalletCallback }: ColorBarProps) {
       if (!hasMoved.current && idx !== null) {
         setSelectedIndex(idx);
         setPickerOpen(true);
-        setPickerPosition({
-          x: (window.innerWidth - 320) / 2,
-          y: (window.innerHeight - 450) / 2
-        });
       }
       hasMoved.current = false;
     };
@@ -560,11 +598,6 @@ function ColorBar({ palletteArg, changePalletCallback }: ColorBarProps) {
     e.stopPropagation();
     setSelectedIndex(index);
     setPickerOpen(true);
-    // Center the picker on screen
-    setPickerPosition({
-      x: (window.innerWidth - 320) / 2,
-      y: (window.innerHeight - 450) / 2
-    });
   };
 
   const handleHandleMouseDown = (index: number, e: React.MouseEvent) => {
@@ -605,7 +638,46 @@ function ColorBar({ palletteArg, changePalletCallback }: ColorBarProps) {
     setSelectedIndex(null);
   }, [selectedIndex, changePalletCallback]);
 
+  // Single click on bar - find nearest stop and open its picker
+  // Uses timeout to distinguish from double-click
+  const handleBarClick = (e: React.MouseEvent) => {
+    if (!containerRef.current) return;
+
+    // Clear any pending click timeout
+    if (clickTimeoutRef.current) {
+      clearTimeout(clickTimeoutRef.current);
+      clickTimeoutRef.current = null;
+    }
+
+    const rect = containerRef.current.getBoundingClientRect();
+    const clickPosition = (e.clientX - rect.left) / rect.width;
+
+    // Find the nearest color stop
+    let nearestIndex = 0;
+    let nearestDistance = Math.abs(palette[0].position - clickPosition);
+    for (let i = 1; i < palette.length; i++) {
+      const distance = Math.abs(palette[i].position - clickPosition);
+      if (distance < nearestDistance) {
+        nearestDistance = distance;
+        nearestIndex = i;
+      }
+    }
+
+    // Delay to allow double-click to cancel this
+    clickTimeoutRef.current = setTimeout(() => {
+      setSelectedIndex(nearestIndex);
+      setPickerOpen(true);
+      clickTimeoutRef.current = null;
+    }, 200);
+  };
+
   const handleDoubleClick = (e: React.MouseEvent) => {
+    // Cancel pending single-click action
+    if (clickTimeoutRef.current) {
+      clearTimeout(clickTimeoutRef.current);
+      clickTimeoutRef.current = null;
+    }
+
     if (!containerRef.current) return;
     const rect = containerRef.current.getBoundingClientRect();
     const clickPosition = (e.clientX - rect.left) / rect.width;
@@ -634,10 +706,6 @@ function ColorBar({ palletteArg, changePalletCallback }: ColorBarProps) {
     changePalletCallback(newPalette);
 
     setSelectedIndex(insertIndex);
-    setPickerPosition({
-      x: (window.innerWidth - 320) / 2,
-      y: (window.innerHeight - 450) / 2
-    });
     setPickerOpen(true);
   };
 
@@ -648,16 +716,27 @@ function ColorBar({ palletteArg, changePalletCallback }: ColorBarProps) {
         {/* Gradient Bar */}
         <div
           ref={containerRef}
+          data-colorbar="true"
           style={{
             width: "100%",
             height: "50px",
             background: gradient,
             borderRadius: "12px",
             border: "2px solid rgba(255, 255, 255, 0.2)",
-            cursor: "crosshair",
+            cursor: "pointer",
             boxShadow: "0 4px 20px rgba(0,0,0,0.3), inset 0 0 0 1px rgba(255, 255, 255, 0.1)",
+            transition: "transform 0.1s ease, box-shadow 0.1s ease",
           }}
+          onClick={handleBarClick}
           onDoubleClick={handleDoubleClick}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.transform = "scale(1.01)";
+            e.currentTarget.style.boxShadow = "0 6px 25px rgba(0,0,0,0.4), inset 0 0 0 1px rgba(255, 255, 255, 0.15)";
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.transform = "scale(1)";
+            e.currentTarget.style.boxShadow = "0 4px 20px rgba(0,0,0,0.3), inset 0 0 0 1px rgba(255, 255, 255, 0.1)";
+          }}
         />
 
         {/* Color Stops Row */}
@@ -686,8 +765,15 @@ function ColorBar({ palletteArg, changePalletCallback }: ColorBarProps) {
                   transform: "translateX(-50%)",
                   cursor: isFirst || isLast ? "pointer" : "ew-resize",
                   zIndex: isSelected ? 10 : 1,
+                  transition: "transform 0.15s ease",
                 }}
                 onMouseDown={(e) => handleHandleMouseDown(index, e)}
+                onMouseEnter={(e) => {
+                  if (!isSelected) e.currentTarget.style.transform = "translateX(-50%) scale(1.15)";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.transform = "translateX(-50%)";
+                }}
               >
                 {/* Triangle handle filled with color */}
                 <svg width="24" height="28" viewBox="0 0 24 28" style={{ filter: isSelected ? "drop-shadow(0 0 6px #f59e0b)" : "drop-shadow(0 2px 4px rgba(0,0,0,0.4))" }}>
@@ -708,34 +794,59 @@ function ColorBar({ palletteArg, changePalletCallback }: ColorBarProps) {
       <div style={{
         display: "flex",
         justifyContent: "center",
-        gap: "24px",
+        gap: "20px",
         color: "rgba(255, 200, 150, 0.6)",
         fontSize: "12px",
+        flexWrap: "wrap",
       }}>
         <span>
-          <strong style={{ color: "#f59e0b" }}>Double-click</strong> bar to add
+          <strong style={{ color: "#f59e0b" }}>Click</strong> to edit color
         </span>
         <span>
-          <strong style={{ color: "#f59e0b" }}>Click</strong> stop to edit
+          <strong style={{ color: "#f59e0b" }}>Double-click</strong> to add stop
         </span>
         <span>
-          <strong style={{ color: "#f59e0b" }}>Drag</strong> to move
+          <strong style={{ color: "#f59e0b" }}>Drag</strong> handles to reposition
         </span>
       </div>
 
       {/* Color Picker Popup */}
-      {pickerOpen && selectedIndex !== null && (
-        <ColorPickerPopup
-          color={palette[selectedIndex]}
-          position={pickerPosition}
-          canDelete={selectedIndex !== 0 && selectedIndex !== palette.length - 1 && palette.length > 2}
-          onColorChange={handleColorChange}
-          onDelete={handleDeleteStop}
-          onClose={() => {
+      {/* Color Picker Modal - rendered via Portal to overlay on top of everything */}
+      {pickerOpen && selectedIndex !== null && createPortal(
+        <div
+          style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            background: "rgba(0, 0, 0, 0.6)",
+            backdropFilter: "blur(4px)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: 2000,
+          }}
+          onClick={() => {
             setPickerOpen(false);
             setSelectedIndex(null);
           }}
-        />
+        >
+          <div onClick={(e) => e.stopPropagation()}>
+            <ColorPickerPopup
+              color={palette[selectedIndex]}
+              position={{ x: 0, y: 0 }} // Position is now handled by flex centering
+              canDelete={selectedIndex !== 0 && selectedIndex !== palette.length - 1 && palette.length > 2}
+              onColorChange={handleColorChange}
+              onDelete={handleDeleteStop}
+              onClose={() => {
+                setPickerOpen(false);
+                setSelectedIndex(null);
+              }}
+            />
+          </div>
+        </div>,
+        document.body
       )}
     </div>
   );
