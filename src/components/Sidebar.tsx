@@ -171,11 +171,20 @@ const CANVAS_SIZE_OPTIONS = [
   { value: 4096, label: "4096 × 4096" },
 ];
 
+const OVERSAMPLING_OPTIONS = [
+  { value: 1, label: "1× (Fast)" },
+  { value: 2, label: "2× (Standard)" },
+  { value: 3, label: "3× (High)" },
+  { value: 4, label: "4× (Ultra)" },
+];
+
 interface SidebarProps {
   attractorType: AttractorType;
   onAttractorTypeChange: (type: AttractorType) => void;
   canvasSize: number;
   onCanvasSizeChange: (size: number) => void;
+  oversampling: number;
+  onOversamplingChange: (oversampling: number) => void;
   maxHits: number;
   totalIterations: number;
   maxIter?: number;
@@ -189,6 +198,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onAttractorTypeChange,
   canvasSize,
   onCanvasSizeChange,
+  oversampling,
+  onOversamplingChange,
   maxHits,
   totalIterations,
   maxIter,
@@ -223,6 +234,18 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   onChange={(e) => onCanvasSizeChange(parseInt(e.target.value))}
                 >
                   {CANVAS_SIZE_OPTIONS.map((opt) => (
+                    <option key={opt.value} value={opt.value}>{opt.label}</option>
+                  ))}
+                </Select>
+              </Field>
+
+              <Field>
+                <Label>Oversampling</Label>
+                <Select
+                  value={oversampling}
+                  onChange={(e) => onOversamplingChange(parseInt(e.target.value))}
+                >
+                  {OVERSAMPLING_OPTIONS.map((opt) => (
                     <option key={opt.value} value={opt.value}>{opt.label}</option>
                   ))}
                 </Select>

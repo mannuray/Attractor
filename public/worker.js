@@ -438,78 +438,98 @@ function getColorRGBInterpolated(x, y, hits, invDivisor, iteratorSize) {
 // FRACTAL RENDERING (Escape-Time Algorithm)
 // ============================================
 
-// Render Mandelbrot set
+// Render Mandelbrot set with oversampling
 function renderMandelbrot() {
   if (!ctx || !colorLUT) return;
 
   const size = canvasSize;
   const { centerX, centerY, zoom, maxIter } = fractalParams;
+  const alias = configAlias;
 
   // Calculate view bounds
   const range = 3.0 / zoom; // Default view is about 3 units wide
   const xMin = centerX - range / 2;
   const yMin = centerY - range / 2;
   const pixelSize = range / size;
+  const subPixelSize = pixelSize / alias;
 
   const imageData = ctx.createImageData(size, size);
   const data32 = new Uint32Array(imageData.data.buffer);
   const lutSize = colorLUT.length;
+  const aliasSq = alias * alias;
 
   // Background color packed
   const bgColorPacked = (255 << 24) | (bgColor.b << 16) | (bgColor.g << 8) | bgColor.r;
 
   for (let py = 0; py < size; py++) {
-    const y0 = yMin + py * pixelSize;
     for (let px = 0; px < size; px++) {
-      const x0 = xMin + px * pixelSize;
+      let totalR = 0, totalG = 0, totalB = 0;
 
-      // Mandelbrot iteration: z = z² + c, where c = (x0, y0)
-      let x = 0, y = 0;
-      let iter = 0;
-      let x2 = 0, y2 = 0;
+      // Oversample: render alias × alias subpixels
+      for (let sy = 0; sy < alias; sy++) {
+        for (let sx = 0; sx < alias; sx++) {
+          const x0 = xMin + (px + (sx + 0.5) / alias) * pixelSize;
+          const y0 = yMin + (py + (sy + 0.5) / alias) * pixelSize;
 
-      while (x2 + y2 <= 4 && iter < maxIter) {
-        y = 2 * x * y + y0;
-        x = x2 - y2 + x0;
-        x2 = x * x;
-        y2 = y * y;
-        iter++;
+          // Mandelbrot iteration: z = z² + c, where c = (x0, y0)
+          let x = 0, y = 0;
+          let iter = 0;
+          let x2 = 0, y2 = 0;
+
+          while (x2 + y2 <= 4 && iter < maxIter) {
+            y = 2 * x * y + y0;
+            x = x2 - y2 + x0;
+            x2 = x * x;
+            y2 = y * y;
+            iter++;
+          }
+
+          if (iter === maxIter) {
+            // Point is in the set - use background
+            totalR += bgColor.r;
+            totalG += bgColor.g;
+            totalB += bgColor.b;
+          } else {
+            // Smooth coloring using escape value
+            const log_zn = Math.log(x2 + y2) / 2;
+            const nu = Math.log(log_zn / Math.LN2) / Math.LN2;
+            const smoothIter = iter + 1 - nu;
+
+            let ratio = smoothIter / maxIter;
+            if (palGamma !== 1.0) {
+              ratio = Math.pow(ratio, palGamma);
+            }
+            ratio = Math.min(1, Math.max(0, ratio));
+
+            const lutIndex = Math.min(lutSize - 1, Math.floor(ratio * lutSize));
+            const color = colorLUT[lutIndex];
+            totalR += color & 0xff;
+            totalG += (color >> 8) & 0xff;
+            totalB += (color >> 16) & 0xff;
+          }
+        }
       }
+
+      // Average the colors
+      const avgR = Math.round(totalR / aliasSq);
+      const avgG = Math.round(totalG / aliasSq);
+      const avgB = Math.round(totalB / aliasSq);
 
       const idx = py * size + px;
-
-      if (iter === maxIter) {
-        // Point is in the set - use background (typically black for Mandelbrot)
-        data32[idx] = bgColorPacked;
-      } else {
-        // Smooth coloring using escape value
-        // Add fractional iteration count for smooth coloring
-        const log_zn = Math.log(x2 + y2) / 2;
-        const nu = Math.log(log_zn / Math.LN2) / Math.LN2;
-        const smoothIter = iter + 1 - nu;
-
-        // Map to palette (normalized to 0-1 range)
-        let ratio = smoothIter / maxIter;
-        if (palGamma !== 1.0) {
-          ratio = Math.pow(ratio, palGamma);
-        }
-        ratio = Math.min(1, Math.max(0, ratio));
-
-        const lutIndex = Math.min(lutSize - 1, Math.floor(ratio * lutSize));
-        data32[idx] = colorLUT[lutIndex];
-      }
+      data32[idx] = (255 << 24) | (avgB << 16) | (avgG << 8) | avgR;
     }
   }
 
   ctx.putImageData(imageData, 0, 0);
 }
 
-// Render Julia set
+// Render Julia set with oversampling
 function renderJulia() {
   if (!ctx || !colorLUT) return;
 
   const size = canvasSize;
   const { cReal, cImag, centerX, centerY, zoom, maxIter } = fractalParams;
+  const alias = configAlias;
 
   // Calculate view bounds
   const range = 3.0 / zoom;
@@ -520,60 +540,77 @@ function renderJulia() {
   const imageData = ctx.createImageData(size, size);
   const data32 = new Uint32Array(imageData.data.buffer);
   const lutSize = colorLUT.length;
-
-  // Background color packed
-  const bgColorPacked = (255 << 24) | (bgColor.b << 16) | (bgColor.g << 8) | bgColor.r;
+  const aliasSq = alias * alias;
 
   for (let py = 0; py < size; py++) {
-    const y0 = yMin + py * pixelSize;
     for (let px = 0; px < size; px++) {
-      const x0 = xMin + px * pixelSize;
+      let totalR = 0, totalG = 0, totalB = 0;
 
-      // Julia iteration: z = z² + c, where z starts at (x0, y0) and c is constant
-      let x = x0, y = y0;
-      let iter = 0;
-      let x2 = x * x, y2 = y * y;
+      // Oversample: render alias × alias subpixels
+      for (let sy = 0; sy < alias; sy++) {
+        for (let sx = 0; sx < alias; sx++) {
+          const x0 = xMin + (px + (sx + 0.5) / alias) * pixelSize;
+          const y0 = yMin + (py + (sy + 0.5) / alias) * pixelSize;
 
-      while (x2 + y2 <= 4 && iter < maxIter) {
-        y = 2 * x * y + cImag;
-        x = x2 - y2 + cReal;
-        x2 = x * x;
-        y2 = y * y;
-        iter++;
+          // Julia iteration: z = z² + c, where z starts at (x0, y0) and c is constant
+          let x = x0, y = y0;
+          let iter = 0;
+          let x2 = x * x, y2 = y * y;
+
+          while (x2 + y2 <= 4 && iter < maxIter) {
+            y = 2 * x * y + cImag;
+            x = x2 - y2 + cReal;
+            x2 = x * x;
+            y2 = y * y;
+            iter++;
+          }
+
+          if (iter === maxIter) {
+            // Point is in the set - use background
+            totalR += bgColor.r;
+            totalG += bgColor.g;
+            totalB += bgColor.b;
+          } else {
+            // Smooth coloring
+            const log_zn = Math.log(x2 + y2) / 2;
+            const nu = Math.log(log_zn / Math.LN2) / Math.LN2;
+            const smoothIter = iter + 1 - nu;
+
+            let ratio = smoothIter / maxIter;
+            if (palGamma !== 1.0) {
+              ratio = Math.pow(ratio, palGamma);
+            }
+            ratio = Math.min(1, Math.max(0, ratio));
+
+            const lutIndex = Math.min(lutSize - 1, Math.floor(ratio * lutSize));
+            const color = colorLUT[lutIndex];
+            totalR += color & 0xff;
+            totalG += (color >> 8) & 0xff;
+            totalB += (color >> 16) & 0xff;
+          }
+        }
       }
+
+      // Average the colors
+      const avgR = Math.round(totalR / aliasSq);
+      const avgG = Math.round(totalG / aliasSq);
+      const avgB = Math.round(totalB / aliasSq);
 
       const idx = py * size + px;
-
-      if (iter === maxIter) {
-        // Point is in the set
-        data32[idx] = bgColorPacked;
-      } else {
-        // Smooth coloring
-        const log_zn = Math.log(x2 + y2) / 2;
-        const nu = Math.log(log_zn / Math.LN2) / Math.LN2;
-        const smoothIter = iter + 1 - nu;
-
-        let ratio = smoothIter / maxIter;
-        if (palGamma !== 1.0) {
-          ratio = Math.pow(ratio, palGamma);
-        }
-        ratio = Math.min(1, Math.max(0, ratio));
-
-        const lutIndex = Math.min(lutSize - 1, Math.floor(ratio * lutSize));
-        data32[idx] = colorLUT[lutIndex];
-      }
+      data32[idx] = (255 << 24) | (avgB << 16) | (avgG << 8) | avgR;
     }
   }
 
   ctx.putImageData(imageData, 0, 0);
 }
 
-// Render Burning Ship fractal
+// Render Burning Ship fractal with oversampling
 function renderBurningShip() {
   if (!ctx || !colorLUT) return;
 
   const size = canvasSize;
   const { centerX, centerY, zoom, maxIter } = fractalParams;
+  const alias = configAlias;
 
   const range = 3.0 / zoom;
   const xMin = centerX - range / 2;
@@ -583,57 +620,73 @@ function renderBurningShip() {
   const imageData = ctx.createImageData(size, size);
   const data32 = new Uint32Array(imageData.data.buffer);
   const lutSize = colorLUT.length;
-  const bgColorPacked = (255 << 24) | (bgColor.b << 16) | (bgColor.g << 8) | bgColor.r;
+  const aliasSq = alias * alias;
 
   for (let py = 0; py < size; py++) {
-    const y0 = yMin + py * pixelSize;
     for (let px = 0; px < size; px++) {
-      const x0 = xMin + px * pixelSize;
+      let totalR = 0, totalG = 0, totalB = 0;
 
-      // Burning Ship: z = (|Re(z)| + i|Im(z)|)² + c
-      let x = 0, y = 0;
-      let iter = 0;
-      let x2 = 0, y2 = 0;
+      for (let sy = 0; sy < alias; sy++) {
+        for (let sx = 0; sx < alias; sx++) {
+          const x0 = xMin + (px + (sx + 0.5) / alias) * pixelSize;
+          const y0 = yMin + (py + (sy + 0.5) / alias) * pixelSize;
 
-      while (x2 + y2 <= 4 && iter < maxIter) {
-        // Take absolute values before squaring
-        x = Math.abs(x);
-        y = Math.abs(y);
-        y = 2 * x * y + y0;
-        x = x2 - y2 + x0;
-        x2 = x * x;
-        y2 = y * y;
-        iter++;
+          // Burning Ship: z = (|Re(z)| + i|Im(z)|)² + c
+          let x = 0, y = 0;
+          let iter = 0;
+          let x2 = 0, y2 = 0;
+
+          while (x2 + y2 <= 4 && iter < maxIter) {
+            x = Math.abs(x);
+            y = Math.abs(y);
+            y = 2 * x * y + y0;
+            x = x2 - y2 + x0;
+            x2 = x * x;
+            y2 = y * y;
+            iter++;
+          }
+
+          if (iter === maxIter) {
+            totalR += bgColor.r;
+            totalG += bgColor.g;
+            totalB += bgColor.b;
+          } else {
+            const log_zn = Math.log(x2 + y2) / 2;
+            const nu = Math.log(log_zn / Math.LN2) / Math.LN2;
+            const smoothIter = iter + 1 - nu;
+
+            let ratio = smoothIter / maxIter;
+            if (palGamma !== 1.0) ratio = Math.pow(ratio, palGamma);
+            ratio = Math.min(1, Math.max(0, ratio));
+
+            const lutIndex = Math.min(lutSize - 1, Math.floor(ratio * lutSize));
+            const color = colorLUT[lutIndex];
+            totalR += color & 0xff;
+            totalG += (color >> 8) & 0xff;
+            totalB += (color >> 16) & 0xff;
+          }
+        }
       }
+
+      const avgR = Math.round(totalR / aliasSq);
+      const avgG = Math.round(totalG / aliasSq);
+      const avgB = Math.round(totalB / aliasSq);
 
       const idx = py * size + px;
-
-      if (iter === maxIter) {
-        data32[idx] = bgColorPacked;
-      } else {
-        const log_zn = Math.log(x2 + y2) / 2;
-        const nu = Math.log(log_zn / Math.LN2) / Math.LN2;
-        const smoothIter = iter + 1 - nu;
-
-        let ratio = smoothIter / maxIter;
-        if (palGamma !== 1.0) ratio = Math.pow(ratio, palGamma);
-        ratio = Math.min(1, Math.max(0, ratio));
-
-        const lutIndex = Math.min(lutSize - 1, Math.floor(ratio * lutSize));
-        data32[idx] = colorLUT[lutIndex];
-      }
+      data32[idx] = (255 << 24) | (avgB << 16) | (avgG << 8) | avgR;
     }
   }
 
   ctx.putImageData(imageData, 0, 0);
 }
 
-// Render Tricorn (Mandelbar) fractal
+// Render Tricorn (Mandelbar) fractal with oversampling
 function renderTricorn() {
   if (!ctx || !colorLUT) return;
 
   const size = canvasSize;
   const { centerX, centerY, zoom, maxIter } = fractalParams;
+  const alias = configAlias;
 
   const range = 3.0 / zoom;
   const xMin = centerX - range / 2;
@@ -643,57 +696,73 @@ function renderTricorn() {
   const imageData = ctx.createImageData(size, size);
   const data32 = new Uint32Array(imageData.data.buffer);
   const lutSize = colorLUT.length;
-  const bgColorPacked = (255 << 24) | (bgColor.b << 16) | (bgColor.g << 8) | bgColor.r;
+  const aliasSq = alias * alias;
 
   for (let py = 0; py < size; py++) {
-    const y0 = yMin + py * pixelSize;
     for (let px = 0; px < size; px++) {
-      const x0 = xMin + px * pixelSize;
+      let totalR = 0, totalG = 0, totalB = 0;
 
-      // Tricorn: z = conj(z)² + c (conjugate before squaring)
-      let x = 0, y = 0;
-      let iter = 0;
-      let x2 = 0, y2 = 0;
+      for (let sy = 0; sy < alias; sy++) {
+        for (let sx = 0; sx < alias; sx++) {
+          const x0 = xMin + (px + (sx + 0.5) / alias) * pixelSize;
+          const y0 = yMin + (py + (sy + 0.5) / alias) * pixelSize;
 
-      while (x2 + y2 <= 4 && iter < maxIter) {
-        // Conjugate: negate imaginary part
-        y = -y;
-        const newY = 2 * x * y + y0;
-        x = x2 - y2 + x0;
-        y = newY;
-        x2 = x * x;
-        y2 = y * y;
-        iter++;
+          // Tricorn: z = conj(z)² + c (conjugate before squaring)
+          let x = 0, y = 0;
+          let iter = 0;
+          let x2 = 0, y2 = 0;
+
+          while (x2 + y2 <= 4 && iter < maxIter) {
+            y = -y;
+            const newY = 2 * x * y + y0;
+            x = x2 - y2 + x0;
+            y = newY;
+            x2 = x * x;
+            y2 = y * y;
+            iter++;
+          }
+
+          if (iter === maxIter) {
+            totalR += bgColor.r;
+            totalG += bgColor.g;
+            totalB += bgColor.b;
+          } else {
+            const log_zn = Math.log(x2 + y2) / 2;
+            const nu = Math.log(log_zn / Math.LN2) / Math.LN2;
+            const smoothIter = iter + 1 - nu;
+
+            let ratio = smoothIter / maxIter;
+            if (palGamma !== 1.0) ratio = Math.pow(ratio, palGamma);
+            ratio = Math.min(1, Math.max(0, ratio));
+
+            const lutIndex = Math.min(lutSize - 1, Math.floor(ratio * lutSize));
+            const color = colorLUT[lutIndex];
+            totalR += color & 0xff;
+            totalG += (color >> 8) & 0xff;
+            totalB += (color >> 16) & 0xff;
+          }
+        }
       }
+
+      const avgR = Math.round(totalR / aliasSq);
+      const avgG = Math.round(totalG / aliasSq);
+      const avgB = Math.round(totalB / aliasSq);
 
       const idx = py * size + px;
-
-      if (iter === maxIter) {
-        data32[idx] = bgColorPacked;
-      } else {
-        const log_zn = Math.log(x2 + y2) / 2;
-        const nu = Math.log(log_zn / Math.LN2) / Math.LN2;
-        const smoothIter = iter + 1 - nu;
-
-        let ratio = smoothIter / maxIter;
-        if (palGamma !== 1.0) ratio = Math.pow(ratio, palGamma);
-        ratio = Math.min(1, Math.max(0, ratio));
-
-        const lutIndex = Math.min(lutSize - 1, Math.floor(ratio * lutSize));
-        data32[idx] = colorLUT[lutIndex];
-      }
+      data32[idx] = (255 << 24) | (avgB << 16) | (avgG << 8) | avgR;
     }
   }
 
   ctx.putImageData(imageData, 0, 0);
 }
 
-// Render Multibrot fractal (z^n + c)
+// Render Multibrot fractal (z^n + c) with oversampling
 function renderMultibrot() {
   if (!ctx || !colorLUT) return;
 
   const size = canvasSize;
   const { centerX, centerY, zoom, maxIter, power } = fractalParams;
+  const alias = configAlias;
 
   const range = 3.0 / zoom;
   const xMin = centerX - range / 2;
@@ -703,55 +772,72 @@ function renderMultibrot() {
   const imageData = ctx.createImageData(size, size);
   const data32 = new Uint32Array(imageData.data.buffer);
   const lutSize = colorLUT.length;
-  const bgColorPacked = (255 << 24) | (bgColor.b << 16) | (bgColor.g << 8) | bgColor.r;
+  const aliasSq = alias * alias;
 
   for (let py = 0; py < size; py++) {
-    const y0 = yMin + py * pixelSize;
     for (let px = 0; px < size; px++) {
-      const x0 = xMin + px * pixelSize;
+      let totalR = 0, totalG = 0, totalB = 0;
 
-      // Multibrot: z = z^n + c (using polar form)
-      let x = 0, y = 0;
-      let iter = 0;
+      for (let sy = 0; sy < alias; sy++) {
+        for (let sx = 0; sx < alias; sx++) {
+          const x0 = xMin + (px + (sx + 0.5) / alias) * pixelSize;
+          const y0 = yMin + (py + (sy + 0.5) / alias) * pixelSize;
 
-      while (x * x + y * y <= 4 && iter < maxIter) {
-        const r = Math.sqrt(x * x + y * y);
-        const theta = Math.atan2(y, x);
-        const rn = Math.pow(r, power);
-        x = rn * Math.cos(power * theta) + x0;
-        y = rn * Math.sin(power * theta) + y0;
-        iter++;
+          // Multibrot: z = z^n + c (using polar form)
+          let x = 0, y = 0;
+          let iter = 0;
+
+          while (x * x + y * y <= 4 && iter < maxIter) {
+            const r = Math.sqrt(x * x + y * y);
+            const theta = Math.atan2(y, x);
+            const rn = Math.pow(r, power);
+            x = rn * Math.cos(power * theta) + x0;
+            y = rn * Math.sin(power * theta) + y0;
+            iter++;
+          }
+
+          if (iter === maxIter) {
+            totalR += bgColor.r;
+            totalG += bgColor.g;
+            totalB += bgColor.b;
+          } else {
+            const r2 = x * x + y * y;
+            const log_zn = Math.log(r2) / 2;
+            const nu = Math.log(log_zn / Math.log(power)) / Math.log(power);
+            const smoothIter = iter + 1 - nu;
+
+            let ratio = smoothIter / maxIter;
+            if (palGamma !== 1.0) ratio = Math.pow(ratio, palGamma);
+            ratio = Math.min(1, Math.max(0, ratio));
+
+            const lutIndex = Math.min(lutSize - 1, Math.floor(ratio * lutSize));
+            const color = colorLUT[lutIndex];
+            totalR += color & 0xff;
+            totalG += (color >> 8) & 0xff;
+            totalB += (color >> 16) & 0xff;
+          }
+        }
       }
+
+      const avgR = Math.round(totalR / aliasSq);
+      const avgG = Math.round(totalG / aliasSq);
+      const avgB = Math.round(totalB / aliasSq);
 
       const idx = py * size + px;
-
-      if (iter === maxIter) {
-        data32[idx] = bgColorPacked;
-      } else {
-        const r2 = x * x + y * y;
-        const log_zn = Math.log(r2) / 2;
-        const nu = Math.log(log_zn / Math.log(power)) / Math.log(power);
-        const smoothIter = iter + 1 - nu;
-
-        let ratio = smoothIter / maxIter;
-        if (palGamma !== 1.0) ratio = Math.pow(ratio, palGamma);
-        ratio = Math.min(1, Math.max(0, ratio));
-
-        const lutIndex = Math.min(lutSize - 1, Math.floor(ratio * lutSize));
-        data32[idx] = colorLUT[lutIndex];
-      }
+      data32[idx] = (255 << 24) | (avgB << 16) | (avgG << 8) | avgR;
     }
   }
 
   ctx.putImageData(imageData, 0, 0);
 }
 
-// Render Newton fractal (z³ - 1 = 0)
+// Render Newton fractal (z³ - 1 = 0) with oversampling
 function renderNewton() {
   if (!ctx || !colorLUT) return;
 
   const size = canvasSize;
   const { centerX, centerY, zoom, maxIter } = fractalParams;
+  const alias = configAlias;
 
   const range = 3.0 / zoom;
   const xMin = centerX - range / 2;
@@ -761,6 +847,7 @@ function renderNewton() {
   const imageData = ctx.createImageData(size, size);
   const data32 = new Uint32Array(imageData.data.buffer);
   const lutSize = colorLUT.length;
+  const aliasSq = alias * alias;
 
   // Three roots of z³ - 1 = 0
   const roots = [
@@ -771,80 +858,87 @@ function renderNewton() {
   const tolerance = 1e-6;
 
   for (let py = 0; py < size; py++) {
-    const y0 = yMin + py * pixelSize;
     for (let px = 0; px < size; px++) {
-      let x = xMin + px * pixelSize;
-      let y = y0;
+      let totalR = 0, totalG = 0, totalB = 0;
 
-      let iter = 0;
-      let rootIndex = -1;
+      for (let sy = 0; sy < alias; sy++) {
+        for (let sx = 0; sx < alias; sx++) {
+          let x = xMin + (px + (sx + 0.5) / alias) * pixelSize;
+          let y = yMin + (py + (sy + 0.5) / alias) * pixelSize;
 
-      for (iter = 0; iter < maxIter; iter++) {
-        // Newton's method for z³ - 1: z = z - (z³-1)/(3z²) = (2z³ + 1) / (3z²)
-        const x2 = x * x, y2 = y * y;
-        const r2 = x2 + y2;
-        if (r2 < 1e-10) break;
+          let iter = 0;
+          let rootIndex = -1;
 
-        // z² = (x + iy)² = x² - y² + 2ixy
-        const zx2 = x2 - y2;
-        const zy2 = 2 * x * y;
+          for (iter = 0; iter < maxIter; iter++) {
+            const x2 = x * x, y2 = y * y;
+            const r2 = x2 + y2;
+            if (r2 < 1e-10) break;
 
-        // z³ = z * z² = (x + iy)(zx2 + izy2)
-        const zx3 = x * zx2 - y * zy2;
-        const zy3 = x * zy2 + y * zx2;
+            const zx2 = x2 - y2;
+            const zy2 = 2 * x * y;
 
-        // 3z²
-        const denom_x = 3 * zx2;
-        const denom_y = 3 * zy2;
-        const denom_r2 = denom_x * denom_x + denom_y * denom_y;
-        if (denom_r2 < 1e-10) break;
+            const zx3 = x * zx2 - y * zy2;
+            const zy3 = x * zy2 + y * zx2;
 
-        // 2z³ + 1
-        const num_x = 2 * zx3 + 1;
-        const num_y = 2 * zy3;
+            const denom_x = 3 * zx2;
+            const denom_y = 3 * zy2;
+            const denom_r2 = denom_x * denom_x + denom_y * denom_y;
+            if (denom_r2 < 1e-10) break;
 
-        // Complex division: (2z³ + 1) / (3z²)
-        x = (num_x * denom_x + num_y * denom_y) / denom_r2;
-        y = (num_y * denom_x - num_x * denom_y) / denom_r2;
+            const num_x = 2 * zx3 + 1;
+            const num_y = 2 * zy3;
 
-        // Check convergence to roots
-        for (let r = 0; r < 3; r++) {
-          const dx = x - roots[r].x;
-          const dy = y - roots[r].y;
-          if (dx * dx + dy * dy < tolerance) {
-            rootIndex = r;
-            break;
+            x = (num_x * denom_x + num_y * denom_y) / denom_r2;
+            y = (num_y * denom_x - num_x * denom_y) / denom_r2;
+
+            for (let r = 0; r < 3; r++) {
+              const dx = x - roots[r].x;
+              const dy = y - roots[r].y;
+              if (dx * dx + dy * dy < tolerance) {
+                rootIndex = r;
+                break;
+              }
+            }
+            if (rootIndex >= 0) break;
+          }
+
+          if (rootIndex >= 0) {
+            const brightness = 1 - iter / maxIter;
+            let ratio = (rootIndex / 3 + brightness * 0.3) % 1;
+            if (palGamma !== 1.0) ratio = Math.pow(ratio, palGamma);
+            ratio = Math.min(1, Math.max(0, ratio));
+            const lutIndex = Math.min(lutSize - 1, Math.floor(ratio * lutSize));
+            const color = colorLUT[lutIndex];
+            totalR += color & 0xff;
+            totalG += (color >> 8) & 0xff;
+            totalB += (color >> 16) & 0xff;
+          } else {
+            totalR += bgColor.r;
+            totalG += bgColor.g;
+            totalB += bgColor.b;
           }
         }
-        if (rootIndex >= 0) break;
       }
+
+      const avgR = Math.round(totalR / aliasSq);
+      const avgG = Math.round(totalG / aliasSq);
+      const avgB = Math.round(totalB / aliasSq);
 
       const idx = py * size + px;
-
-      if (rootIndex >= 0) {
-        // Color based on root and iteration count
-        const brightness = 1 - iter / maxIter;
-        let ratio = (rootIndex / 3 + brightness * 0.3) % 1;
-        if (palGamma !== 1.0) ratio = Math.pow(ratio, palGamma);
-        ratio = Math.min(1, Math.max(0, ratio));
-        const lutIndex = Math.min(lutSize - 1, Math.floor(ratio * lutSize));
-        data32[idx] = colorLUT[lutIndex];
-      } else {
-        // Didn't converge - use background
-        data32[idx] = (255 << 24) | (bgColor.b << 16) | (bgColor.g << 8) | bgColor.r;
-      }
+      data32[idx] = (255 << 24) | (avgB << 16) | (avgG << 8) | avgR;
     }
   }
 
   ctx.putImageData(imageData, 0, 0);
 }
 
-// Render Phoenix fractal
+// Render Phoenix fractal with oversampling
 function renderPhoenix() {
   if (!ctx || !colorLUT) return;
 
   const size = canvasSize;
   const { centerX, centerY, zoom, maxIter, cReal, cImag, p } = fractalParams;
+  const alias = configAlias;
 
   const range = 3.0 / zoom;
   const xMin = centerX - range / 2;
@@ -854,111 +948,139 @@ function renderPhoenix() {
   const imageData = ctx.createImageData(size, size);
   const data32 = new Uint32Array(imageData.data.buffer);
   const lutSize = colorLUT.length;
-  const bgColorPacked = (255 << 24) | (bgColor.b << 16) | (bgColor.g << 8) | bgColor.r;
+  const aliasSq = alias * alias;
 
   for (let py = 0; py < size; py++) {
-    const y0 = yMin + py * pixelSize;
     for (let px = 0; px < size; px++) {
-      const x0 = xMin + px * pixelSize;
+      let totalR = 0, totalG = 0, totalB = 0;
 
-      // Phoenix: z_new = z² + c + p * z_prev
-      let x = x0, y = y0;
-      let prevX = 0, prevY = 0;
-      let iter = 0;
+      for (let sy = 0; sy < alias; sy++) {
+        for (let sx = 0; sx < alias; sx++) {
+          const x0 = xMin + (px + (sx + 0.5) / alias) * pixelSize;
+          const y0 = yMin + (py + (sy + 0.5) / alias) * pixelSize;
 
-      while (x * x + y * y <= 4 && iter < maxIter) {
-        const x2 = x * x, y2 = y * y;
-        const newX = x2 - y2 + cReal + p * prevX;
-        const newY = 2 * x * y + cImag + p * prevY;
-        prevX = x;
-        prevY = y;
-        x = newX;
-        y = newY;
-        iter++;
+          // Phoenix: z_new = z² + c + p * z_prev
+          let x = x0, y = y0;
+          let prevX = 0, prevY = 0;
+          let iter = 0;
+
+          while (x * x + y * y <= 4 && iter < maxIter) {
+            const x2 = x * x, y2 = y * y;
+            const newX = x2 - y2 + cReal + p * prevX;
+            const newY = 2 * x * y + cImag + p * prevY;
+            prevX = x;
+            prevY = y;
+            x = newX;
+            y = newY;
+            iter++;
+          }
+
+          if (iter === maxIter) {
+            totalR += bgColor.r;
+            totalG += bgColor.g;
+            totalB += bgColor.b;
+          } else {
+            const r2 = x * x + y * y;
+            const log_zn = Math.log(r2) / 2;
+            const nu = Math.log(log_zn / Math.LN2) / Math.LN2;
+            const smoothIter = iter + 1 - nu;
+
+            let ratio = smoothIter / maxIter;
+            if (palGamma !== 1.0) ratio = Math.pow(ratio, palGamma);
+            ratio = Math.min(1, Math.max(0, ratio));
+
+            const lutIndex = Math.min(lutSize - 1, Math.floor(ratio * lutSize));
+            const color = colorLUT[lutIndex];
+            totalR += color & 0xff;
+            totalG += (color >> 8) & 0xff;
+            totalB += (color >> 16) & 0xff;
+          }
+        }
       }
+
+      const avgR = Math.round(totalR / aliasSq);
+      const avgG = Math.round(totalG / aliasSq);
+      const avgB = Math.round(totalB / aliasSq);
 
       const idx = py * size + px;
-
-      if (iter === maxIter) {
-        data32[idx] = bgColorPacked;
-      } else {
-        const r2 = x * x + y * y;
-        const log_zn = Math.log(r2) / 2;
-        const nu = Math.log(log_zn / Math.LN2) / Math.LN2;
-        const smoothIter = iter + 1 - nu;
-
-        let ratio = smoothIter / maxIter;
-        if (palGamma !== 1.0) ratio = Math.pow(ratio, palGamma);
-        ratio = Math.min(1, Math.max(0, ratio));
-
-        const lutIndex = Math.min(lutSize - 1, Math.floor(ratio * lutSize));
-        data32[idx] = colorLUT[lutIndex];
-      }
+      data32[idx] = (255 << 24) | (avgB << 16) | (avgG << 8) | avgR;
     }
   }
 
   ctx.putImageData(imageData, 0, 0);
 }
 
-// Render Lyapunov fractal
+// Render Lyapunov fractal with oversampling
 function renderLyapunov() {
   if (!ctx || !colorLUT) return;
 
   const size = canvasSize;
   const { aMin, aMax, bMin, bMax, maxIter, sequence } = fractalParams;
+  const alias = configAlias;
 
   const imageData = ctx.createImageData(size, size);
   const data32 = new Uint32Array(imageData.data.buffer);
   const lutSize = colorLUT.length;
-  const bgColorPacked = (255 << 24) | (bgColor.b << 16) | (bgColor.g << 8) | bgColor.r;
+  const aliasSq = alias * alias;
 
   const seqLen = sequence.length;
+  const aRange = aMax - aMin;
+  const bRange = bMax - bMin;
 
   for (let py = 0; py < size; py++) {
-    const b = bMin + (py / size) * (bMax - bMin);
     for (let px = 0; px < size; px++) {
-      const a = aMin + (px / size) * (aMax - aMin);
+      let totalR = 0, totalG = 0, totalB = 0;
 
-      // Lyapunov exponent calculation
-      let x = 0.5; // Initial condition
-      let lyapunov = 0;
+      for (let sy = 0; sy < alias; sy++) {
+        for (let sx = 0; sx < alias; sx++) {
+          const a = aMin + ((px + (sx + 0.5) / alias) / size) * aRange;
+          const b = bMin + ((py + (sy + 0.5) / alias) / size) * bRange;
 
-      for (let n = 0; n < maxIter; n++) {
-        // Get r value based on sequence
-        const r = sequence[n % seqLen] === 'A' ? a : b;
+          // Lyapunov exponent calculation
+          let x = 0.5;
+          let lyapunov = 0;
 
-        // Logistic map: x = r * x * (1 - x)
-        x = r * x * (1 - x);
+          for (let n = 0; n < maxIter; n++) {
+            const r = sequence[n % seqLen] === 'A' ? a : b;
+            x = r * x * (1 - x);
+            const deriv = Math.abs(r * (1 - 2 * x));
+            if (deriv > 0) {
+              lyapunov += Math.log(deriv);
+            }
+          }
 
-        // Accumulate Lyapunov exponent
-        const deriv = Math.abs(r * (1 - 2 * x));
-        if (deriv > 0) {
-          lyapunov += Math.log(deriv);
+          lyapunov /= maxIter;
+
+          if (isNaN(lyapunov) || !isFinite(lyapunov)) {
+            totalR += bgColor.r;
+            totalG += bgColor.g;
+            totalB += bgColor.b;
+          } else {
+            let ratio;
+            if (lyapunov < 0) {
+              ratio = Math.min(1, -lyapunov / 2);
+            } else {
+              ratio = 0;
+            }
+
+            if (palGamma !== 1.0) ratio = Math.pow(ratio, palGamma);
+            ratio = Math.min(1, Math.max(0, ratio));
+
+            const lutIndex = Math.min(lutSize - 1, Math.floor(ratio * lutSize));
+            const color = colorLUT[lutIndex];
+            totalR += color & 0xff;
+            totalG += (color >> 8) & 0xff;
+            totalB += (color >> 16) & 0xff;
+          }
         }
       }
 
-      lyapunov /= maxIter;
+      const avgR = Math.round(totalR / aliasSq);
+      const avgG = Math.round(totalG / aliasSq);
+      const avgB = Math.round(totalB / aliasSq);
 
       const idx = py * size + px;
-
-      if (isNaN(lyapunov) || !isFinite(lyapunov)) {
-        data32[idx] = bgColorPacked;
-      } else {
-        // Map Lyapunov exponent to color
-        // Negative = stable (colored), Positive = chaotic (dark)
-        let ratio;
-        if (lyapunov < 0) {
-          ratio = Math.min(1, -lyapunov / 2); // Scale negative values
-        } else {
-          ratio = 0; // Chaotic regions get background-like color
-        }
-
-        if (palGamma !== 1.0) ratio = Math.pow(ratio, palGamma);
-        ratio = Math.min(1, Math.max(0, ratio));
-
-        const lutIndex = Math.min(lutSize - 1, Math.floor(ratio * lutSize));
-        data32[idx] = colorLUT[lutIndex];
-      }
+      data32[idx] = (255 << 24) | (avgB << 16) | (avgG << 8) | avgR;
     }
   }
 

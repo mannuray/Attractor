@@ -161,15 +161,16 @@ function Home() {
       return (255 << 24) | (palette.bgColor.b << 16) | (palette.bgColor.g << 8) | palette.bgColor.r;
     }
 
+    const alias = canvas.oversampling;
     let totalR = 0, totalG = 0, totalB = 0;
-    const startX = x * CONFIG.ALIAS;
-    const startY = y * CONFIG.ALIAS;
+    const startX = x * alias;
+    const startY = y * alias;
     const lutSize = CONFIG.COLOR_LUT_SIZE;
     const invMaxHits = 1 / maxHitsVal;
 
-    for (let dy = 0; dy < CONFIG.ALIAS; dy++) {
+    for (let dy = 0; dy < alias; dy++) {
       const row = startY + dy;
-      for (let dx = 0; dx < CONFIG.ALIAS; dx++) {
+      for (let dx = 0; dx < alias; dx++) {
         const col = startX + dx;
         const hitVal = hits[col * iteratorSize + row] || 0;
 
@@ -189,12 +190,12 @@ function Home() {
       }
     }
 
-    const aliasSquared = CONFIG.ALIAS * CONFIG.ALIAS;
+    const aliasSquared = alias * alias;
     const avgR = Math.round(totalR / aliasSquared);
     const avgG = Math.round(totalG / aliasSquared);
     const avgB = Math.round(totalB / aliasSquared);
     return (255 << 24) | (avgB << 16) | (avgG << 8) | avgR;
-  }, [palette.bgColor, palette.palGamma, palette.colorLUTRef]);
+  }, [palette.bgColor, palette.palGamma, palette.colorLUTRef, canvas.oversampling]);
 
   // Clear canvas
   const clearCanvas = useCallback((size: number) => {
@@ -241,6 +242,7 @@ function Home() {
   // Initialize worker
   const initializeWorker = useCallback((size: number = canvas.canvasSize, options?: any) => {
     // Use overrides if provided
+    const currentOversampling = options?.oversamplingOverride ?? canvas.oversampling;
     const currentType = options?.typeOverride ?? attractor.attractorType;
     const currentIcon = options?.iconOverride ?? attractor.iconParams;
     const currentClifford = options?.cliffordOverride ?? attractor.cliffordParams;
@@ -426,7 +428,7 @@ function Home() {
           canvas: offscreen,
           point: { xpos: 0.001, ypos: 0.002 },
           size,
-          alias: CONFIG.ALIAS,
+          alias: currentOversampling,
           scale,
           palette: currentPalette,
           colorLUTSize: CONFIG.COLOR_LUT_SIZE,
@@ -468,7 +470,7 @@ function Home() {
         mode: "legacy",
         point: { xpos: 0.001, ypos: 0.002 },
         size,
-        alias: CONFIG.ALIAS,
+        alias: currentOversampling,
         scale,
         palette: currentPalette,
         iterator: iteratorPayload,
@@ -1097,6 +1099,11 @@ function Home() {
         onAttractorTypeChange={handleAttractorTypeChange}
         canvasSize={canvas.canvasSize}
         onCanvasSizeChange={handleCanvasSizeChange}
+        oversampling={canvas.oversampling}
+        onOversamplingChange={(value) => {
+          canvas.setOversampling(value);
+          initializeWorker(canvas.canvasSize, { oversamplingOverride: value });
+        }}
         maxHits={canvas.maxHits}
         totalIterations={canvas.totalIterations}
         maxIter={currentMaxIter}

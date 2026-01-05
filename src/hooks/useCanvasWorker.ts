@@ -30,6 +30,8 @@ interface UseCanvasWorkerReturn {
   setCanvasKey: (key: number | ((prev: number) => number)) => void;
   isEditing: boolean;
   setIsEditing: (editing: boolean) => void;
+  oversampling: number;
+  setOversampling: (oversampling: number) => void;
 
   // Cleanup
   cleanup: () => void;
@@ -56,6 +58,7 @@ export function useCanvasWorker(): UseCanvasWorkerReturn {
   const [iterating, setIterating] = useState(false);
   const [canvasKey, setCanvasKey] = useState(0);
   const [isEditing, setIsEditing] = useState(false);
+  const [oversampling, setOversampling] = useState(CONFIG.ALIAS);
 
   // Cleanup function
   const cleanup = useCallback(() => {
@@ -99,6 +102,8 @@ export function useCanvasWorker(): UseCanvasWorkerReturn {
     setCanvasKey,
     isEditing,
     setIsEditing,
+    oversampling,
+    setOversampling,
     cleanup,
   };
 }
