@@ -1,18 +1,25 @@
 # Chaos Iterator
 
+[![Live Demo](https://img.shields.io/badge/demo-live-brightgreen)](https://mannuray.github.io/Attractor/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
 A real-time strange attractor and fractal visualization tool built with React and Web Workers. Generate beautiful mathematical art by exploring chaotic dynamical systems.
+
+**[Launch App](https://mannuray.github.io/Attractor/)** · **[View on GitHub](https://github.com/mannuray/Attractor)**
+
+![Chaos Iterator Screenshot](public/gallery/symmetric-icon.png)
 
 ## Features
 
-- **Multiple Attractor Types**: 12 strange attractors including Clifford, De Jong, Gumowski-Mira, Sprott, and more
+- **25+ Attractor Types**: Strange attractors including Clifford, De Jong, Gumowski-Mira, Sprott, and more
 - **IFS Fractals**: Symmetric Fractals, De Rham curves, Conradi, and Mobius transformations
 - **Escape-Time Fractals**: Mandelbrot, Julia, Burning Ship, Tricorn, Multibrot, Newton, Phoenix, and Lyapunov
 - **Real-time Rendering**: Uses Web Workers and OffscreenCanvas for smooth, non-blocking iteration
 - **Custom Palettes**: Built-in palette editor with gamma correction and scaling options
-- **Presets**: Each type comes with curated presets to explore
-- **High Resolution**: Configurable canvas sizes up to 4096x4096 with anti-aliasing
+- **Curated Presets**: Each type comes with beautiful presets to explore
+- **High Resolution**: Canvas sizes up to 4096×4096 with customizable oversampling (1×–4×)
 - **Fractal Zoom**: Click and drag to zoom into escape-time fractals
-- **Export**: Save your creations as PNG images
+- **Export**: Save your creations as high-quality PNG images
 
 ## Attractor Types
 
@@ -136,7 +143,7 @@ public/
 - Uses **OffscreenCanvas** for GPU-accelerated rendering in supported browsers
 - Falls back to main-thread rendering for compatibility
 - **Color LUT** (lookup table) for fast palette interpolation
-- **Anti-aliasing** via 2x supersampling
+- **Customizable oversampling** (1×, 2×, 3×, 4×) for anti-aliasing quality vs speed tradeoff
 - Fractals render once; attractors iterate continuously for progressive detail
 
 ## License

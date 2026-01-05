@@ -1670,6 +1670,20 @@ const AboutTab: React.FC = () => (
         decades of mathematical discovery into an accessible, interactive
         visualization platform.
       </Paragraph>
+      <Paragraph>
+        This project is <strong>open source</strong> and available on GitHub. Contributions,
+        bug reports, and feature requests are welcome!
+      </Paragraph>
+      <Paragraph>
+        <CreditLink
+          href="https://github.com/mannuray/Attractor"
+          target="_blank"
+          rel="noopener noreferrer"
+          style={{ fontSize: "16px", fontWeight: 600 }}
+        >
+          View on GitHub →
+        </CreditLink>
+      </Paragraph>
     </Section>
 
     <Section>
@@ -1802,9 +1816,17 @@ const AboutTab: React.FC = () => (
     </Section>
 
     <CreditSection>
-      <Paragraph style={{ opacity: 0.6, fontSize: "14px" }}>
+      <Paragraph style={{ opacity: 0.8, fontSize: "14px", marginBottom: "8px" }}>
         Chaos Iterator - Exploring Order in Chaos
       </Paragraph>
+      <CreditLink
+        href="https://github.com/mannuray/Attractor"
+        target="_blank"
+        rel="noopener noreferrer"
+        style={{ opacity: 0.6, fontSize: "13px" }}
+      >
+        github.com/mannuray/Attractor
+      </CreditLink>
     </CreditSection>
   </>
 );
