@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import styled from "styled-components";
 import 'katex/dist/katex.min.css';
 import { InlineMath, BlockMath } from 'react-katex';
+import { GiscusComments } from "../../components/GiscusComments";
 
 // ============= STYLED COMPONENTS =============
 
@@ -1813,6 +1814,15 @@ const AboutTab: React.FC = () => (
         visualizations are rendered using HTML5 Canvas with Web Workers for
         performance. Mathematical formulas rendered with KaTeX.
       </Paragraph>
+    </Section>
+
+    <Section>
+      <SectionTitle>Community Feedback</SectionTitle>
+      <Paragraph>
+        Have thoughts, ideas, or suggestions? Found a bug or want to request a feature?
+        Join the discussion below! Sign in with GitHub to leave a comment.
+      </Paragraph>
+      <GiscusComments />
     </Section>
 
     <CreditSection>
