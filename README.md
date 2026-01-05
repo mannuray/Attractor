@@ -1,11 +1,11 @@
 # Chaos Iterator
 
-[![Live Demo](https://img.shields.io/badge/demo-live-brightgreen)](https://mannuray.github.io/Attractor/)
+[![Live Demo](https://img.shields.io/badge/demo-live-brightgreen)](https://chaos-iterator.vercel.app/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 A real-time strange attractor and fractal visualization tool built with React and Web Workers. Generate beautiful mathematical art by exploring chaotic dynamical systems.
 
-**[Launch App](https://mannuray.github.io/Attractor/)** · **[View on GitHub](https://github.com/mannuray/Attractor)**
+**[Launch App](https://chaos-iterator.vercel.app/)** · **[View on GitHub](https://github.com/mannuray/Attractor)**
 
 ![Chaos Iterator Screenshot](public/gallery/symmetric-icon.png)
 
@@ -152,6 +152,9 @@ MIT
 
 ## Acknowledgments
 
-- Mathematical formulas based on research in chaotic dynamical systems
-- Inspired by the work of Clifford Pickover, Julien C. Sprott, and other chaos mathematicians
-- IFS algorithms based on "Symmetry in Chaos" by Field and Golubitsky
+This project was inspired by **"Symmetry in Chaos"** by Michael Field and Martin Golubitsky, and the desktop application [Symmetry in Chaos](https://symmetrichaos.sourceforge.net/) that implemented their algorithms. The preset parameter values, color coding system, and palette definitions used in Chaos Iterator's symmetric icons are derived directly from Symmetry in Chaos.
+
+Additional references:
+- [Paul Bourke's Encyclopedic Fractal & Attractor Collection](https://paulbourke.net/fractals/) - Clifford, De Jong, Gumowski-Mira documentation
+- [Softology Blog](https://softologyblog.wordpress.com/2017/03/04/2d-strange-attractors/) - Extensive attractor presets and parameter values
+- Research by Clifford Pickover, J.C. Sprott, and other chaos mathematicians
