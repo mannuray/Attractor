@@ -23,6 +23,15 @@ let palGamma = 1.0;       // Gamma correction for color distribution
 let palScale = false;     // true = dynamic (use maxHits), false = fixed (use palMax)
 let palMax = 10000;       // Fixed max value when palScale is false
 let bgColor = { r: 255, g: 255, b: 255 }; // Background color for 0-hit pixels
+let progressiveTimeoutId = null; // Tracks pending progressive full render
+
+// Pre-computed gamma lookup table: maps linear LUT index → gamma-corrected LUT index
+let gammaLUT = null;      // Uint16Array of size colorLUTSize
+
+// Cached ImageData to avoid per-frame allocation
+let cachedImageData = null;
+let cachedData32 = null;
+let cachedImageSize = 0;
 
 // ============================================
 // COLOR PALETTE MANAGEMENT
@@ -75,6 +84,30 @@ function buildColorLUT(palette, lutSize) {
     // Pack RGBA into single 32-bit value (ABGR format for ImageData)
     colorLUT[i] = (255 << 24) | (col.blue << 16) | (col.green << 8) | col.red;
   }
+
+  // Rebuild gamma LUT whenever palette is built
+  buildGammaLUT();
+}
+
+// Build gamma lookup table: gammaLUT[linearIndex] = gamma-corrected LUT index
+// This eliminates Math.pow() from the per-pixel hot path
+function buildGammaLUT() {
+  gammaLUT = new Uint16Array(colorLUTSize);
+  for (let i = 0; i < colorLUTSize; i++) {
+    const linear = i / colorLUTSize;
+    const corrected = palGamma === 1.0 ? linear : Math.pow(linear, palGamma);
+    gammaLUT[i] = Math.min(colorLUTSize - 1, Math.floor(corrected * colorLUTSize));
+  }
+}
+
+// Get or create a cached ImageData of the given size
+function getImageData(size) {
+  if (cachedImageSize !== size || !cachedImageData) {
+    cachedImageData = ctx.createImageData(size, size);
+    cachedData32 = new Uint32Array(cachedImageData.data.buffer);
+    cachedImageSize = size;
+  }
+  return { imageData: cachedImageData, data32: cachedData32 };
 }
 
 // ============================================
@@ -118,13 +151,9 @@ function getColorRGB(x, y, hits, maxHits, iteratorSize) {
         continue;
       }
 
-      // Normalize hit value and apply gamma correction
-      let c = Math.min(1, hitVal * invDivisor);
-      if (palGamma !== 1.0) {
-        c = Math.pow(c, palGamma);
-      }
-
-      const lutIndex = Math.min(lutSize - 1, Math.floor(c * lutSize));
+      // Normalize hit value and use pre-computed gamma LUT
+      const linearIndex = Math.min(lutSize - 1, Math.floor(Math.min(1, hitVal * invDivisor) * lutSize));
+      const lutIndex = gammaLUT ? gammaLUT[linearIndex] : linearIndex;
       const color = colorLUT[lutIndex];
       totalR += color & 0xff;
       totalG += (color >> 8) & 0xff;
@@ -154,8 +183,7 @@ function render() {
     return;
   }
 
-  const imageData = ctx.createImageData(size, size);
-  const data32 = new Uint32Array(imageData.data.buffer);
+  const { imageData, data32 } = getImageData(size);
 
   for (let y = 0; y < size; y++) {
     for (let x = 0; x < size; x++) {
@@ -243,11 +271,7 @@ self.onmessage = (event) => {
       iterCanvas = null; // Not used for fractals
 
       if (mode === "offscreen") {
-        renderFractal();
-        self.postMessage({
-          type: "stats",
-          payload: { maxHits: 0, totalIterations: 0, fractalComplete: true },
-        });
+        renderFractalProgressive();
       }
     } else {
       // Attractor mode: initialize iterator and canvas
@@ -298,7 +322,8 @@ self.onmessage = (event) => {
       currentPalette = palette;
       buildColorLUT(palette, lutSize);
 
-      if (mode === "offscreen") {
+      // Skip render if a progressive full render is pending — it will use the updated LUT
+      if (mode === "offscreen" && progressiveTimeoutId === null) {
         if (fractalMode) {
           renderFractal();
           self.postMessage({
@@ -320,8 +345,10 @@ self.onmessage = (event) => {
     if (payload.palScale !== undefined) palScale = payload.palScale;
     if (payload.palMax !== undefined) palMax = payload.palMax;
     if (payload.bgColor !== undefined) bgColor = payload.bgColor;
+    buildGammaLUT();
 
-    if (mode === "offscreen") {
+    // Skip render if a progressive full render is pending — it will use the updated settings
+    if (mode === "offscreen" && progressiveTimeoutId === null) {
       if (fractalMode) {
         renderFractal();
         self.postMessage({
@@ -376,8 +403,7 @@ function renderFinal() {
     return;
   }
 
-  const imageData = ctx.createImageData(size, size);
-  const data32 = new Uint32Array(imageData.data.buffer);
+  const { imageData, data32 } = getImageData(size);
 
   // Determine the divisor based on scaling mode
   const divisor = palScale ? maxHits : palMax;
@@ -453,8 +479,7 @@ function renderMandelbrot() {
   const pixelSize = range / size;
   const subPixelSize = pixelSize / alias;
 
-  const imageData = ctx.createImageData(size, size);
-  const data32 = new Uint32Array(imageData.data.buffer);
+  const { imageData, data32 } = getImageData(size);
   const lutSize = colorLUT.length;
   const aliasSq = alias * alias;
 
@@ -496,12 +521,10 @@ function renderMandelbrot() {
             const smoothIter = iter + 1 - nu;
 
             let ratio = smoothIter / maxIter;
-            if (palGamma !== 1.0) {
-              ratio = Math.pow(ratio, palGamma);
-            }
             ratio = Math.min(1, Math.max(0, ratio));
 
-            const lutIndex = Math.min(lutSize - 1, Math.floor(ratio * lutSize));
+            const linearIndex = Math.min(lutSize - 1, Math.floor(ratio * lutSize));
+            const lutIndex = gammaLUT ? gammaLUT[linearIndex] : linearIndex;
             const color = colorLUT[lutIndex];
             totalR += color & 0xff;
             totalG += (color >> 8) & 0xff;
@@ -537,8 +560,7 @@ function renderJulia() {
   const yMin = centerY - range / 2;
   const pixelSize = range / size;
 
-  const imageData = ctx.createImageData(size, size);
-  const data32 = new Uint32Array(imageData.data.buffer);
+  const { imageData, data32 } = getImageData(size);
   const lutSize = colorLUT.length;
   const aliasSq = alias * alias;
 
@@ -577,12 +599,10 @@ function renderJulia() {
             const smoothIter = iter + 1 - nu;
 
             let ratio = smoothIter / maxIter;
-            if (palGamma !== 1.0) {
-              ratio = Math.pow(ratio, palGamma);
-            }
             ratio = Math.min(1, Math.max(0, ratio));
 
-            const lutIndex = Math.min(lutSize - 1, Math.floor(ratio * lutSize));
+            const linearIndex = Math.min(lutSize - 1, Math.floor(ratio * lutSize));
+            const lutIndex = gammaLUT ? gammaLUT[linearIndex] : linearIndex;
             const color = colorLUT[lutIndex];
             totalR += color & 0xff;
             totalG += (color >> 8) & 0xff;
@@ -617,8 +637,7 @@ function renderBurningShip() {
   const yMin = centerY - range / 2;
   const pixelSize = range / size;
 
-  const imageData = ctx.createImageData(size, size);
-  const data32 = new Uint32Array(imageData.data.buffer);
+  const { imageData, data32 } = getImageData(size);
   const lutSize = colorLUT.length;
   const aliasSq = alias * alias;
 
@@ -656,10 +675,10 @@ function renderBurningShip() {
             const smoothIter = iter + 1 - nu;
 
             let ratio = smoothIter / maxIter;
-            if (palGamma !== 1.0) ratio = Math.pow(ratio, palGamma);
             ratio = Math.min(1, Math.max(0, ratio));
 
-            const lutIndex = Math.min(lutSize - 1, Math.floor(ratio * lutSize));
+            const linearIndex = Math.min(lutSize - 1, Math.floor(ratio * lutSize));
+            const lutIndex = gammaLUT ? gammaLUT[linearIndex] : linearIndex;
             const color = colorLUT[lutIndex];
             totalR += color & 0xff;
             totalG += (color >> 8) & 0xff;
@@ -693,8 +712,7 @@ function renderTricorn() {
   const yMin = centerY - range / 2;
   const pixelSize = range / size;
 
-  const imageData = ctx.createImageData(size, size);
-  const data32 = new Uint32Array(imageData.data.buffer);
+  const { imageData, data32 } = getImageData(size);
   const lutSize = colorLUT.length;
   const aliasSq = alias * alias;
 
@@ -732,10 +750,10 @@ function renderTricorn() {
             const smoothIter = iter + 1 - nu;
 
             let ratio = smoothIter / maxIter;
-            if (palGamma !== 1.0) ratio = Math.pow(ratio, palGamma);
             ratio = Math.min(1, Math.max(0, ratio));
 
-            const lutIndex = Math.min(lutSize - 1, Math.floor(ratio * lutSize));
+            const linearIndex = Math.min(lutSize - 1, Math.floor(ratio * lutSize));
+            const lutIndex = gammaLUT ? gammaLUT[linearIndex] : linearIndex;
             const color = colorLUT[lutIndex];
             totalR += color & 0xff;
             totalG += (color >> 8) & 0xff;
@@ -769,8 +787,7 @@ function renderMultibrot() {
   const yMin = centerY - range / 2;
   const pixelSize = range / size;
 
-  const imageData = ctx.createImageData(size, size);
-  const data32 = new Uint32Array(imageData.data.buffer);
+  const { imageData, data32 } = getImageData(size);
   const lutSize = colorLUT.length;
   const aliasSq = alias * alias;
 
@@ -807,10 +824,10 @@ function renderMultibrot() {
             const smoothIter = iter + 1 - nu;
 
             let ratio = smoothIter / maxIter;
-            if (palGamma !== 1.0) ratio = Math.pow(ratio, palGamma);
             ratio = Math.min(1, Math.max(0, ratio));
 
-            const lutIndex = Math.min(lutSize - 1, Math.floor(ratio * lutSize));
+            const linearIndex = Math.min(lutSize - 1, Math.floor(ratio * lutSize));
+            const lutIndex = gammaLUT ? gammaLUT[linearIndex] : linearIndex;
             const color = colorLUT[lutIndex];
             totalR += color & 0xff;
             totalG += (color >> 8) & 0xff;
@@ -844,8 +861,7 @@ function renderNewton() {
   const yMin = centerY - range / 2;
   const pixelSize = range / size;
 
-  const imageData = ctx.createImageData(size, size);
-  const data32 = new Uint32Array(imageData.data.buffer);
+  const { imageData, data32 } = getImageData(size);
   const lutSize = colorLUT.length;
   const aliasSq = alias * alias;
 
@@ -905,9 +921,9 @@ function renderNewton() {
           if (rootIndex >= 0) {
             const brightness = 1 - iter / maxIter;
             let ratio = (rootIndex / 3 + brightness * 0.3) % 1;
-            if (palGamma !== 1.0) ratio = Math.pow(ratio, palGamma);
             ratio = Math.min(1, Math.max(0, ratio));
-            const lutIndex = Math.min(lutSize - 1, Math.floor(ratio * lutSize));
+            const linearIndex = Math.min(lutSize - 1, Math.floor(ratio * lutSize));
+            const lutIndex = gammaLUT ? gammaLUT[linearIndex] : linearIndex;
             const color = colorLUT[lutIndex];
             totalR += color & 0xff;
             totalG += (color >> 8) & 0xff;
@@ -945,8 +961,7 @@ function renderPhoenix() {
   const yMin = centerY - range / 2;
   const pixelSize = range / size;
 
-  const imageData = ctx.createImageData(size, size);
-  const data32 = new Uint32Array(imageData.data.buffer);
+  const { imageData, data32 } = getImageData(size);
   const lutSize = colorLUT.length;
   const aliasSq = alias * alias;
 
@@ -986,10 +1001,10 @@ function renderPhoenix() {
             const smoothIter = iter + 1 - nu;
 
             let ratio = smoothIter / maxIter;
-            if (palGamma !== 1.0) ratio = Math.pow(ratio, palGamma);
             ratio = Math.min(1, Math.max(0, ratio));
 
-            const lutIndex = Math.min(lutSize - 1, Math.floor(ratio * lutSize));
+            const linearIndex = Math.min(lutSize - 1, Math.floor(ratio * lutSize));
+            const lutIndex = gammaLUT ? gammaLUT[linearIndex] : linearIndex;
             const color = colorLUT[lutIndex];
             totalR += color & 0xff;
             totalG += (color >> 8) & 0xff;
@@ -1018,8 +1033,7 @@ function renderLyapunov() {
   const { aMin, aMax, bMin, bMax, maxIter, sequence } = fractalParams;
   const alias = configAlias;
 
-  const imageData = ctx.createImageData(size, size);
-  const data32 = new Uint32Array(imageData.data.buffer);
+  const { imageData, data32 } = getImageData(size);
   const lutSize = colorLUT.length;
   const aliasSq = alias * alias;
 
@@ -1063,10 +1077,10 @@ function renderLyapunov() {
               ratio = 0;
             }
 
-            if (palGamma !== 1.0) ratio = Math.pow(ratio, palGamma);
             ratio = Math.min(1, Math.max(0, ratio));
 
-            const lutIndex = Math.min(lutSize - 1, Math.floor(ratio * lutSize));
+            const linearIndex = Math.min(lutSize - 1, Math.floor(ratio * lutSize));
+            const lutIndex = gammaLUT ? gammaLUT[linearIndex] : linearIndex;
             const color = colorLUT[lutIndex];
             totalR += color & 0xff;
             totalG += (color >> 8) & 0xff;
@@ -1085,6 +1099,58 @@ function renderLyapunov() {
   }
 
   ctx.putImageData(imageData, 0, 0);
+}
+
+// Progressive fractal rendering: fast low-res preview, then full-quality render
+function renderFractalProgressive() {
+  if (!fractalParams || !ctx) return;
+
+  const fullSize = canvasSize;
+  const fullAlias = configAlias;
+
+  // --- Preview pass: 1/4 size, no oversampling ---
+  const previewSize = Math.max(1, Math.floor(fullSize / 4));
+
+  // Render preview into a temporary OffscreenCanvas
+  const previewCanvas = new OffscreenCanvas(previewSize, previewSize);
+  const previewCtx = previewCanvas.getContext("2d");
+
+  // Swap globals for preview render
+  const savedCtx = ctx;
+  canvasSize = previewSize;
+  configAlias = 1;
+  ctx = previewCtx;
+
+  renderFractal();  // renders preview-size image to previewCtx
+
+  // Restore globals
+  ctx = savedCtx;
+  canvasSize = fullSize;
+  configAlias = fullAlias;
+
+  // Scale preview up to fill the full canvas
+  ctx.imageSmoothingEnabled = true;
+  ctx.imageSmoothingQuality = "low";
+  ctx.drawImage(previewCanvas, 0, 0, fullSize, fullSize);
+  ctx.imageSmoothingEnabled = false;
+
+  // Notify preview is ready
+  self.postMessage({
+    type: "stats",
+    payload: { maxHits: 0, totalIterations: 0, fractalPreview: true },
+  });
+
+  // Yield long enough for the browser compositor to present the preview frame.
+  // OffscreenCanvas auto-commits at the next vsync (~16ms at 60fps).
+  // 50ms guarantees at least one vsync has passed on any display.
+  progressiveTimeoutId = setTimeout(() => {
+    progressiveTimeoutId = null;
+    renderFractal();
+    self.postMessage({
+      type: "stats",
+      payload: { maxHits: 0, totalIterations: 0, fractalComplete: true },
+    });
+  }, 50);
 }
 
 // Render fractal based on type

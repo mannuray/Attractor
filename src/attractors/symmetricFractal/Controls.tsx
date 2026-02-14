@@ -39,13 +39,13 @@ export const SymmetricFractalControls: React.FC<SymmetricFractalControlsProps> =
         />
       )}
       <ParameterGrid>
-        <ParameterInputCompact label="a" value={params.a} onChange={handleChange("a")} disabled={disabled} />
-        <ParameterInputCompact label="b" value={params.b} onChange={handleChange("b")} disabled={disabled} />
-        <ParameterInputCompact label="c" value={params.c} onChange={handleChange("c")} disabled={disabled} />
-        <ParameterInputCompact label="d" value={params.d} onChange={handleChange("d")} disabled={disabled} />
-        <ParameterInputCompact label="Alpha" value={params.alpha} onChange={handleChange("alpha")} disabled={disabled} />
-        <ParameterInputCompact label="Beta" value={params.beta} onChange={handleChange("beta")} disabled={disabled} />
-        <ParameterInputCompact label="Symmetry (p)" value={params.p} onChange={handleChange("p")} disabled={disabled} step={1} decimals={0} />
+        <ParameterInputCompact label="a" value={params.a} onChange={handleChange("a")} disabled={disabled} min={-3} max={3} step={0.01} />
+        <ParameterInputCompact label="b" value={params.b} onChange={handleChange("b")} disabled={disabled} min={-3} max={3} step={0.01} />
+        <ParameterInputCompact label="c" value={params.c} onChange={handleChange("c")} disabled={disabled} min={-3} max={3} step={0.01} />
+        <ParameterInputCompact label="d" value={params.d} onChange={handleChange("d")} disabled={disabled} min={-3} max={3} step={0.01} />
+        <ParameterInputCompact label="Alpha" value={params.alpha} onChange={handleChange("alpha")} disabled={disabled} min={-3} max={3} step={0.01} />
+        <ParameterInputCompact label="Beta" value={params.beta} onChange={handleChange("beta")} disabled={disabled} min={-3} max={3} step={0.01} />
+        <ParameterInputCompact label="Symmetry (p)" value={params.p} onChange={handleChange("p")} disabled={disabled} step={1} decimals={0} min={2} max={20} />
       </ParameterGrid>
       <Field>
         <Label>Symmetry Type</Label>
@@ -58,7 +58,7 @@ export const SymmetricFractalControls: React.FC<SymmetricFractalControlsProps> =
           <option value="cyclic">Cyclic (Zp)</option>
         </Select>
       </Field>
-      <ParameterInputCompact label="Scale" value={params.scale} onChange={handleChange("scale")} disabled={disabled} step={0.01} />
+      <ParameterInputCompact label="Scale" value={params.scale} onChange={handleChange("scale")} disabled={disabled} step={0.01} min={0.1} max={10} />
     </Card>
   );
 };

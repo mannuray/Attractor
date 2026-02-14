@@ -39,11 +39,11 @@ export const GumowskiMiraControls: React.FC<GumowskiMiraControlsProps> = ({
         />
       )}
       <ParameterGrid>
-        <ParameterInputCompact label="Mu" value={params.mu} onChange={handleChange("mu")} disabled={disabled} />
-        <ParameterInputCompact label="Alpha" value={params.alpha} onChange={handleChange("alpha")} disabled={disabled} />
-        <ParameterInputCompact label="Sigma" value={params.sigma} onChange={handleChange("sigma")} disabled={disabled} />
+        <ParameterInputCompact label="Mu" value={params.mu} onChange={handleChange("mu")} disabled={disabled} min={-1} max={1} step={0.001} />
+        <ParameterInputCompact label="Alpha" value={params.alpha} onChange={handleChange("alpha")} disabled={disabled} min={-1} max={1} step={0.001} />
+        <ParameterInputCompact label="Sigma" value={params.sigma} onChange={handleChange("sigma")} disabled={disabled} min={-1} max={1} step={0.001} />
       </ParameterGrid>
-      <ParameterInputCompact label="Scale" value={params.scale} onChange={handleChange("scale")} disabled={disabled} step={0.01} />
+      <ParameterInputCompact label="Scale" value={params.scale} onChange={handleChange("scale")} disabled={disabled} step={0.01} min={0.1} max={10} />
     </Card>
   );
 };

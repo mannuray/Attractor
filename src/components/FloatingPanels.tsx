@@ -1,6 +1,6 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import styled from "styled-components";
-import { GlassPanel, FlexRow, FloatingButton } from "../attractors/shared/styles";
+import { GlassPanel, FlexRow, FloatingButton, colors } from "../attractors/shared/styles";
 
 const ZoomPanelContainer = styled(GlassPanel)`
   position: fixed;
@@ -30,6 +30,27 @@ const StartButton = styled(IconButton)<{ $iterating: boolean }>`
     ? "0 2px 10px rgba(239, 68, 68, 0.3)"
     : "0 2px 10px rgba(34, 197, 94, 0.3)"};
   border: none;
+`;
+
+const ShareButtonWrapper = styled.div`
+  position: relative;
+  display: inline-flex;
+`;
+
+const CopiedTooltip = styled.span`
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  margin-bottom: 6px;
+  padding: 4px 10px;
+  font-size: 11px;
+  font-weight: 600;
+  color: ${colors.white};
+  background: ${colors.accent};
+  border-radius: 6px;
+  white-space: nowrap;
+  pointer-events: none;
 `;
 
 interface ZoomPanelProps {
@@ -68,7 +89,8 @@ interface ControlPanelProps {
   iterating: boolean;
   onToggleIteration: () => void;
   onOpenPalette: () => void;
-  onSaveImage: () => void;
+  onOpenExport: () => void;
+  onShareLink: () => void;
   isFractalType: boolean;
 }
 
@@ -76,9 +98,23 @@ export const ControlPanel: React.FC<ControlPanelProps> = ({
   iterating,
   onToggleIteration,
   onOpenPalette,
-  onSaveImage,
+  onOpenExport,
+  onShareLink,
   isFractalType,
 }) => {
+  const [copied, setCopied] = useState(false);
+
+  useEffect(() => {
+    if (!copied) return;
+    const id = setTimeout(() => setCopied(false), 2000);
+    return () => clearTimeout(id);
+  }, [copied]);
+
+  const handleShare = () => {
+    onShareLink();
+    setCopied(true);
+  };
+
   return (
     <ControlPanelContainer>
       <FlexRow $gap="4px">
@@ -94,9 +130,15 @@ export const ControlPanel: React.FC<ControlPanelProps> = ({
         <IconButton onClick={onOpenPalette} title="Palette">
           🎨
         </IconButton>
-        <IconButton onClick={onSaveImage} title="Save">
+        <IconButton onClick={onOpenExport} title="Export">
           💾
         </IconButton>
+        <ShareButtonWrapper>
+          <IconButton onClick={handleShare} title="Copy Share Link">
+            🔗
+          </IconButton>
+          {copied && <CopiedTooltip>Copied!</CopiedTooltip>}
+        </ShareButtonWrapper>
       </FlexRow>
     </ControlPanelContainer>
   );

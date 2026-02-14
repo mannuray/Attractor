@@ -1,8 +1,9 @@
 import React from "react";
-import styled from "styled-components";
+import styled, { keyframes, css } from "styled-components";
 
 const CanvasContainer = styled.div<{ $scrollable: boolean }>`
   flex: 1;
+  min-width: 0;
   display: flex;
   align-items: ${props => props.$scrollable ? "flex-start" : "center"};
   justify-content: ${props => props.$scrollable ? "flex-start" : "center"};
@@ -11,7 +12,12 @@ const CanvasContainer = styled.div<{ $scrollable: boolean }>`
   background: rgba(0, 0, 0, 0.3);
 `;
 
-const CanvasWrapper = styled.div<{ $width: number; $height: number; $isFractal: boolean }>`
+const renderPulse = keyframes`
+  0%, 100% { box-shadow: 0 0 15px 4px rgba(255, 30, 30, 0.6), 0 0 40px 8px rgba(255, 30, 30, 0.3); }
+  50% { box-shadow: 0 0 30px 8px rgba(255, 30, 30, 0.9), 0 0 60px 16px rgba(255, 30, 30, 0.5); }
+`;
+
+const CanvasWrapper = styled.div<{ $width: number; $height: number; $isFractal: boolean; $rendering: boolean }>`
   position: relative;
   width: ${props => props.$width}px;
   height: ${props => props.$height}px;
@@ -20,6 +26,7 @@ const CanvasWrapper = styled.div<{ $width: number; $height: number; $isFractal: 
   border-radius: 12px;
   overflow: hidden;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+  animation: ${props => props.$rendering ? css`${renderPulse} 1.5s ease-in-out infinite` : "none"};
 `;
 
 const StyledCanvas = styled.canvas`
@@ -51,6 +58,7 @@ interface CanvasAreaProps {
   isFractalType: boolean;
   isDragging: boolean;
   dragSelection: DragSelection | null;
+  rendering?: boolean;
   onMouseDown?: (e: React.MouseEvent<HTMLDivElement>) => void;
   onMouseMove?: (e: React.MouseEvent<HTMLDivElement>) => void;
   onMouseUp?: () => void;
@@ -65,6 +73,7 @@ export const CanvasArea: React.FC<CanvasAreaProps> = ({
   isFractalType,
   isDragging,
   dragSelection,
+  rendering,
   onMouseDown,
   onMouseMove,
   onMouseUp,
@@ -78,6 +87,7 @@ export const CanvasArea: React.FC<CanvasAreaProps> = ({
         $width={displaySize}
         $height={displaySize}
         $isFractal={isFractalType}
+        $rendering={rendering ?? false}
         onMouseDown={isFractalType ? onMouseDown : undefined}
         onMouseMove={isFractalType ? onMouseMove : undefined}
         onMouseUp={isFractalType ? onMouseUp : undefined}

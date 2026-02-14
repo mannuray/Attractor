@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from "react";
-import { Label, ParameterRow, ValueText, ValueInput } from "./styles";
+import { Label, ParameterRow, ParameterRowWithSlider, SliderInput, ValueText, ValueInput } from "./styles";
 import styled from "styled-components";
 
 const InlineLabel = styled(Label)`
@@ -121,6 +121,34 @@ export const ParameterInput: React.FC<ParameterInputProps> = ({
   max,
   decimals = 2,
 }) => {
+  const showSlider = !disabled && min !== undefined && max !== undefined;
+
+  if (showSlider) {
+    return (
+      <ParameterRowWithSlider>
+        <ParameterRow>
+          <InlineLabel>{label}</InlineLabel>
+          <EditableValue
+            value={value}
+            onChange={onChange}
+            disabled={disabled}
+            step={step}
+            min={min}
+            max={max}
+            decimals={decimals}
+          />
+        </ParameterRow>
+        <SliderInput
+          min={min}
+          max={max}
+          step={step}
+          value={value}
+          onChange={(e) => onChange(parseFloat(e.target.value))}
+        />
+      </ParameterRowWithSlider>
+    );
+  }
+
   return (
     <ParameterRow>
       <InlineLabel>{label}</InlineLabel>
@@ -148,6 +176,34 @@ export const ParameterInputCompact: React.FC<ParameterInputProps> = ({
   max,
   decimals = 2,
 }) => {
+  const showSlider = !disabled && min !== undefined && max !== undefined;
+
+  if (showSlider) {
+    return (
+      <ParameterRowWithSlider>
+        <ParameterRow>
+          <InlineLabel>{label}</InlineLabel>
+          <EditableValue
+            value={value}
+            onChange={onChange}
+            disabled={disabled}
+            step={step}
+            min={min}
+            max={max}
+            decimals={decimals}
+          />
+        </ParameterRow>
+        <SliderInput
+          min={min}
+          max={max}
+          step={step}
+          value={value}
+          onChange={(e) => onChange(parseFloat(e.target.value))}
+        />
+      </ParameterRowWithSlider>
+    );
+  }
+
   return (
     <ParameterRow>
       <InlineLabel>{label}</InlineLabel>

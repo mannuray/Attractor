@@ -50,14 +50,14 @@ export const ConradiControls: React.FC<ConradiControlsProps> = ({
         </Select>
       </Field>
       <ParameterGrid>
-        <ParameterInputCompact label="r1" value={params.r1} onChange={handleChange("r1")} disabled={disabled} />
-        <ParameterInputCompact label="θ1" value={params.theta1} onChange={handleChange("theta1")} disabled={disabled} />
-        <ParameterInputCompact label="r2" value={params.r2} onChange={handleChange("r2")} disabled={disabled} />
-        <ParameterInputCompact label="θ2" value={params.theta2} onChange={handleChange("theta2")} disabled={disabled} />
-        <ParameterInputCompact label="a" value={params.a} onChange={handleChange("a")} disabled={disabled} />
-        <ParameterInputCompact label="n" value={params.n} onChange={handleChange("n")} disabled={disabled} step={1} decimals={0} />
+        <ParameterInputCompact label="r1" value={params.r1} onChange={handleChange("r1")} disabled={disabled} min={0} max={2} step={0.01} />
+        <ParameterInputCompact label="θ1" value={params.theta1} onChange={handleChange("theta1")} disabled={disabled} min={0} max={6.28} step={0.01} />
+        <ParameterInputCompact label="r2" value={params.r2} onChange={handleChange("r2")} disabled={disabled} min={0} max={2} step={0.01} />
+        <ParameterInputCompact label="θ2" value={params.theta2} onChange={handleChange("theta2")} disabled={disabled} min={0} max={6.28} step={0.01} />
+        <ParameterInputCompact label="a" value={params.a} onChange={handleChange("a")} disabled={disabled} min={-3} max={3} step={0.01} />
+        <ParameterInputCompact label="n" value={params.n} onChange={handleChange("n")} disabled={disabled} step={1} decimals={0} min={1} max={20} />
       </ParameterGrid>
-      <ParameterInputCompact label="Scale" value={params.scale} onChange={handleChange("scale")} disabled={disabled} step={0.01} />
+      <ParameterInputCompact label="Scale" value={params.scale} onChange={handleChange("scale")} disabled={disabled} step={0.01} min={0.1} max={10} />
     </Card>
   );
 };

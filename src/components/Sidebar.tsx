@@ -1,7 +1,7 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
 import styled from "styled-components";
-import { GlassPanel, SectionHeader, SectionTitle, StatsRow, StatLabel, StatValue, Field, Label, Select } from "../attractors/shared/styles";
+import { GlassPanel, SectionHeader, SectionTitle, StatsRow, StatLabel, StatValue, Field, Label, Select, colors } from "../attractors/shared/styles";
 import { AttractorType, formatCompact } from "../attractors/shared/types";
 import { CustomDropdown } from "./CustomDropdown";
 
@@ -10,19 +10,19 @@ const SidebarContainer = styled.aside`
   height: 100vh;
   display: flex;
   flex-direction: column;
-  background: rgba(0, 0, 0, 0.4);
+  background: ${colors.darkerBg};
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
-  border-right: 1px solid rgba(255, 180, 120, 0.15);
+  border-right: 1px solid ${colors.accentMuted};
 `;
 
 const SidebarHeader = styled.div`
   position: sticky;
   top: 0;
-  background: rgba(0, 0, 0, 0.6);
+  background: ${colors.darkestBg};
   backdrop-filter: blur(12px);
   padding: 20px;
-  border-bottom: 1px solid rgba(255, 180, 120, 0.15);
+  border-bottom: 1px solid ${colors.accentMuted};
   z-index: 10;
 `;
 
@@ -49,17 +49,17 @@ const InfoButton = styled.button`
   align-items: center;
   justify-content: center;
   font-size: 16px;
-  background: rgba(255, 180, 120, 0.1);
-  border: 1px solid rgba(255, 180, 120, 0.25);
+  background: ${colors.accentSubtle};
+  border: 1px solid ${colors.accentBorderSoft};
   border-radius: 8px;
-  color: rgba(255, 180, 120, 0.8);
+  color: ${colors.accentSoft};
   cursor: pointer;
   transition: all 0.2s ease;
 
   &:hover {
-    background: rgba(255, 180, 120, 0.2);
-    border-color: rgba(255, 180, 120, 0.4);
-    color: rgba(255, 180, 120, 1);
+    background: ${colors.accentBorder};
+    border-color: ${colors.accentHover};
+    color: ${colors.accent};
   }
 `;
 
@@ -75,15 +75,15 @@ const SidebarContent = styled.div`
     background: transparent;
   }
   &::-webkit-scrollbar-thumb {
-    background: rgba(255, 180, 120, 0.3);
+    background: ${colors.accentBorderLight};
     border-radius: 3px;
   }
 `;
 
 const SidebarFooter = styled.div`
-  background: rgba(0, 0, 0, 0.4);
+  background: ${colors.darkerBg};
   padding: 12px 20px;
-  border-top: 1px solid rgba(255, 180, 120, 0.15);
+  border-top: 1px solid ${colors.accentMuted};
 `;
 
 const SettingsCard = styled(GlassPanel)`
@@ -103,20 +103,20 @@ const EditButton = styled.button<{ $active: boolean }>`
   font-weight: 600;
   background: ${props => props.$active
     ? "linear-gradient(135deg, #f59e0b 0%, #ea580c 100%)"
-    : "rgba(0, 0, 0, 0.3)"};
+    : colors.darkBg};
   border: 1px solid ${props => props.$active
     ? "transparent"
-    : "rgba(255, 180, 120, 0.3)"};
+    : colors.accentBorderLight};
   border-radius: 10px;
-  color: white;
+  color: ${colors.white};
   cursor: pointer;
   transition: all 0.2s ease;
 
   &:hover {
     background: ${props => props.$active
       ? "linear-gradient(135deg, #f59e0b 0%, #ea580c 100%)"
-      : "rgba(0, 0, 0, 0.4)"};
-    border-color: rgba(255, 180, 120, 0.4);
+      : colors.darkerBg};
+    border-color: ${colors.accentHover};
   }
 `;
 
@@ -188,6 +188,7 @@ interface SidebarProps {
   maxHits: number;
   totalIterations: number;
   maxIter?: number;
+  rendering?: boolean;
   isEditing: boolean;
   onToggleEdit: () => void;
   children: React.ReactNode;
@@ -203,6 +204,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   maxHits,
   totalIterations,
   maxIter,
+  rendering,
   isEditing,
   onToggleEdit,
   children,
@@ -271,15 +273,25 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
       <SidebarFooter>
         <StatsRow>
-          <StatLabel>Hits/Iteration</StatLabel>
-          <span>
-            <StatValue>{formatCompact(maxHits)}</StatValue>
-            <StatLabel> / </StatLabel>
-            <StatValue>{formatCompact(totalIterations)}</StatValue>
-            {isFractal && maxIter && (
-              <StatLabel> ({maxIter})</StatLabel>
-            )}
-          </span>
+          {rendering ? (
+            <>
+              <StatLabel>Status</StatLabel>
+              <StatValue style={{ color: "#ef4444" }}>Rendering...</StatValue>
+            </>
+          ) : (
+            <>
+              <StatLabel>{isFractal ? "Max Iterations" : "Hits/Iteration"}</StatLabel>
+              {isFractal ? (
+                <StatValue>{maxIter ?? "—"}</StatValue>
+              ) : (
+                <span>
+                  <StatValue>{formatCompact(maxHits)}</StatValue>
+                  <StatLabel> / </StatLabel>
+                  <StatValue>{formatCompact(totalIterations)}</StatValue>
+                </span>
+              )}
+            </>
+          )}
         </StatsRow>
       </SidebarFooter>
     </SidebarContainer>

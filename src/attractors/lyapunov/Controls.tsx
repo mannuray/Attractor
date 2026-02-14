@@ -36,7 +36,7 @@ export const LyapunovControls: React.FC<LyapunovControlsProps> = ({
         <ParameterInputCompact label="B Min" value={params.bMin} onChange={handleChange("bMin")} disabled={disabled} step={0.1} />
         <ParameterInputCompact label="B Max" value={params.bMax} onChange={handleChange("bMax")} disabled={disabled} step={0.1} />
       </ParameterGrid>
-      <ParameterInputCompact label="Max Iter" value={params.maxIter} onChange={handleChange("maxIter")} disabled={disabled} step={1} />
+      <ParameterInputCompact label="Max Iter" value={params.maxIter} onChange={handleChange("maxIter")} disabled={disabled} step={10} min={10} max={5000} decimals={0} />
       <Field>
         <Label>Sequence (A/B only)</Label>
         <StringInput

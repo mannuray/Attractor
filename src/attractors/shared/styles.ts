@@ -3,13 +3,19 @@ import styled, { css } from "styled-components";
 // Color palette
 export const colors = {
   accent: "rgba(255, 180, 120, 1)",
+  accentSoft: "rgba(255, 180, 120, 0.8)",
   accentLight: "rgba(255, 180, 120, 0.7)",
-  accentMuted: "rgba(255, 180, 120, 0.15)",
-  accentBorder: "rgba(255, 180, 120, 0.2)",
+  accentDim: "rgba(255, 180, 120, 0.6)",
+  accentHover: "rgba(255, 180, 120, 0.4)",
   accentBorderLight: "rgba(255, 180, 120, 0.3)",
+  accentBorderSoft: "rgba(255, 180, 120, 0.25)",
+  accentBorder: "rgba(255, 180, 120, 0.2)",
+  accentMuted: "rgba(255, 180, 120, 0.15)",
+  accentSubtle: "rgba(255, 180, 120, 0.1)",
   glassBg: "rgba(255, 180, 120, 0.06)",
   darkBg: "rgba(0, 0, 0, 0.3)",
   darkerBg: "rgba(0, 0, 0, 0.4)",
+  darkestBg: "rgba(0, 0, 0, 0.6)",
   white: "#ffffff",
   shadow: "rgba(0, 0, 0, 0.3)",
 };
@@ -309,7 +315,7 @@ export const StatsRow = styled.div`
   display: flex;
   justify-content: space-between;
   font-size: 11px;
-  color: rgba(255, 180, 120, 0.6);
+  color: ${colors.accentDim};
   padding: 8px 0;
   border-top: 1px solid ${colors.accentBorder};
 `;
@@ -374,4 +380,67 @@ export const ValueInput = styled.input`
     margin: 0;
   }
   -moz-appearance: textfield;
+`;
+
+// Wrapper for parameter row + slider
+export const ParameterRowWithSlider = styled.div`
+  display: flex;
+  flex-direction: column;
+  padding: 4px 0;
+`;
+
+// Range slider styled to match the glass/amber theme
+export const SliderInput = styled.input.attrs({ type: "range" })`
+  width: 100%;
+  height: 4px;
+  margin: 4px 0 2px;
+  padding: 0;
+  appearance: none;
+  -webkit-appearance: none;
+  background: transparent;
+  cursor: pointer;
+
+  &::-webkit-slider-runnable-track {
+    height: 4px;
+    background: rgba(0, 0, 0, 0.4);
+    border-radius: 2px;
+    border: 1px solid ${colors.accentBorder};
+  }
+
+  &::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: ${colors.accent};
+    margin-top: -6px;
+    border: none;
+    box-shadow: 0 0 4px rgba(255, 180, 120, 0.4);
+    transition: box-shadow 0.15s ease;
+  }
+
+  &:hover::-webkit-slider-thumb {
+    box-shadow: 0 0 8px rgba(255, 180, 120, 0.7);
+  }
+
+  &::-moz-range-track {
+    height: 4px;
+    background: rgba(0, 0, 0, 0.4);
+    border-radius: 2px;
+    border: 1px solid ${colors.accentBorder};
+  }
+
+  &::-moz-range-thumb {
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: ${colors.accent};
+    border: none;
+    box-shadow: 0 0 4px rgba(255, 180, 120, 0.4);
+    transition: box-shadow 0.15s ease;
+  }
+
+  &:hover::-moz-range-thumb {
+    box-shadow: 0 0 8px rgba(255, 180, 120, 0.7);
+  }
 `;
