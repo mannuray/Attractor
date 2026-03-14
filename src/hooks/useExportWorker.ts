@@ -19,7 +19,7 @@ interface ExportWorkerOptions {
   palMax: number;
   bgColor: BgColor;
   canvasSize: number;
-  totalIterations: number;
+  statsRef: React.MutableRefObject<{ maxHits: number; totalIterations: number }>;
   oversampling: number;
   getFilename: () => string;
 }
@@ -48,6 +48,7 @@ export function useExportWorker(options: ExportWorkerOptions) {
 
   const exportImage = useCallback((size: number) => {
     const opts = latestOptions.current;
+    const currentTotalIterations = opts.statsRef.current.totalIterations;
 
     // Guard against invalid sizes
     if (size <= 0 || opts.canvasSize <= 0) return;
@@ -107,11 +108,12 @@ export function useExportWorker(options: ExportWorkerOptions) {
     } else {
       // Attractors: send iterate messages to match density, then export
       const scaleFactor = (size / opts.canvasSize) ** 2;
-      const targetIterations = Math.ceil(opts.totalIterations * scaleFactor);
+      const targetIterations = Math.ceil(currentTotalIterations * scaleFactor);
+      
       // Skip extra iterations if source had none yet
-      const iterateCount = opts.totalIterations === 0
+      const iterateCount = currentTotalIterations === 0
         ? 0
-        : Math.max(1, Math.ceil(targetIterations / 2_000_000));
+        : Math.max(1, Math.ceil(targetIterations / 4_000_000)); // match new worker chunk size
       let iteratesSent = 0;
       let statsReceived = 0;
 

@@ -165,7 +165,7 @@ function Home() {
     palMax: palette.palMax,
     bgColor: palette.bgColor,
     canvasSize: worker.canvasSize,
-    totalIterations: worker.totalIterations,
+    statsRef: worker.statsRef,
     oversampling: worker.oversampling,
     getFilename,
   });
