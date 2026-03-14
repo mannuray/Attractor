@@ -1,3 +1,6 @@
+// Registry
+export * from "./registry";
+
 // Shared
 export * from "./shared";
 

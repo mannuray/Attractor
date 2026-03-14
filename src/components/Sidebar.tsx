@@ -1,11 +1,12 @@
-import React from "react";
+import React, { useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import styled from "styled-components";
 import { StatsRow, StatLabel, StatValue, Field, Label, Select, colors } from "../attractors/shared/styles";
-import { AttractorType, formatCompact } from "../attractors/shared/types";
+import { AttractorType } from "../attractors/shared/types";
 import { CustomDropdown } from "./CustomDropdown";
 import { useTheme } from "../theme/ThemeContext";
 import { LiveStats } from "./LiveStats";
+import { registry } from "../attractors/registry";
 
 const SidebarContainer = styled.aside<{ $collapsed: boolean }>`
   width: ${props => props.$collapsed ? "70px" : "340px"};
@@ -146,48 +147,6 @@ const IconWrapper = styled.div`
   }
 `;
 
-const ATTRACTOR_OPTIONS: { value: AttractorType; label: string }[] = [
-  { value: "symmetric_icon", label: "Symmetric Icon" },
-  { value: "symmetric_quilt", label: "Symmetric Quilt" },
-  { value: "clifford", label: "Clifford" },
-  { value: "dejong", label: "De Jong" },
-  { value: "tinkerbell", label: "Tinkerbell" },
-  { value: "henon", label: "Henon" },
-  { value: "bedhead", label: "Bedhead" },
-  { value: "svensson", label: "Svensson" },
-  { value: "fractal_dream", label: "Fractal Dream" },
-  { value: "hopalong", label: "Hopalong" },
-  { value: "gumowski_mira", label: "Gumowski-Mira" },
-  { value: "sprott", label: "Sprott" },
-  { value: "jason_rampe1", label: "Jason Rampe 1" },
-  { value: "jason_rampe2", label: "Jason Rampe 2" },
-  { value: "jason_rampe3", label: "Jason Rampe 3" },
-];
-
-const IFS_OPTIONS: { value: AttractorType; label: string }[] = [
-  { value: "symmetric_fractal", label: "Symmetric Fractal" },
-  { value: "derham", label: "De Rham Curves" },
-  { value: "conradi", label: "Conradi" },
-  { value: "mobius", label: "Mobius" },
-];
-
-const FRACTAL_OPTIONS: { value: AttractorType; label: string }[] = [
-  { value: "mandelbrot", label: "Mandelbrot" },
-  { value: "julia", label: "Julia" },
-  { value: "burningship", label: "Burning Ship" },
-  { value: "tricorn", label: "Tricorn" },
-  { value: "multibrot", label: "Multibrot" },
-  { value: "newton", label: "Newton" },
-  { value: "phoenix", label: "Phoenix" },
-  { value: "lyapunov", label: "Lyapunov" },
-];
-
-const ATTRACTOR_GROUPS = [
-  { label: "Attractors", options: ATTRACTOR_OPTIONS },
-  { label: "IFS", options: IFS_OPTIONS },
-  { label: "Fractals", options: FRACTAL_OPTIONS },
-];
-
 const CANVAS_SIZE_OPTIONS = [
   { value: 800, label: "800 × 800" },
   { value: 1200, label: "1200 × 1200" },
@@ -239,7 +198,22 @@ export const Sidebar: React.FC<SidebarProps> = ({
 }) => {
   const navigate = useNavigate();
   const { currentTheme, setTheme, availableThemes } = useTheme();
-  const isFractal = ["mandelbrot", "julia", "burningship", "tricorn", "multibrot", "newton", "phoenix", "lyapunov"].includes(attractorType);
+  
+  const isFractal = useMemo(() => {
+    const module = registry.get(attractorType);
+    return module?.category === "Fractals";
+  }, [attractorType]);
+
+  const attractorGroups = useMemo(() => {
+    const categories: ("Attractors" | "IFS" | "Fractals")[] = ["Attractors", "IFS", "Fractals"];
+    return categories.map(cat => ({
+      label: cat,
+      options: registry.getByCategory(cat).map(m => ({
+        value: m.id,
+        label: m.label
+      }))
+    }));
+  }, []);
 
   return (
     <SidebarContainer $collapsed={collapsed}>
@@ -301,7 +275,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             <CustomDropdown
               value={attractorType}
               onChange={(value) => onAttractorTypeChange(value as AttractorType)}
-              groups={ATTRACTOR_GROUPS}
+              groups={attractorGroups}
               placeholder="Select module..."
             />
           </Field>

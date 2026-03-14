@@ -1,69 +1,53 @@
 import { useCallback } from "react";
 import { useSearchParams } from "react-router-dom";
 import { AttractorType } from "../attractors/shared/types";
-import { ITERATOR_CONFIG } from "./iteratorConfig";
-import { DEFAULT_PARAMS, ParamsMap } from "./useAttractorState";
-
-const VALID_TYPES = new Set<string>(Object.keys(ITERATOR_CONFIG));
-
-const BOOLEAN_PARAMS = new Set(["reflect"]);
-const STRING_PARAMS = new Set(["curveType", "sequence"]);
-
-export interface UrlInitialState {
-  attractorType: AttractorType;
-  params: Partial<ParamsMap>;
-}
+import { registry } from "../attractors/registry";
 
 export function useUrlSync() {
   const [searchParams, setSearchParams] = useSearchParams();
 
-  const getInitialState = useCallback((): UrlInitialState | null => {
-    const typeParam = searchParams.get("type");
-    if (!typeParam || !VALID_TYPES.has(typeParam)) return null;
+  // Helper to check if a type is valid via registry
+  const isValidType = useCallback((type: string): type is AttractorType => {
+    return registry.get(type as AttractorType) !== undefined;
+  }, []);
 
-    const type = typeParam as AttractorType;
-    const config = ITERATOR_CONFIG[type];
-    const defaults = DEFAULT_PARAMS[type] as Record<string, any>;
-    const parsed: Record<string, any> = { ...defaults };
+  const getInitialState = useCallback(() => {
+    const type = searchParams.get("type");
+    if (!type || !isValidType(type)) return null;
 
-    const allKeys = [...config.paramKeys, ...(config.extraFields || [])];
-    if (config.hasScale) allKeys.push("scale");
+    const module = registry.get(type);
+    if (!module) return null;
 
-    for (const key of allKeys) {
+    const params: Record<string, any> = { ...module.defaultParams };
+    
+    // Override defaults with URL values
+    Object.keys(params).forEach(key => {
       const val = searchParams.get(key);
-      if (val === null) continue;
-
-      if (BOOLEAN_PARAMS.has(key)) {
-        parsed[key] = val === "true";
-      } else if (STRING_PARAMS.has(key)) {
-        parsed[key] = val;
-      } else {
+      if (val !== null) {
+        // Parse numbers, keep strings (like curveType)
         const num = parseFloat(val);
-        if (!isNaN(num)) parsed[key] = num;
+        params[key] = isNaN(num) ? val : num;
       }
-    }
+    });
 
     return {
-      attractorType: type,
-      params: { [type]: parsed } as Partial<ParamsMap>,
+      attractorType: type as AttractorType,
+      params: { [type]: params }
     };
-  }, []); // Only read on mount — searchParams captured at call time
+  }, [searchParams, isValidType]);
 
   const syncToUrl = useCallback((type: AttractorType, params: Record<string, any>) => {
-    const config = ITERATOR_CONFIG[type];
-    const allKeys = [...config.paramKeys, ...(config.extraFields || [])];
-    if (config.hasScale) allKeys.push("scale");
+    const newParams: Record<string, string> = { type };
+    
+    // Only sync keys that exist in the default params
+    Object.keys(params).forEach(key => {
+      newParams[key] = String(params[key]);
+    });
 
-    const query: Record<string, string> = { type };
-    for (const key of allKeys) {
-      const val = params[key];
-      if (val !== undefined && val !== null) {
-        query[key] = String(val);
-      }
-    }
-
-    setSearchParams(query, { replace: true });
+    setSearchParams(newParams, { replace: true });
   }, [setSearchParams]);
 
   return { getInitialState, syncToUrl };
 }
+
+export default useUrlSync;

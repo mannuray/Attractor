@@ -3,7 +3,7 @@
 [![Live Demo](https://img.shields.io/badge/demo-live-brightgreen)](https://chaos-iterator.vercel.app/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-A real-time strange attractor and fractal visualization tool built with React and Web Workers. Generate beautiful mathematical art by exploring chaotic dynamical systems.
+A high-performance, real-time strange attractor and fractal visualization engine built with React, TypeScript, and Web Workers. Generate beautiful mathematical art by exploring chaotic dynamical systems through a professional creative suite interface.
 
 **[Launch App](https://chaos-iterator.vercel.app/)** · **[View on GitHub](https://github.com/mannuray/Attractor)**
 
@@ -11,63 +11,16 @@ A real-time strange attractor and fractal visualization tool built with React an
 
 ## Features
 
-- **25+ Attractor Types**: Strange attractors including Clifford, De Jong, Gumowski-Mira, Sprott, and more
-- **IFS Fractals**: Symmetric Fractals, De Rham curves, Conradi, and Mobius transformations
-- **Escape-Time Fractals**: Mandelbrot, Julia, Burning Ship, Tricorn, Multibrot, Newton, Phoenix, and Lyapunov
-- **Real-time Rendering**: Uses Web Workers and OffscreenCanvas for smooth, non-blocking iteration
-- **Custom Palettes**: Built-in palette editor with gamma correction and scaling options
-- **Curated Presets**: Each type comes with beautiful presets to explore
-- **High Resolution**: Canvas sizes up to 4096×4096 with customizable oversampling (1×–4×)
-- **Fractal Zoom**: Click and drag to zoom into escape-time fractals
-- **Export**: Save your creations as high-quality PNG images
-
-## Attractor Types
-
-### Strange Attractors
-
-| Type | Formula | Parameters |
-|------|---------|------------|
-| **Symmetric Icon** | Complex polynomial with rotational symmetry | alpha, beta, gamma, delta, omega, lambda, degree |
-| **Symmetric Quilt** | Tiled patterns using sin/cos functions | lambda, alpha, beta, gamma, omega, m, shift |
-| **Clifford** | `x' = sin(a*y) + c*cos(a*x)` | a, b, c, d |
-| **De Jong** | `x' = sin(a*y) - cos(b*x)` | a, b, c, d |
-| **Svensson** | `x' = d*sin(a*x) - sin(b*y)` | a, b, c, d |
-| **Fractal Dream** | `x' = sin(y*b) + c*sin(x*b)` | a, b, c, d |
-| **Tinkerbell** | `x' = x² - y² + a*x + b*y` | a, b, c, d |
-| **Henon** | `x' = 1 - a*x² + y` | a, b |
-| **Bedhead** | `x' = sin(x*y/b)*y + cos(a*x - y)` | a, b |
-| **Hopalong** | `x' = y - sign(x)*sqrt(abs(b*x - c))` | a, b, c |
-| **Gumowski-Mira** | `x' = y + a*(1 - σ*y²)*y + f(x)` | mu, alpha, sigma |
-| **Sprott** | 12-parameter quadratic map | a1-a12 |
-
-### IFS (Iterated Function Systems)
-
-| Type | Description | Parameters |
-|------|-------------|------------|
-| **Symmetric Fractal** | Affine transforms with rotational symmetry | a, b, c, d, alpha, beta, p, reflect |
-| **De Rham** | Cesaro and Koch-Peano curves | alpha, beta, curve type |
-| **Conradi** | Complex IFS with rotational symmetry | r1, theta1, r2, theta2, a, n, variant |
-| **Mobius** | Mobius transformation IFS | a, b, c, d (complex), n |
-
-### Escape-Time Fractals
-
-| Type | Formula | Parameters |
-|------|---------|------------|
-| **Mandelbrot** | `z' = z² + c` | center, zoom, max iterations |
-| **Julia** | `z' = z² + c` (fixed c) | c (real/imag), center, zoom |
-| **Burning Ship** | `z' = (|Re(z)| + i|Im(z)|)² + c` | center, zoom |
-| **Tricorn** | `z' = conj(z)² + c` | center, zoom |
-| **Multibrot** | `z' = z^n + c` | power, center, zoom |
-| **Newton** | Newton's method for z³ - 1 = 0 | center, zoom |
-| **Phoenix** | `z' = z² + c + p*z_prev` | c, p, center, zoom |
-| **Lyapunov** | Lyapunov exponent visualization | a/b range, sequence |
+- **30+ Mathematical Modules**: Strange attractors, IFS systems, and escape-time fractals.
+- **Pluggable Architecture**: SOLID-compliant design using a centralized Registry Pattern.
+- **Serialized Iterator Logic**: High-performance mathematical kernels compiled dynamically in Web Workers.
+- **Dynamic Theme System**: Switch between professional presets like Cyber Cyan, Electric Indigo, and Solar Flare.
+- **Real-time Rendering**: Optimized zero-allocation iteration engine with OffscreenCanvas support.
+- **Custom Palettes**: Integrated LUT (Color Lookup Table) editor with gamma and scaling controls.
+- **High-Resolution Export**: Studio-quality PNG export up to 8K resolution with customizable oversampling.
+- **Minimalist HUD**: Floating "Control Bridge" and collapsible sidebars for maximal visual focus.
 
 ## Getting Started
-
-### Prerequisites
-
-- Node.js 16+
-- npm or yarn
 
 ### Installation
 
@@ -79,82 +32,77 @@ cd Attractor
 # Install dependencies
 npm install
 
-# Start development server
+# Start development engine
 npm start
 ```
 
-Open [http://localhost:3000](http://localhost:3000) to view the app.
+## Architecture (SOLID Design)
 
-### Build for Production
+Chaos Iterator has been refactored to follow professional software engineering patterns, moving away from monolithic files toward a modular, pluggable system.
 
-```bash
-npm run build
+### 1. The Attractor Registry (Open/Closed Principle)
+All mathematical systems are managed by a centralized `AttractorRegistry`. To add a new attractor, you no longer need to modify the main UI or the core engine. You simply register a new module.
+
+### 2. Serialized Iterator Logic
+Mathematical formulas are decoupled from the rendering engine. Formulas are stored as **serialized strings** within their respective modules. When a module is selected, the UI sends the formula to the Web Worker, which compiles it on-the-fly using `new Function()`. This ensures the Worker remains a "pure execution shell."
+
+### 3. Performance Optimizations
+- **Zero-Allocation Math**: Iterators use `Float64Array` updates in-place to prevent Garbage Collection stutter.
+- **32-bit Color Packing**: Colors are pre-computed into 32-bit `ABGR` integers for rapid pixel-buffer lookup.
+- **Render Isolation**: High-frequency stats (iterations/density) are isolated from the React render tree via `useRef` and `requestAnimationFrame`.
+
+## Developer Guide: Adding a New Attractor
+
+Adding a new mathematical system is now a simple 4-step process:
+
+### 1. Create the Module Folder
+Create a new directory in `src/attractors/your_new_module/`.
+
+### 2. Define the Math and Metadata
+In `index.ts`, register your module with the registry:
+
+```typescript
+import { registry } from "../registry";
+import { YourControls } from "./Controls";
+
+registry.register({
+  id: "your_module_id",
+  label: "Friendly Name",
+  category: "Attractors", // or "IFS" or "Fractals"
+  defaultParams: { alpha: 1.5, beta: 2.0, scale: 0.2 },
+  Controls: YourControls,
+  math: `
+    // p[0] is x, p[1] is y. Update them in-place.
+    const x = p[0], y = p[1];
+    p[0] = Math.sin(params.alpha * y) + ...;
+    p[1] = Math.cos(params.beta * x) + ...;
+  `
+});
 ```
 
-## Usage
+### 3. Create the UI View
+In `Controls.tsx`, define the React sliders for your parameters using the provided `ParameterInput` components.
 
-1. **Select Type**: Choose from Attractors, IFS, or Fractals in the dropdown menu
-2. **Choose a Preset**: Each type has curated presets with interesting parameters
-3. **Start Iteration**: Click "Start" to begin generating (attractors iterate continuously)
-4. **Adjust Parameters**: Click "Edit Parameters" to modify values
-5. **Zoom (Fractals)**: Click and drag on the canvas to zoom into a region
-6. **Customize Colors**: Open the Palette editor to create custom color schemes
-7. **Export**: Click "Save Image" to download your creation as PNG
+### 4. Export the Module
+Add your module to `src/attractors/index.ts`.
 
-### Palette Settings
-
-- **Gamma**: Adjusts color distribution (lower = more contrast)
-- **Scale Mode**: Dynamic (based on max hits) or Fixed (manual threshold)
-- **Pal Max**: Fixed threshold value for color scaling
-- **Background**: Custom background color for zero-hit pixels
-
-## Architecture
-
-```
-src/
-├── view/pages/Home.tsx      # Main UI component
-├── hooks/
-│   ├── useAttractorState.ts # State management for all attractor types
-│   ├── usePalette.ts        # Color palette state
-│   ├── useCanvasWorker.ts   # Web Worker communication
-│   └── useFractalZoom.ts    # Fractal zoom/pan controls
-├── attractors/
-│   ├── shared/              # Shared components and types
-│   ├── symmetricIcon/       # Each attractor has its own module
-│   ├── clifford/
-│   ├── gumowskiMira/
-│   ├── sprott/
-│   ├── symmetricFractal/
-│   ├── deRham/
-│   ├── conradi/
-│   ├── mobius/
-│   └── ...
-└── components/
-    ├── Sidebar.tsx          # Main controls panel
-    ├── CanvasArea.tsx       # Canvas display
-    └── PaletteModal.tsx     # Palette editor
-
-public/
-└── worker.js                # Web Worker with all iterator implementations
-```
+**The UI and Worker will automatically detect your new module, add it to the dropdowns, and handle the rendering.**
 
 ## Performance
 
-- Uses **OffscreenCanvas** for GPU-accelerated rendering in supported browsers
-- Falls back to main-thread rendering for compatibility
-- **Color LUT** (lookup table) for fast palette interpolation
-- **Customizable oversampling** (1×, 2×, 3×, 4×) for anti-aliasing quality vs speed tradeoff
-- Fractals render once; attractors iterate continuously for progressive detail
+- **Web Workers**: Offloads heavy math to background threads to keep the UI responsive at 60fps.
+- **SharedArrayBuffer**: (Optional) For zero-copy density map transfers between worker and UI.
+- **Mandelbrot Optimization**: Uses geometric Cardioid and Period-2 bulb checks for 2x faster fractal rendering.
+
+## Acknowledgments
+
+This project was inspired by **"Symmetry in Chaos"** by Michael Field and Martin Golubitsky.
+
+Additional references:
+- [Paul Bourke's Fractal Collection](https://paulbourke.net/fractals/)
+- [Softology Blog](https://softologyblog.wordpress.com/2017/03/04/2d-strange-attractors/)
+- Research by Clifford Pickover and J.C. Sprott.
 
 ## License
 
 MIT
-
-## Acknowledgments
-
-This project was inspired by **"Symmetry in Chaos"** by Michael Field and Martin Golubitsky, and the desktop application [Symmetry in Chaos](https://symmetrichaos.sourceforge.net/) that implemented their algorithms. The preset parameter values, color coding system, and palette definitions used in Chaos Iterator's symmetric icons are derived directly from Symmetry in Chaos.
-
-Additional references:
-- [Paul Bourke's Encyclopedic Fractal & Attractor Collection](https://paulbourke.net/fractals/) - Clifford, De Jong, Gumowski-Mira documentation
-- [Softology Blog](https://softologyblog.wordpress.com/2017/03/04/2d-strange-attractors/) - Extensive attractor presets and parameter values
-- Research by Clifford Pickover, J.C. Sprott, and other chaos mathematicians
