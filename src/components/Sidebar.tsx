@@ -1,7 +1,7 @@
 import React, { useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import styled from "styled-components";
-import { StatsRow, StatLabel, StatValue, Field, Label, Select, colors } from "../attractors/shared/styles";
+import { StatsRow, StatLabel, StatValue, Field, Label, Select } from "../attractors/shared/styles";
 import { AttractorType } from "../attractors/shared/types";
 import { CustomDropdown } from "./CustomDropdown";
 import { useTheme } from "../theme/ThemeContext";

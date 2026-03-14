@@ -1,4 +1,5 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState } from "react";
+
 import { ThemeProvider as StyledThemeProvider } from 'styled-components';
 import { themes, ThemeColors } from './themes';
 
