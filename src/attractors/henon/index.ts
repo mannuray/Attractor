@@ -12,6 +12,10 @@ registry.register({
   label: "Henon",
   category: "Attractors",
   defaultParams: DEFAULT_HENON as HenonParams,
+  paramRanges: {
+    alpha: { min: 1.0, max: 1.4 },
+    beta: { min: 0.2, max: 0.4 },
+  },
   Controls: HenonControls,
   workerIteratorName: "henon_iterator",
   math: `

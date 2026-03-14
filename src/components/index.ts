@@ -8,3 +8,4 @@ export * from "./CustomDropdown";
 export * from "./ModalStyles";
 export * from "./GiscusComments";
 export * from "./LiveStats";
+export * from "./FXControls";

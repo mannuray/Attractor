@@ -36,6 +36,9 @@ let cachedImageSize = 0;
 // SharedArrayBuffer support
 let sharedHitsArray = null;
 
+// Discovery state
+let isHunting = false;
+
 // ============================================
 // DYNAMIC ITERATOR ENGINE (SOLID Refactor)
 // ============================================
@@ -44,9 +47,8 @@ class DynamicIterator {
   constructor(mathString, params) {
     this.params = params;
     try {
-      // Simplest signature: just p and params
-      this.iterateFn = new Function('p', 'params', mathString);
-      console.log("Worker: Compiled iterateFn successfully");
+      // Create a function from the serialized string
+      this.iterateFn = new Function('p', 'params', 'Math', mathString);
     } catch (e) {
       console.error("Worker: Failed to compile dynamic iterator math:", e);
       this.iterateFn = (p) => { p[0] = 0; p[1] = 0; };
@@ -54,8 +56,70 @@ class DynamicIterator {
   }
 
   iterate(p) {
-    this.iterateFn(p, this.params);
+    this.iterateFn(p, this.params, Math);
   }
+}
+
+// ============================================
+// DISCOVERY AI (HUNT) LOGIC
+// ============================================
+
+function calculateEntropy(hits, size) {
+  let filledPixels = 0;
+  const totalPixels = size * size;
+  const step = Math.max(1, Math.floor(totalPixels / 10000));
+  for (let i = 0; i < totalPixels; i += step) {
+    if (hits[i] > 0) filledPixels++;
+  }
+  return filledPixels / (totalPixels / step);
+}
+
+function performHunt(payload) {
+  const { math, ranges, size, alias, scale } = payload;
+  const iteratorSize = size * alias;
+  const totalPixels = iteratorSize * iteratorSize;
+  const sampleHits = new Uint32Array(totalPixels);
+  isHunting = true;
+  
+  for (let attempt = 0; attempt < 100; attempt++) {
+    // Check if interrupted
+    if (!isHunting) return { success: false, interrupted: true };
+
+    const testParams = {};
+    Object.entries(ranges).forEach(([key, range]) => {
+      let val = Math.random() * (range.max - range.min) + range.min;
+      if (range.step) {
+        val = Math.round(val / range.step) * range.step;
+      }
+      testParams[key] = val;
+    });
+
+    const it = new DynamicIterator(math, testParams);
+    sampleHits.fill(0);
+    const offset = iteratorSize / 2;
+    const finalScale = scale * iteratorSize;
+
+    const p = new Float64Array([Math.random() * 0.2 - 0.1, Math.random() * 0.2 - 0.1]);
+
+    for (let i = 0; i < 200000; i++) {
+      it.iterate(p);
+      if (isNaN(p[0]) || isNaN(p[1]) || !isFinite(p[0]) || !isFinite(p[1])) break;
+      const xp = Math.round(p[0] * finalScale + offset);
+      const yp = Math.round(p[1] * finalScale + offset);
+      if (xp >= 0 && xp < iteratorSize && yp >= 0 && yp < iteratorSize) {
+        sampleHits[xp * iteratorSize + yp]++;
+      }
+    }
+
+    const coverage = calculateEntropy(sampleHits, iteratorSize);
+    if (coverage > 0.005 && coverage < 0.2) {
+      console.log(`Worker: Hunt Success! Attempt ${attempt}, Coverage: ${(coverage * 100).toFixed(2)}%`);
+      isHunting = false;
+      return { success: true, params: testParams, coverage, attempt };
+    }
+  }
+  isHunting = false;
+  return { success: false };
 }
 
 // ============================================
@@ -242,20 +306,18 @@ self.onmessage = (event) => {
       fractalParams = { type: iterator.name, ...iterator.parameters };
       if (iterator.sequence) fractalParams.sequence = iterator.sequence;
       iterCanvas = null;
-      console.log("Worker: Initialized Fractal Mode", fractalParams.type);
       if (mode === "offscreen") renderFractalProgressive();
     } else {
-      // SOLID REFACTOR: Use dynamic iterator if math string provided
       if (iterator.math) {
-        console.log("Worker: Creating DynamicIterator with math length:", iterator.math.length);
         it = new DynamicIterator(iterator.math, iterator.parameters);
-      } else {
-        console.warn("Worker: No math string provided for attractor!");
       }
       
-      iterCanvas = new IterationCanvas(point, size, alias, scale, it, useSharedBuffer);
-      console.log("Worker: Initialized Attractor Mode. Iterator size:", iterCanvas.iterator_size);
+      const jitterPoint = point || { 
+        xpos: Math.random() * 0.2 - 0.1, 
+        ypos: Math.random() * 0.2 - 0.1 
+      };
       
+      iterCanvas = new IterationCanvas(jitterPoint, size, alias, scale, it, useSharedBuffer);
       if (mode === "offscreen") {
         render();
         self.postMessage({ type: "stats", payload: { maxHits: iterCanvas.getMaxHits(), totalIterations: iterCanvas.getTotalIterations() } });
@@ -318,6 +380,11 @@ self.onmessage = (event) => {
         self.postMessage({ type: "imageExport", payload: { blob } });
       });
     }
+  } else if (type === "hunt") {
+    const result = performHunt(payload);
+    if (result) self.postMessage({ type: "huntResult", payload: result });
+  } else if (type === "stopHunt") {
+    isHunting = false;
   }
 };
 
@@ -356,8 +423,7 @@ function renderMandelbrot() {
           while (x2 + y2 <= 4 && iter < maxIter) {
             y = 2 * x * y + y0;
             x = x2 - y2 + x0;
-            x2 = x * x;
-            y2 = y * y;
+            x2 = x * x; y2 = y * y;
             iter++;
           }
           if (iter === maxIter) {
@@ -827,3 +893,121 @@ class IterationCanvas {
   getMaxHits() { return this.maxHits; }
   getTotalIterations() { return this.totalIterations; }
 }
+
+// ============================================
+// MESSAGE HANDLER
+// ============================================
+
+self.onmessage = (event) => {
+  const { type, payload } = event.data;
+
+  if (type === "initialize") {
+    const { point, size, alias, scale, iterator, palette, colorLUTSize: lutSize, useSharedBuffer } = payload;
+    if (payload.palGamma !== undefined) palGamma = payload.palGamma;
+    if (payload.palScale !== undefined) palScale = payload.palScale;
+    if (payload.palMax !== undefined) palMax = payload.palMax;
+    if (payload.bgColor !== undefined) bgColor = payload.bgColor;
+
+    const fractalTypes = ["mandelbrot", "julia", "burningship", "tricorn", "multibrot", "newton", "phoenix", "lyapunov"];
+    fractalMode = fractalTypes.includes(iterator.name);
+
+    if (payload.mode === "offscreen" && payload.canvas) {
+      mode = "offscreen";
+      offscreenCanvas = payload.canvas;
+      ctx = offscreenCanvas.getContext("2d", { alpha: false });
+      canvasSize = size;
+      configAlias = alias;
+      if (palette && lutSize) {
+        currentPalette = palette;
+        buildColorLUT(palette, lutSize);
+      }
+    } else {
+      mode = "legacy";
+      if (palette) currentPalette = palette;
+    }
+
+    if (fractalMode) {
+      fractalParams = { type: iterator.name, ...iterator.parameters };
+      if (iterator.sequence) fractalParams.sequence = iterator.sequence;
+      iterCanvas = null;
+      if (mode === "offscreen") renderFractalProgressive();
+    } else {
+      if (iterator.math) {
+        it = new DynamicIterator(iterator.math, iterator.parameters);
+      }
+      
+      const jitterPoint = point || { 
+        xpos: Math.random() * 0.2 - 0.1, 
+        ypos: Math.random() * 0.2 - 0.1 
+      };
+      
+      iterCanvas = new IterationCanvas(jitterPoint, size, alias, scale, it, useSharedBuffer);
+      if (mode === "offscreen") {
+        render();
+        self.postMessage({ type: "stats", payload: { maxHits: iterCanvas.getMaxHits(), totalIterations: iterCanvas.getTotalIterations() } });
+      } else {
+        if (iterCanvas.isShared) {
+           self.postMessage({ type: "init_shared", payload: { buffer: iterCanvas.getHits().buffer } });
+        }
+        sendHits();
+      }
+    }
+  } else if (type === "iterate") {
+    if (fractalMode) {
+      if (mode === "offscreen") {
+        renderFractal();
+        self.postMessage({ type: "stats", payload: { maxHits: 0, totalIterations: 0, fractalComplete: true } });
+      }
+      return;
+    }
+    if (!iterCanvas) return;
+    iterCanvas.iterate();
+    if (mode === "offscreen") {
+      render();
+      self.postMessage({ type: "stats", payload: { maxHits: iterCanvas.getMaxHits(), totalIterations: iterCanvas.getTotalIterations() } });
+    } else {
+      sendHits();
+    }
+  } else if (type === "updatePalette") {
+    const { palette, colorLUTSize: lutSize } = payload;
+    if (palette && lutSize) {
+      currentPalette = palette;
+      buildColorLUT(palette, lutSize);
+      if (mode === "offscreen" && progressiveTimeoutId === null) {
+        if (fractalMode) {
+          renderFractal();
+          self.postMessage({ type: "stats", payload: { maxHits: 0, totalIterations: 0, fractalComplete: true } });
+        } else {
+          render();
+          self.postMessage({ type: "stats", payload: { maxHits: iterCanvas ? iterCanvas.getMaxHits() : 0, totalIterations: iterCanvas ? iterCanvas.getTotalIterations() : 0 } });
+        }
+      }
+    }
+  } else if (type === "updatePaletteSettings") {
+    if (payload.palGamma !== undefined) palGamma = payload.palGamma;
+    if (payload.palScale !== undefined) palScale = payload.palScale;
+    if (payload.palMax !== undefined) palMax = payload.palMax;
+    if (payload.bgColor !== undefined) bgColor = payload.bgColor;
+    buildGammaLUT();
+    if (mode === "offscreen" && progressiveTimeoutId === null) {
+      if (fractalMode) {
+        renderFractal();
+        self.postMessage({ type: "stats", payload: { maxHits: 0, totalIterations: 0, fractalComplete: true } });
+      } else {
+        render();
+        self.postMessage({ type: "stats", payload: { maxHits: iterCanvas ? iterCanvas.getMaxHits() : 0, totalIterations: iterCanvas ? iterCanvas.getTotalIterations() : 0 } });
+      }
+    }
+  } else if (type === "exportImage") {
+    if (mode === "offscreen" && offscreenCanvas) {
+      offscreenCanvas.convertToBlob({ type: "image/png" }).then((blob) => {
+        self.postMessage({ type: "imageExport", payload: { blob } });
+      });
+    }
+  } else if (type === "hunt") {
+    const result = performHunt(payload);
+    if (result) self.postMessage({ type: "huntResult", payload: result });
+  } else if (type === "stopHunt") {
+    isHunting = false;
+  }
+};

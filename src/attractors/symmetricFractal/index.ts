@@ -12,6 +12,15 @@ registry.register({
   label: "Symmetric Fractal",
   category: "IFS",
   defaultParams: DEFAULT_SYMMETRIC_FRACTAL as SymmetricFractalParams,
+  paramRanges: {
+    a: { min: -1, max: 1 },
+    b: { min: -1, max: 1 },
+    c: { min: -1, max: 1 },
+    d: { min: -1, max: 1 },
+    alpha: { min: -0.5, max: 0.5 },
+    beta: { min: -0.5, max: 0.5 },
+    p: { min: 3, max: 12, step: 1 },
+  },
   Controls: SymmetricFractalControls,
   workerIteratorName: "symmetric_fractal_iterator",
   math: `

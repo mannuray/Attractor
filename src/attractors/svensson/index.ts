@@ -12,6 +12,12 @@ registry.register({
   label: "Svensson",
   category: "Attractors",
   defaultParams: DEFAULT_SVENSSON as SvenssonParams,
+  paramRanges: {
+    alpha: { min: -2.5, max: 2.5 },
+    beta: { min: -2.5, max: 2.5 },
+    gamma: { min: -2.5, max: 2.5 },
+    delta: { min: -2.5, max: 2.5 },
+  },
   Controls: SvenssonControls,
   workerIteratorName: "svensson_iterator",
   math: `

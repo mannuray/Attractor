@@ -12,6 +12,16 @@ registry.register({
   label: "Symmetric Icon",
   category: "Attractors",
   defaultParams: DEFAULT_SYMMETRIC_ICON as SymmetricIconParams,
+  paramRanges: {
+    lambda: { min: -2.5, max: 2.5 },
+    alpha: { min: -2.5, max: 2.5 },
+    betha: { min: -2.5, max: 2.5 },
+    gamma: { min: -2.5, max: 2.5 },
+    omega: { min: -0.5, max: 0.5 },
+    delta: { min: -1, max: 1 },
+    degree: { min: 3, max: 12, step: 1 },
+    npdegree: { min: 0, max: 2, step: 1 },
+  },
   Controls: SymmetricIconControls,
   workerIteratorName: "symmetric_icon",
   math: `

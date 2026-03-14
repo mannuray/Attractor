@@ -15,7 +15,14 @@ import {
 } from "../../hooks";
 
 // Components
-import { CanvasArea, SystemCommandBar, PaletteModal, ExportModal, Sidebar } from "../../components";
+import { 
+  CanvasArea, 
+  SystemCommandBar, 
+  PaletteModal, 
+  ExportModal, 
+  Sidebar, 
+  FXControls 
+} from "../../components";
 
 // Data
 import symmetricIconData, {
@@ -53,8 +60,9 @@ const MainContent = styled.main`
 `;
 
 function Home() {
-  // Sidebar state
+  // UI state
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [hunting, setHunting] = useState(false);
 
   // URL sync hook
   const { getInitialState, syncToUrl } = useUrlSync();
@@ -120,6 +128,23 @@ function Home() {
     oversampling: worker.oversampling,
     getFilename,
   });
+
+  // Listen for Hunt AI results
+  useEffect(() => {
+    const handleHuntFound = (e: CustomEvent) => {
+      const foundParams = e.detail;
+      const type = attractor.attractorType;
+      // Merge with existing params to preserve 'scale'
+      const mergedParams = { ...attractor.params[type], ...foundParams };
+      
+      attractor.setParams(type, mergedParams);
+      worker.initialize({ params: mergedParams });
+      setHunting(false);
+    };
+
+    window.addEventListener("attractorHuntFound" as any, handleHuntFound as any);
+    return () => window.removeEventListener("attractorHuntFound" as any, handleHuntFound as any);
+  }, [attractor, worker]);
 
   // Sync attractor state to URL — only when current type's params change
   const currentParams = attractor.params[attractor.attractorType];
@@ -190,6 +215,17 @@ function Home() {
       worker.initialize({ params: defaults });
     }
   }, [attractor, worker]);
+
+  // The AI Hunter action
+  const handleHunt = useCallback(() => {
+    setHunting(true);
+    worker.hunt();
+  }, [worker]);
+
+  const handleCancelHunt = useCallback(() => {
+    worker.stopHunt();
+    setHunting(false);
+  }, [worker]);
 
   // Drag selection rect
   const dragSelection = useMemo(() => {
@@ -278,6 +314,7 @@ function Home() {
         collapsed={sidebarCollapsed}
         onToggleCollapse={() => setSidebarCollapsed(!sidebarCollapsed)}
       >
+        <FXControls fx={attractor.fx} onChange={attractor.setFx} />
         {renderControls()}
       </Sidebar>
 
@@ -295,12 +332,16 @@ function Home() {
           onMouseDown={handleFractalMouseDown}
           onMouseMove={handleFractalMouseMove}
           onMouseUp={handleFractalMouseUp}
+          fx={attractor.fx}
         />
 
         <SystemCommandBar
           iterating={worker.iterating}
           onToggleIteration={worker.toggleIteration}
           isFractalType={attractor.isFractalType}
+          onHunt={handleHunt}
+          onCancelHunt={handleCancelHunt}
+          hunting={hunting}
           onFitToView={worker.fitToView}
           onZoomIn={worker.zoomIn}
           onZoomOut={worker.zoomOut}

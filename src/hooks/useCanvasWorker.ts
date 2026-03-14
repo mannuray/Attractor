@@ -2,6 +2,7 @@ import { useRef, useState, useCallback, useEffect } from "react";
 import { HitsData, CONFIG, AttractorType, supportsOffscreenCanvas } from "../attractors/shared/types";
 import { Color } from "../model-controller/Attractor/palette";
 import { buildIteratorPayload, getScale } from "./iteratorConfig";
+import { registry } from "../attractors/registry";
 
 interface BgColor {
   r: number;
@@ -57,6 +58,8 @@ export interface UseCanvasWorkerReturn {
   // Actions
   initialize: (overrides?: InitializeOverrides) => void;
   toggleIteration: () => void;
+  hunt: () => void;
+  stopHunt: () => void;
   saveImage: () => void;
   setCanvasSize: (size: number) => void;
   setOversampling: (value: number) => void;
@@ -226,6 +229,32 @@ export function useCanvasWorker(options: UseCanvasWorkerOptions): UseCanvasWorke
     }
   }, []);
 
+  const stopHunt = useCallback(() => {
+    if (workerRef.current) {
+      workerRef.current.postMessage({ type: "stopHunt" });
+    }
+  }, []);
+
+  const hunt = useCallback(() => {
+    const props = latestProps.current;
+    const module = registry.get(props.attractorType);
+    if (!module || !module.math || !module.paramRanges) return;
+
+    if (workerRef.current) {
+      const scale = getScale(props.attractorType, props.params);
+      workerRef.current.postMessage({
+        type: "hunt",
+        payload: {
+          math: module.math,
+          ranges: module.paramRanges,
+          size: props.canvasSize,
+          alias: props.oversampling,
+          scale
+        }
+      });
+    }
+  }, []);
+
   // --- Core: initialize ---
 
   const initialize = useCallback((overrides?: InitializeOverrides) => {
@@ -312,6 +341,12 @@ export function useCanvasWorker(options: UseCanvasWorkerOptions): UseCanvasWorke
             link.href = url;
             link.click();
             URL.revokeObjectURL(url);
+          } else if (type === "huntResult") {
+            if (payload.success) {
+              (window as any).dispatchEvent(new CustomEvent("attractorHuntFound", { detail: payload.params }));
+            } else if (!payload.interrupted) {
+              hunt();
+            }
           }
         };
       } catch {
@@ -368,6 +403,12 @@ export function useCanvasWorker(options: UseCanvasWorkerOptions): UseCanvasWorke
                rafIdRef.current = null;
              });
            }
+        } else if (type === "huntResult") {
+          if (payload.success) {
+            (window as any).dispatchEvent(new CustomEvent("attractorHuntFound", { detail: payload.params }));
+          } else if (!payload.interrupted) {
+            hunt();
+          }
         }
       };
     }
@@ -387,7 +428,7 @@ export function useCanvasWorker(options: UseCanvasWorkerOptions): UseCanvasWorke
 
     statsRef.current.maxHits = 0;
     statsRef.current.totalIterations = 0;
-  }, [clearCanvas, draw]);
+  }, [clearCanvas, draw, hunt]);
 
   // --- Effects ---
 
@@ -535,6 +576,8 @@ export function useCanvasWorker(options: UseCanvasWorkerOptions): UseCanvasWorke
     rendering,
     initialize,
     toggleIteration,
+    hunt,
+    stopHunt,
     saveImage,
     setCanvasSize,
     setOversampling,

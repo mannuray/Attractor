@@ -10,6 +10,7 @@ export interface AttractorModule<P = any> {
   
   // The Model
   defaultParams: P;
+  paramRanges?: Record<string, { min: number; max: number; step?: number }>;
   
   // The View
   Controls: React.FC<{
@@ -21,10 +22,9 @@ export interface AttractorModule<P = any> {
   }>;
   
   // The Controller (Worker logic)
-  workerIteratorName?: string; // Legacy
+  workerIteratorName?: string;
   
   // New: Serialized math function
-  // (p: Float64Array, params: any) => void
   math?: string; 
 }
 

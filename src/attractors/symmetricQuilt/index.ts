@@ -12,6 +12,14 @@ registry.register({
   label: "Symmetric Quilt",
   category: "Attractors",
   defaultParams: DEFAULT_SYMMETRIC_QUILT as SymmetricQuiltParams,
+  paramRanges: {
+    lambda: { min: -1, max: 1 },
+    alpha: { min: -1, max: 1 },
+    beta: { min: -1, max: 1 },
+    gamma: { min: -1, max: 1 },
+    omega: { min: -1, max: 1 },
+    m: { min: 1, max: 3, step: 1 },
+  },
   Controls: SymmetricQuiltControls,
   workerIteratorName: "symmetric_quilt",
   math: `

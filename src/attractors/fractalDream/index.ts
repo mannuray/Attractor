@@ -12,6 +12,12 @@ registry.register({
   label: "Fractal Dream",
   category: "Attractors",
   defaultParams: DEFAULT_FRACTAL_DREAM as FractalDreamParams,
+  paramRanges: {
+    alpha: { min: -3, max: 3 },
+    beta: { min: -3, max: 3 },
+    gamma: { min: -1, max: 1 },
+    delta: { min: -1, max: 1 },
+  },
   Controls: FractalDreamControls,
   workerIteratorName: "fractal_dream_iterator",
   math: `

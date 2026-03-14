@@ -12,6 +12,12 @@ registry.register({
   label: "Tinkerbell",
   category: "Attractors",
   defaultParams: DEFAULT_TINKERBELL as TinkerbellParams,
+  paramRanges: {
+    alpha: { min: 0.7, max: 1.1 },
+    beta: { min: -0.8, max: -0.4 },
+    gamma: { min: 1.8, max: 2.2 },
+    delta: { min: 0.3, max: 0.7 },
+  },
   Controls: TinkerbellControls,
   workerIteratorName: "tinkerbell_iterator",
   math: `

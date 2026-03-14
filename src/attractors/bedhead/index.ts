@@ -12,6 +12,10 @@ registry.register({
   label: "Bedhead",
   category: "Attractors",
   defaultParams: DEFAULT_BEDHEAD as BedheadParams,
+  paramRanges: {
+    alpha: { min: -2, max: 2 },
+    beta: { min: -2, max: 2 },
+  },
   Controls: BedheadControls,
   workerIteratorName: "bedhead_iterator",
   math: `

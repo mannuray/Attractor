@@ -30,5 +30,5 @@ export function buildIteratorPayload(
 export function getScale(type: AttractorType, params: Record<string, any>): number {
   const module = registry.get(type);
   const hasScale = module && module.category !== "Fractals";
-  return hasScale ? params.scale : 1;
+  return hasScale ? (params.scale ?? 1.0) : 1;
 }

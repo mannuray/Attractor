@@ -12,6 +12,11 @@ registry.register({
   label: "Gumowski-Mira",
   category: "Attractors",
   defaultParams: DEFAULT_GUMOWSKI_MIRA as GumowskiMiraParams,
+  paramRanges: {
+    alpha: { min: -0.1, max: 0.1 },
+    sigma: { min: 0.01, max: 0.1 },
+    mu: { min: -1, max: 1 },
+  },
   Controls: GumowskiMiraControls,
   workerIteratorName: "gumowski_mira_iterator",
   math: `

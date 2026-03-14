@@ -12,6 +12,11 @@ registry.register({
   label: "Hopalong",
   category: "Attractors",
   defaultParams: DEFAULT_HOPALONG as HopalongParams,
+  paramRanges: {
+    alpha: { min: -10, max: 10 },
+    beta: { min: -10, max: 10 },
+    gamma: { min: -10, max: 10 },
+  },
   Controls: HopalongControls,
   workerIteratorName: "hopalong_iterator",
   math: `

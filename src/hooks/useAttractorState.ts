@@ -7,12 +7,20 @@ interface AttractorReducerState {
   attractorType: AttractorType;
   params: Record<AttractorType, any>;
   presets: Record<AttractorType, number>;
+  fx: {
+    enabled: boolean;
+    bloom: number;
+    grain: number;
+    vignette: number;
+    exposure: number;
+  };
 }
 
 type AttractorAction =
   | { type: "SET_TYPE"; attractorType: AttractorType }
   | { type: "SET_PARAMS"; attractorType: AttractorType; params: any }
-  | { type: "SET_PRESET"; attractorType: AttractorType; preset: number };
+  | { type: "SET_PRESET"; attractorType: AttractorType; preset: number }
+  | { type: "SET_FX"; fx: Partial<AttractorReducerState["fx"]> };
 
 function attractorReducer(state: AttractorReducerState, action: AttractorAction): AttractorReducerState {
   switch (action.type) {
@@ -22,6 +30,8 @@ function attractorReducer(state: AttractorReducerState, action: AttractorAction)
       return { ...state, params: { ...state.params, [action.attractorType]: action.params } };
     case "SET_PRESET":
       return { ...state, presets: { ...state.presets, [action.attractorType]: action.preset } };
+    case "SET_FX":
+      return { ...state, fx: { ...state.fx, ...action.fx } };
   }
 }
 
@@ -49,6 +59,9 @@ export interface AttractorState {
   setParams: (type: AttractorType, params: any) => void;
   presets: Record<AttractorType, number>;
   setPreset: (type: AttractorType, preset: number) => void;
+  shuffleParams: () => void;
+  fx: AttractorReducerState["fx"];
+  setFx: (fx: Partial<AttractorReducerState["fx"]>) => void;
   isFractalType: boolean;
   isIFSType: boolean;
   getCurrentParams: () => any;
@@ -68,6 +81,13 @@ export function useAttractorState(initial?: {
       ? { ...initialParams, ...initial.params }
       : initialParams,
     presets: initialPresets,
+    fx: {
+      enabled: false,
+      bloom: 0.4,
+      grain: 0.15,
+      vignette: 0.3,
+      exposure: 1.0,
+    },
   });
 
   const setAttractorType = useCallback((type: AttractorType) => {
@@ -81,6 +101,23 @@ export function useAttractorState(initial?: {
   const setPreset = useCallback((type: AttractorType, preset: number) => {
     dispatch({ type: "SET_PRESET", attractorType: type, preset });
   }, []);
+
+  const setFx = useCallback((fx: Partial<AttractorReducerState["fx"]>) => {
+    dispatch({ type: "SET_FX", fx });
+  }, []);
+
+  const shuffleParams = useCallback(() => {
+    const currentModule = registry.get(state.attractorType);
+    if (!currentModule || !currentModule.paramRanges) return;
+
+    const newParams = { ...state.params[state.attractorType] };
+    Object.entries(currentModule.paramRanges).forEach(([key, range]) => {
+      const randomVal = Math.random() * (range.max - range.min) + range.min;
+      newParams[key] = parseFloat(randomVal.toFixed(3));
+    });
+
+    dispatch({ type: "SET_PARAMS", attractorType: state.attractorType, params: newParams });
+  }, [state.attractorType, state.params]);
 
   const getCurrentParams = useCallback((): any => {
     return state.params[state.attractorType];
@@ -99,6 +136,9 @@ export function useAttractorState(initial?: {
     setParams,
     presets: state.presets,
     setPreset,
+    shuffleParams,
+    fx: state.fx,
+    setFx,
     isFractalType: currentModule?.category === "Fractals",
     isIFSType: currentModule?.category === "IFS",
     getCurrentParams,

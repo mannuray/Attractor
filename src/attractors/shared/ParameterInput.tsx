@@ -26,13 +26,13 @@ const EditableValue: React.FC<EditableValueProps> = ({
   decimals = 4,
 }) => {
   const [isEditing, setIsEditing] = useState(false);
-  const [tempValue, setTempValue] = useState(value.toString());
+  const [tempValue, setTempValue] = useState((value ?? 0).toString());
   const inputRef = useRef<HTMLInputElement>(null);
 
   // Sync tempValue when external value changes
   useEffect(() => {
     if (!isEditing) {
-      setTempValue(value.toString());
+      setTempValue((value ?? 0).toString());
     }
   }, [value, isEditing]);
 
@@ -59,15 +59,16 @@ const EditableValue: React.FC<EditableValueProps> = ({
     if (e.key === "Enter") {
       handleSave();
     } else if (e.key === "Escape") {
-      setTempValue(value.toString());
+      setTempValue((value ?? 0).toString());
       setIsEditing(false);
     }
   };
 
   // Format value - strip trailing zeros for cleaner display
   const formatValue = (val: number) => {
-    if (decimals === 0) return Math.round(val).toString();
-    const fixed = val.toFixed(decimals);
+    const safeVal = val ?? 0;
+    if (decimals === 0) return Math.round(safeVal).toString();
+    const fixed = safeVal.toFixed(decimals);
     // Remove trailing zeros but keep at least one decimal if not integer
     return fixed.replace(/\.?0+$/, '') || '0';
   };
@@ -122,15 +123,16 @@ export const ParameterInput: React.FC<ParameterInputProps> = ({
   decimals = 2,
 }) => {
   const showSlider = !disabled && min !== undefined && max !== undefined;
+  const safeValue = value ?? 0;
 
   if (showSlider) {
-    const percent = Math.max(0, Math.min(100, ((value - min!) / (max! - min!)) * 100));
+    const percent = Math.max(0, Math.min(100, ((safeValue - min!) / (max! - min!)) * 100));
     return (
       <ParameterRowWithSlider>
         <ParameterRow>
           <InlineLabel>{label}</InlineLabel>
           <EditableValue
-            value={value}
+            value={safeValue}
             onChange={onChange}
             disabled={disabled}
             step={step}
@@ -143,7 +145,7 @@ export const ParameterInput: React.FC<ParameterInputProps> = ({
           min={min}
           max={max}
           step={step}
-          value={value}
+          value={safeValue}
           onChange={(e) => onChange(parseFloat(e.target.value))}
           style={{ '--val': `${percent}%` } as React.CSSProperties}
         />
@@ -155,7 +157,7 @@ export const ParameterInput: React.FC<ParameterInputProps> = ({
     <ParameterRow>
       <InlineLabel>{label}</InlineLabel>
       <EditableValue
-        value={value}
+        value={safeValue}
         onChange={onChange}
         disabled={disabled}
         step={step}
@@ -179,15 +181,16 @@ export const ParameterInputCompact: React.FC<ParameterInputProps> = ({
   decimals = 2,
 }) => {
   const showSlider = !disabled && min !== undefined && max !== undefined;
+  const safeValue = value ?? 0;
 
   if (showSlider) {
-    const percent = Math.max(0, Math.min(100, ((value - min!) / (max! - min!)) * 100));
+    const percent = Math.max(0, Math.min(100, ((safeValue - min!) / (max! - min!)) * 100));
     return (
       <ParameterRowWithSlider>
         <ParameterRow>
           <InlineLabel>{label}</InlineLabel>
           <EditableValue
-            value={value}
+            value={safeValue}
             onChange={onChange}
             disabled={disabled}
             step={step}
@@ -200,7 +203,7 @@ export const ParameterInputCompact: React.FC<ParameterInputProps> = ({
           min={min}
           max={max}
           step={step}
-          value={value}
+          value={safeValue}
           onChange={(e) => onChange(parseFloat(e.target.value))}
           style={{ '--val': `${percent}%` } as React.CSSProperties}
         />
@@ -212,7 +215,7 @@ export const ParameterInputCompact: React.FC<ParameterInputProps> = ({
     <ParameterRow>
       <InlineLabel>{label}</InlineLabel>
       <EditableValue
-        value={value}
+        value={safeValue}
         onChange={onChange}
         disabled={disabled}
         step={step}

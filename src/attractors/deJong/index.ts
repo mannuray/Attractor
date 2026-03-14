@@ -12,6 +12,12 @@ registry.register({
   label: "De Jong",
   category: "Attractors",
   defaultParams: DEFAULT_DEJONG as DeJongParams,
+  paramRanges: {
+    alpha: { min: -3, max: 3 },
+    beta: { min: -3, max: 3 },
+    gamma: { min: -3, max: 3 },
+    delta: { min: -3, max: 3 },
+  },
   Controls: DeJongControls,
   workerIteratorName: "dejong_iterator",
   math: `

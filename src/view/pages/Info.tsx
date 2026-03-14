@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import styled, { css } from "styled-components";
@@ -344,77 +345,6 @@ const CreditLink = styled.a`
 `;
 
 // ============= TAB CONTENT COMPONENTS =============
-
-const HowToUseTab: React.FC = () => (
-  <>
-    <Section>
-      <SectionTitle>Getting Started</SectionTitle>
-      <Paragraph>
-        Chaos Iterator is a visualization tool for exploring strange attractors,
-        iterated function systems (IFS), and escape-time fractals. Each type of
-        visualization uses different mathematical equations to create stunning
-        patterns from simple rules.
-      </Paragraph>
-      <UsageList>
-        <UsageItem>
-          <StepNumber>1</StepNumber>
-          <span><strong>Select a Type:</strong> Use the dropdown in the sidebar to choose from Attractors, IFS, or Fractals. Each category contains multiple visualization types.</span>
-        </UsageItem>
-        <UsageItem>
-          <StepNumber>2</StepNumber>
-          <span><strong>Choose a Preset:</strong> Each type comes with curated presets that demonstrate interesting parameter combinations. Start here to explore!</span>
-        </UsageItem>
-        <UsageItem>
-          <StepNumber>3</StepNumber>
-          <span><strong>Edit Parameters:</strong> Click "Edit Parameters" to unlock the controls. Adjust values and watch the visualization update in real-time.</span>
-        </UsageItem>
-        <UsageItem>
-          <StepNumber>4</StepNumber>
-          <span><strong>Customize Colors:</strong> Click the palette button to open the color editor. Add, remove, or modify color stops to create your perfect palette.</span>
-        </UsageItem>
-        <UsageItem>
-          <StepNumber>5</StepNumber>
-          <span><strong>Navigate Fractals:</strong> For escape-time fractals, use scroll to zoom and drag to pan. Explore the infinite detail at any scale.</span>
-        </UsageItem>
-        <UsageItem>
-          <StepNumber>6</StepNumber>
-          <span><strong>Save Your Art:</strong> Click the download button to save your creation as a high-resolution PNG image.</span>
-        </UsageItem>
-      </UsageList>
-    </Section>
-
-    <Section>
-      <SectionTitle>Understanding the Parameters</SectionTitle>
-      <Paragraph>
-        It's not necessary to understand the mathematics to create beautiful images!
-        You can experiment by using the presets and adjusting parameters to see how
-        changes affect the visualization. However, understanding the math can help
-        you predict how parameter changes will affect the output.
-      </Paragraph>
-      <Paragraph>
-        <strong>Scale:</strong> Controls the zoom level of the attractor rendering.
-        Smaller values zoom out, larger values zoom in.
-      </Paragraph>
-      <Paragraph>
-        <strong>Iterations:</strong> The number of points calculated. More iterations
-        mean more detail but slower rendering.
-      </Paragraph>
-      <Paragraph>
-        <strong>Palette Gamma:</strong> Controls the brightness distribution of the
-        color mapping. Lower values brighten shadows, higher values increase contrast.
-      </Paragraph>
-      <SubTitle>Oversampling (Anti-Aliasing)</SubTitle>
-      <Paragraph>
-        Chaos Iterator uses <strong>2x oversampling</strong> for smooth, high-quality
-        rendering. This means the attractor is computed at twice the display resolution,
-        then each 2×2 block of pixels is averaged down to produce the final image.
-        This technique eliminates the jagged edges and noise that would otherwise
-        appear in fine details, producing smoother gradients and cleaner lines—especially
-        visible in the delicate structures of symmetric icons and attractor filaments.
-      </Paragraph>
-    </Section>
-  </>
-);
 
 const AttractorsTab: React.FC = () => (
   <>
@@ -1871,15 +1801,6 @@ const AboutTab: React.FC = () => (
       </Paragraph>
     </Section>
 
-    <Section>
-      <SectionTitle>Community Feedback</SectionTitle>
-      <Paragraph>
-        Have thoughts, ideas, or suggestions? Found a bug or want to request a feature?
-        Join the discussion below! Sign in with GitHub to leave a comment.
-      </Paragraph>
-      <GiscusComments />
-    </Section>
-
     <CreditSection>
       <Paragraph style={{ opacity: 0.8, fontSize: "14px", marginBottom: "8px" }}>
         Chaos Iterator - Exploring Order in Chaos
@@ -1896,9 +1817,139 @@ const AboutTab: React.FC = () => (
   </>
 );
 
+const HowToUseTab: React.FC = () => (
+  <>
+    <Section>
+      <SectionTitle>Getting Started</SectionTitle>
+      <Paragraph>
+        Chaos Iterator is a visualization tool for exploring strange attractors,
+        iterated function systems (IFS), and escape-time fractals. Each type of
+        visualization uses different mathematical equations to create stunning
+        patterns from simple rules.
+      </Paragraph>
+      <UsageList>
+        <UsageItem>
+          <StepNumber>1</StepNumber>
+          <span><strong>Select a Type:</strong> Use the dropdown in the sidebar to choose from Attractors, IFS, or Fractals. Each category contains multiple visualization types.</span>
+        </UsageItem>
+        <UsageItem>
+          <StepNumber>2</StepNumber>
+          <span><strong>Discovery AI:</strong> Click the ◈ (HUNT) button in the bottom command bar to automatically find visually interesting chaotic systems.</span>
+        </UsageItem>
+        <UsageItem>
+          <StepNumber>3</StepNumber>
+          <span><strong>Edit Parameters:</strong> Adjust sliders in the sidebar to modify the underlying math in real-time.</span>
+        </UsageItem>
+        <UsageItem>
+          <StepNumber>4</StepNumber>
+          <span><strong>Visual FX:</strong> Open the "Studio.FX" panel in the sidebar to apply high-end post-processing like Bloom and Grain.</span>
+        </UsageItem>
+        <UsageItem>
+          <StepNumber>5</StepNumber>
+          <span><strong>Customize Colors:</strong> Click the LUT button to open the color editor and modify the 32-bit color lookup table.</span>
+        </UsageItem>
+        <UsageItem>
+          <StepNumber>6</StepNumber>
+          <span><strong>Save Your Art:</strong> Click the OUT button to export your creation as a high-resolution PNG image.</span>
+        </UsageItem>
+      </UsageList>
+    </Section>
+
+    <Section>
+      <SectionTitle>Discovery AI (Smart HUNT)</SectionTitle>
+      <Paragraph>
+        Finding visually interesting chaotic systems manually can be difficult, as most random parameter combinations result in empty screens or simple points. The **Discovery AI** automates this "exploration" process using a heuristic search algorithm.
+      </Paragraph>
+      <SubTitle>The Hunting Algorithm</SubTitle>
+      <Paragraph>
+        When you click the ◈ button, the system triggers a background search process:
+      </Paragraph>
+      <UsageList>
+        <UsageItem>
+          <span><strong>1. Fast Simulation:</strong> The AI generates a random seed and simulates a burst of 500,000 points in milliseconds.</span>
+        </UsageItem>
+        <UsageItem>
+          <span><strong>2. Entropy Analysis:</strong> It calculates the "Visual Entropy" (Screen Coverage) of the result.</span>
+        </UsageItem>
+        <UsageItem>
+          <span><strong>3. Golden Ratio Filtering:</strong> The AI automatically rejects "boring" results (too small) and "noise" results (too scattered). It only stops when it finds a structure that hits the "Golden Ratio" of visual complexity (usually 1% to 15% coverage).</span>
+        </UsageItem>
+      </UsageList>
+      <Paragraph>
+        You can cancel a hunt at any time by clicking the pulsing <strong>"SCANNING..."</strong> button.
+      </Paragraph>
+    </Section>
+
+    <Section>
+      <SectionTitle>Studio.FX (Post-Processing)</SectionTitle>
+      <Paragraph>
+        The Studio.FX engine applies cinematic post-processing effects directly to the canvas after the mathematical iteration is complete.
+      </Paragraph>
+      <UsageList>
+        <UsageItem>
+          <span><strong>Bloom:</strong> Simulates the glowing aura of bright light sources. It isolates the high-signal parts of the attractor and applies a Gaussian-style bleed, making the patterns feel "alive."</span>
+        </UsageItem>
+        <UsageItem>
+          <span><strong>Exposure:</strong> Adjusts the overall signal intensity. Useful for bringing out delicate structures in sparse attractors.</span>
+        </UsageItem>
+        <UsageItem>
+          <span><strong>Grain:</strong> Adds a fine film-grain texture. This breaks up digital gradients and gives the render a professional, analog photographic feel.</span>
+        </UsageItem>
+        <UsageItem>
+          <span><strong>Vignette:</strong> Subtly darkens the corners of the viewport, focusing the viewer's eye on the chaotic center of the system.</span>
+        </UsageItem>
+      </UsageList>
+    </Section>
+
+    <Section>
+      <SectionTitle>Understanding the Parameters</SectionTitle>
+      <Paragraph>
+        It's not necessary to understand the mathematics to create beautiful images!
+        You can experiment by using the presets and adjusting parameters to see how
+        changes affect the visualization. However, understanding the math can help
+        you predict how parameter changes will affect the output.
+      </Paragraph>
+      <Paragraph>
+        <strong>Scale:</strong> Controls the zoom level of the attractor rendering.
+        Smaller values zoom out, larger values zoom in.
+      </Paragraph>
+      <Paragraph>
+        <strong>Iterations:</strong> The number of points calculated. More iterations
+        mean more detail but slower rendering.
+      </Paragraph>
+      <Paragraph>
+        <strong>Palette Gamma:</strong> Controls the brightness distribution of the
+        color mapping. Lower values brighten shadows, higher values increase contrast.
+      </Paragraph>
+      <SubTitle>Oversampling (Anti-Aliasing)</SubTitle>
+      <Paragraph>
+        Chaos Iterator uses <strong>2x oversampling</strong> for smooth, high-quality
+        rendering. This means the attractor is computed at twice the display resolution,
+        then each 2×2 block of pixels is averaged down to produce the final image.
+        This technique eliminates the jagged edges and noise that would otherwise
+        appear in fine details, producing smoother gradients and cleaner lines—especially
+        visible in the delicate structures of symmetric icons and attractor filaments.
+      </Paragraph>
+    </Section>
+  </>
+);
+
+const DiscussTab: React.FC = () => (
+  <>
+    <Section>
+      <SectionTitle>Community Feedback</SectionTitle>
+      <Paragraph>
+        Have thoughts, ideas, or suggestions? Found a bug or want to request a feature?
+        Join the discussion below! Sign in with GitHub to leave a comment.
+      </Paragraph>
+      <GiscusComments />
+    </Section>
+  </>
+);
+
 // ============= MAIN COMPONENT =============
 
-type TabType = "usage" | "attractors" | "ifs" | "fractals" | "about";
+type TabType = "usage" | "attractors" | "ifs" | "fractals" | "about" | "discuss";
 
 const Info: React.FC = () => {
   const navigate = useNavigate();
@@ -1910,6 +1961,7 @@ const Info: React.FC = () => {
     { id: "ifs", label: "03.IFS_SYSTEMS" },
     { id: "fractals", label: "04.FRACTALS" },
     { id: "about", label: "05.REFERENCE" },
+    { id: "discuss", label: "06.DISCUSS" },
   ];
 
   const renderTabContent = () => {
@@ -1924,6 +1976,8 @@ const Info: React.FC = () => {
         return <FractalsTab />;
       case "about":
         return <AboutTab />;
+      case "discuss":
+        return <DiscussTab />;
       default:
         return <HowToUseTab />;
     }

@@ -11,6 +11,12 @@ registry.register({
   label: "Clifford",
   category: "Attractors",
   defaultParams: { alpha: 1.5, beta: -1.8, gamma: 1.6, delta: 2.0, scale: 0.2 } as CliffordParams,
+  paramRanges: {
+    alpha: { min: -3, max: 3 },
+    beta: { min: -3, max: 3 },
+    gamma: { min: -3, max: 3 },
+    delta: { min: -3, max: 3 },
+  },
   Controls: CliffordControls,
   workerIteratorName: "clifford_iterator",
   math: `

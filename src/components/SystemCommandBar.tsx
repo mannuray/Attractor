@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import styled from "styled-components";
+import styled, { keyframes } from "styled-components";
 import { GlassPanel, FlexRow, FloatingButton, colors } from "../attractors/shared/styles";
 
 const CommandBarContainer = styled(GlassPanel)`
@@ -38,6 +38,34 @@ const IconButton = styled(FloatingButton)`
   &:hover {
     border-color: ${colors.accentBorder};
   }
+`;
+
+const pulse = keyframes`
+  0% { opacity: 0.4; transform: scale(0.9); }
+  50% { opacity: 1; transform: scale(1.1); filter: drop-shadow(0 0 8px ${props => props.theme.accent}); }
+  100% { opacity: 0.4; transform: scale(0.9); }
+`;
+
+const ScanningIcon = styled.span`
+  display: inline-block;
+  animation: ${pulse} 1s infinite ease-in-out;
+  color: ${colors.accent};
+`;
+
+const HuntButton = styled(IconButton)<{ $hunting: boolean }>`
+  background: ${props => props.$hunting ? colors.accentSubtle : "transparent"};
+  border-color: ${props => props.$hunting ? colors.accent : "transparent"};
+  width: ${props => props.$hunting ? "auto" : "32px"};
+  padding: ${props => props.$hunting ? "0 12px" : "0"};
+  gap: 8px;
+  display: flex;
+  align-items: center;
+`;
+
+const ButtonLabel = styled.span`
+  font-size: 9px;
+  font-weight: 900;
+  letter-spacing: 1px;
 `;
 
 const MasterButton = styled.button<{ $iterating: boolean; $isFractal: boolean }>`
@@ -123,6 +151,9 @@ interface SystemCommandBarProps {
   iterating: boolean;
   onToggleIteration: () => void;
   isFractalType: boolean;
+  onHunt: () => void;
+  onCancelHunt: () => void;
+  hunting: boolean;
   
   // Zoom Controls
   onFitToView: () => void;
@@ -142,6 +173,9 @@ export const SystemCommandBar: React.FC<SystemCommandBarProps> = ({
   iterating,
   onToggleIteration,
   isFractalType,
+  onHunt,
+  onCancelHunt,
+  hunting,
   onFitToView,
   onZoomIn,
   onZoomOut,
@@ -181,18 +215,32 @@ export const SystemCommandBar: React.FC<SystemCommandBarProps> = ({
       <Divider />
 
       {/* Master Control */}
-      <MasterButton 
-        $iterating={iterating} 
-        $isFractal={isFractalType} 
-        onClick={onToggleIteration}
-        title={iterating ? "HALT PROCESS" : "EXECUTE KERNEL"}
-      >
-        {isFractalType ? (
-          <><span>🔄</span> RENDER</>
-        ) : (
-          <>{iterating ? '⏹ STOP' : '▶ START'}</>
+      <FlexRow $gap="4px">
+        {!isFractalType && (
+          <HuntButton $hunting={hunting} onClick={hunting ? onCancelHunt : onHunt} title={hunting ? "CANCEL SCAN" : "HUNT FOR CHAOS (SMART SHUFFLE)"}>
+            {hunting ? (
+              <>
+                <ScanningIcon>◈</ScanningIcon>
+                <ButtonLabel>SCANNING...</ButtonLabel>
+              </>
+            ) : (
+              <ButtonLabel>◈</ButtonLabel>
+            )}
+          </HuntButton>
         )}
-      </MasterButton>
+        <MasterButton 
+          $iterating={iterating} 
+          $isFractal={isFractalType} 
+          onClick={onToggleIteration}
+          title={iterating ? "HALT PROCESS" : "EXECUTE KERNEL"}
+        >
+          {isFractalType ? (
+            <><span>🔄</span> RENDER</>
+          ) : (
+            <>{iterating ? '⏹ STOP' : '▶ START'}</>
+          )}
+        </MasterButton>
+      </FlexRow>
 
       <Divider />
 

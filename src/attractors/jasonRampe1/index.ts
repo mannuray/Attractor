@@ -12,6 +12,12 @@ registry.register({
   label: "Jason Rampe 1",
   category: "Attractors",
   defaultParams: DEFAULT_JASON_RAMPE1 as JasonRampe1Params,
+  paramRanges: {
+    alpha: { min: -3, max: 3 },
+    beta: { min: -3, max: 3 },
+    gamma: { min: -1, max: 1 },
+    delta: { min: -1, max: 1 },
+  },
   Controls: JasonRampe1Controls,
   workerIteratorName: "jason_rampe1_iterator",
   math: `
