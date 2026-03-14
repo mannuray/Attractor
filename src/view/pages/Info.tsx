@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import styled from "styled-components";
+import styled, { css } from "styled-components";
 import 'katex/dist/katex.min.css';
 import { InlineMath, BlockMath } from 'react-katex';
 import { GiscusComments } from "../../components/GiscusComments";
@@ -9,17 +9,19 @@ import { GiscusComments } from "../../components/GiscusComments";
 
 const PageContainer = styled.div`
   min-height: 100vh;
-  background: linear-gradient(135deg, #0a0a0f 0%, #1a1a2e 50%, #0f0f1a 100%);
-  color: #ffffff;
+  background: ${props => props.theme.bgPage};
+  color: ${props => props.theme.white};
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  transition: background 0.5s ease;
 `;
 
 const Header = styled.header`
   position: sticky;
   top: 0;
-  background: rgba(0, 0, 0, 0.9);
+  background: ${props => props.theme.darkestBg};
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
-  border-bottom: 1px solid rgba(255, 180, 120, 0.15);
+  border-bottom: 1px solid ${props => props.theme.accentBorder};
   z-index: 100;
 `;
 
@@ -34,125 +36,164 @@ const BackButton = styled.button`
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 10px 16px;
-  font-size: 14px;
-  font-weight: 600;
-  background: rgba(0, 0, 0, 0.3);
-  border: 1px solid rgba(255, 180, 120, 0.3);
-  border-radius: 10px;
-  color: #ffffff;
+  padding: 8px 16px;
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  font-family: 'JetBrains Mono', monospace;
+  background: transparent;
+  border: 1px solid ${props => props.theme.accentBorder};
+  border-radius: 4px;
+  color: ${props => props.theme.accent};
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 
   &:hover {
-    background: rgba(0, 0, 0, 0.5);
-    border-color: rgba(255, 180, 120, 0.5);
+    background: ${props => props.theme.accentSubtle};
+    border-color: ${props => props.theme.accent};
+    color: white;
+    transform: translateX(-4px);
   }
 `;
 
 const Title = styled.h1`
   margin: 0;
-  font-size: 24px;
-  font-weight: 700;
-  background: linear-gradient(135deg, #f59e0b 0%, #ea580c 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+  font-size: 18px;
+  font-weight: 900;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  font-family: 'JetBrains Mono', monospace;
+  color: ${props => props.theme.accent};
+  text-shadow: 0 0 10px ${props => props.theme.accentMuted};
 `;
 
 const TabNav = styled.nav`
   display: flex;
-  gap: 4px;
-  padding: 0 24px 12px;
+  gap: 2px;
+  padding: 0 24px;
+  background: rgba(0, 0, 0, 0.2);
+  border-bottom: 1px solid ${props => props.theme.accentMuted};
   overflow-x: auto;
 
   &::-webkit-scrollbar {
-    height: 4px;
-  }
-  &::-webkit-scrollbar-thumb {
-    background: rgba(255, 180, 120, 0.3);
-    border-radius: 2px;
+    height: 2px;
   }
 `;
 
 const Tab = styled.button<{ $active: boolean }>`
-  padding: 10px 20px;
-  font-size: 14px;
-  font-weight: 600;
-  background: ${props => props.$active
-    ? "linear-gradient(135deg, #f59e0b 0%, #ea580c 100%)"
-    : "rgba(0, 0, 0, 0.3)"};
-  border: 1px solid ${props => props.$active
-    ? "transparent"
-    : "rgba(255, 180, 120, 0.2)"};
-  border-radius: 8px;
-  color: #ffffff;
+  padding: 12px 24px;
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  font-family: 'JetBrains Mono', monospace;
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid ${props => props.$active ? props.theme.accent : "transparent"};
+  color: ${props => props.$active ? props.theme.accent : props.theme.accentDim};
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   white-space: nowrap;
+  position: relative;
 
   &:hover {
-    background: ${props => props.$active
-      ? "linear-gradient(135deg, #f59e0b 0%, #ea580c 100%)"
-      : "rgba(0, 0, 0, 0.5)"};
-    border-color: rgba(255, 180, 120, 0.4);
+    color: ${props => props.theme.accent};
+    background: ${props => props.theme.accentSubtle};
+  }
+
+  ${props => props.$active && css`
+    text-shadow: 0 0 10px ${props.theme.accentSoft};
+    background: linear-gradient(to top, ${props.theme.accentSubtle} 0%, transparent 100%);
+  `}
+
+  &::before {
+    content: '[';
+    margin-right: 4px;
+    opacity: ${props => props.$active ? 1 : 0};
+    transition: opacity 0.3s ease;
+  }
+
+  &::after {
+    content: ']';
+    margin-left: 4px;
+    opacity: ${props => props.$active ? 1 : 0};
+    transition: opacity 0.3s ease;
   }
 `;
 
 const Content = styled.main`
-  max-width: 1000px;
+  max-width: 95%;
   margin: 0 auto;
-  padding: 32px 24px 64px;
+  padding: 40px 24px 80px;
 `;
 
 const Section = styled.section`
-  background: rgba(255, 180, 120, 0.06);
+  background: ${props => props.theme.darkerBg};
   backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 180, 120, 0.2);
-  border-radius: 16px;
-  padding: 24px;
-  margin-bottom: 24px;
+  border: 1px solid ${props => props.theme.accentMuted};
+  border-radius: 8px;
+  padding: 40px;
+  margin-bottom: 32px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
 `;
 
 const SectionTitle = styled.h2`
-  margin: 0 0 20px 0;
-  font-size: 20px;
-  font-weight: 700;
-  color: rgba(255, 180, 120, 0.9);
+  margin: 0 0 32px 0;
+  font-size: 16px;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 3px;
+  color: ${props => props.theme.accentLight};
+  font-family: 'JetBrains Mono', monospace;
+  border-left: 4px solid ${props => props.theme.accent};
+  padding-left: 20px;
 `;
 
 const SubTitle = styled.h3`
-  margin: 24px 0 16px 0;
-  font-size: 16px;
-  font-weight: 600;
-  color: rgba(255, 180, 120, 0.8);
+  margin: 48px 0 20px 0;
+  font-size: 13px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  color: ${props => props.theme.accentDim};
+  font-family: 'JetBrains Mono', monospace;
 `;
 
 const Paragraph = styled.p`
-  margin: 0 0 16px 0;
-  font-size: 15px;
-  line-height: 1.7;
-  color: rgba(255, 255, 255, 0.85);
+  margin: 0 0 24px 0;
+  font-size: 16px;
+  line-height: 1.8;
+  color: ${props => props.theme.white};
+  opacity: 0.8;
 `;
 
 const MathBlock = styled.div`
-  background: rgba(0, 0, 0, 0.4);
-  padding: 16px 20px;
-  border-radius: 10px;
-  margin: 16px 0;
+  background: ${props => props.theme.darkestBg};
+  padding: 24px;
+  border-radius: 4px;
+  border: 1px solid ${props => props.theme.accentBorder};
+  margin: 32px 0;
   overflow-x: auto;
 
   .katex {
-    font-size: 1.1em;
+    font-size: 1.2em;
+    color: ${props => props.theme.white};
   }
 `;
 
 const AttractorCard = styled.div`
-  background: rgba(0, 0, 0, 0.25);
-  border: 1px solid rgba(255, 180, 120, 0.15);
-  border-radius: 12px;
-  padding: 20px;
-  margin-bottom: 20px;
+  background: ${props => props.theme.darkBg};
+  border: 1px solid ${props => props.theme.accentMuted};
+  border-radius: 8px;
+  padding: 32px;
+  margin-bottom: 40px;
+  transition: all 0.2s ease;
+
+  &:hover {
+    border-color: ${props => props.theme.accentBorderLight};
+    background: ${props => props.theme.darkerBg};
+  }
 `;
 
 const AttractorHeader = styled.div`
@@ -160,31 +201,32 @@ const AttractorHeader = styled.div`
   flex-direction: column;
   align-items: center;
   text-align: center;
-  margin-bottom: 16px;
+  margin-bottom: 32px;
 `;
 
 const GalleryImage = styled.img`
   width: 100%;
-  max-width: 400px;
+  max-width: 600px;
   height: auto;
-  border-radius: 12px;
-  border: 1px solid rgba(255, 180, 120, 0.3);
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
-  margin: 16px 0;
+  border-radius: 4px;
+  border: 1px solid ${props => props.theme.accentBorder};
+  box-shadow: 0 0 30px rgba(0, 0, 0, 0.6);
+  margin: 24px 0;
   cursor: pointer;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  transition: all 0.3s ease;
 
   &:hover {
-    transform: scale(1.02);
-    box-shadow: 0 8px 30px rgba(255, 180, 120, 0.2);
+    border-color: ${props => props.theme.accent};
+    box-shadow: 0 0 40px ${props => props.theme.accentMuted};
+    transform: scale(1.01);
   }
 `;
 
 const ImageGrid = styled.div`
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-  gap: 20px;
-  margin: 24px 0;
+  grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
+  gap: 32px;
+  margin: 40px 0;
   width: 100%;
 `;
 
@@ -192,25 +234,29 @@ const GridImage = styled.img`
   width: 100%;
   aspect-ratio: 1;
   object-fit: cover;
-  border-radius: 12px;
-  border: 1px solid rgba(255, 180, 120, 0.3);
-  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.5);
+  border-radius: 4px;
+  border: 1px solid ${props => props.theme.accentBorder};
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.6);
   cursor: pointer;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  transition: all 0.3s ease;
 
   &:hover {
-    transform: scale(1.02);
-    box-shadow: 0 12px 36px rgba(255, 180, 120, 0.3);
+    border-color: ${props => props.theme.accent};
+    transform: translateY(-4px);
+    box-shadow: 0 0 30px ${props => props.theme.accentMuted};
   }
 `;
 
 const ImageLabel = styled.span`
   display: block;
   text-align: center;
-  font-size: 14px;
-  font-weight: 500;
-  color: rgba(255, 255, 255, 0.8);
-  margin-top: 10px;
+  font-size: 10px;
+  font-weight: 800;
+  color: ${props => props.theme.accentDim};
+  margin-top: 12px;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  font-family: 'JetBrains Mono', monospace;
 `;
 
 const AttractorContent = styled.div`
@@ -219,10 +265,11 @@ const AttractorContent = styled.div`
 `;
 
 const AttractorName = styled.h4`
-  margin: 0 0 8px 0;
+  margin: 0 0 12px 0;
   font-size: 18px;
-  font-weight: 600;
-  color: #ffffff;
+  font-weight: 700;
+  color: ${props => props.theme.white};
+  letter-spacing: -0.5px;
 `;
 
 const UsageList = styled.ul`
@@ -232,11 +279,11 @@ const UsageList = styled.ul`
 `;
 
 const UsageItem = styled.li`
-  padding: 12px 0;
-  border-bottom: 1px solid rgba(255, 180, 120, 0.1);
+  padding: 16px 0;
+  border-bottom: 1px solid ${props => props.theme.accentMuted};
   display: flex;
-  gap: 12px;
-  line-height: 1.6;
+  gap: 16px;
+  line-height: 1.7;
 
   &:last-child {
     border-bottom: none;
@@ -250,41 +297,49 @@ const StepNumber = styled.span`
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, #f59e0b 0%, #ea580c 100%);
-  border-radius: 50%;
-  font-size: 14px;
-  font-weight: 700;
-  color: #ffffff;
+  background: ${props => props.theme.accent};
+  border-radius: 4px;
+  font-size: 13px;
+  font-weight: 900;
+  color: ${props => props.theme.bgPage};
+  font-family: 'JetBrains Mono', monospace;
 `;
 
 const ParamList = styled.div`
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
-  margin-top: 12px;
+  gap: 10px;
+  margin-top: 16px;
 `;
 
 const ParamBadge = styled.span`
   padding: 4px 10px;
-  background: rgba(255, 180, 120, 0.15);
-  border: 1px solid rgba(255, 180, 120, 0.3);
-  border-radius: 6px;
-  font-size: 12px;
-  font-weight: 500;
-  color: rgba(255, 180, 120, 0.9);
+  background: ${props => props.theme.accentSubtle};
+  border: 1px solid ${props => props.theme.accentBorder};
+  border-radius: 4px;
+  font-size: 10px;
+  font-weight: 800;
+  font-family: 'JetBrains Mono', monospace;
+  color: ${props => props.theme.accentLight};
 `;
 
 const CreditSection = styled.div`
   text-align: center;
-  padding: 20px;
+  padding: 32px;
+  margin-top: 40px;
+  border-top: 1px solid ${props => props.theme.accentMuted};
 `;
 
 const CreditLink = styled.a`
-  color: rgba(255, 180, 120, 0.9);
+  color: ${props => props.theme.accent};
+  font-weight: 700;
   text-decoration: none;
-
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  
   &:hover {
     text-decoration: underline;
+    text-shadow: 0 0 10px ${props => props.theme.accentMuted};
   }
 `;
 
@@ -1850,11 +1905,11 @@ const Info: React.FC = () => {
   const [activeTab, setActiveTab] = useState<TabType>("usage");
 
   const tabs: { id: TabType; label: string }[] = [
-    { id: "usage", label: "How to Use" },
-    { id: "attractors", label: "Attractors" },
-    { id: "ifs", label: "IFS" },
-    { id: "fractals", label: "Fractals" },
-    { id: "about", label: "About" },
+    { id: "usage", label: "01.OPERATIONS" },
+    { id: "attractors", label: "02.ATTRACTORS" },
+    { id: "ifs", label: "03.IFS_SYSTEMS" },
+    { id: "fractals", label: "04.FRACTALS" },
+    { id: "about", label: "05.REFERENCE" },
   ];
 
   const renderTabContent = () => {
@@ -1879,9 +1934,10 @@ const Info: React.FC = () => {
       <Header>
         <HeaderTop>
           <BackButton onClick={() => navigate("/")}>
-            <span>←</span> Back to Generator
+            <span>&lsaquo;</span> RETURN_TO_ENGINE
           </BackButton>
-          <Title>Chaos Iterator</Title>
+          <Title>Documentation.v1</Title>
+          <div style={{ width: 140 }} /> {/* Spacer */}
         </HeaderTop>
         <TabNav>
           {tabs.map(tab => (

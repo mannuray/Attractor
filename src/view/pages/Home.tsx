@@ -7,7 +7,7 @@ import { useUrlSync } from "../../hooks/useUrlSync";
 import { useExportWorker } from "../../hooks/useExportWorker";
 
 // Components
-import { CanvasArea, ZoomPanel, ControlPanel, PaletteModal, ExportModal, Sidebar } from "../../components";
+import { CanvasArea, SystemCommandBar, PaletteModal, ExportModal, Sidebar } from "../../components";
 
 // Attractor Controls
 import { SymmetricIconControls } from "../../attractors/symmetricIcon";
@@ -88,7 +88,8 @@ const PageContainer = styled.div`
   width: 100vw;
   height: 100vh;
   overflow: hidden;
-  background: #0a0a0f;
+  background: ${props => props.theme.bgPage};
+  transition: background 0.5s ease;
 `;
 
 const MainContent = styled.main`
@@ -100,6 +101,9 @@ const MainContent = styled.main`
 `;
 
 function Home() {
+  // Sidebar state
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+
   // URL sync hook
   const { getInitialState, syncToUrl } = useUrlSync();
 
@@ -177,15 +181,6 @@ function Home() {
     navigator.clipboard.writeText(window.location.href);
   }, []);
 
-  // Memoized modal/edit toggle callbacks
-  const handleToggleEdit = useCallback(() => {
-    const wasEditing = worker.isEditing;
-    worker.setIsEditing(!wasEditing);
-    if (wasEditing && attractor.isFractalType) {
-      worker.initialize();
-    }
-  }, [worker, attractor.isFractalType]);
-
   const handleOpenPalette = useCallback(() => setPaletteModalOpen(true), []);
   const handleClosePalette = useCallback(() => setPaletteModalOpen(false), []);
   const handleOpenExport = useCallback(() => setExportModalOpen(true), []);
@@ -259,7 +254,8 @@ function Home() {
 
   // Render attractor controls
   const renderControls = () => {
-    const disabled = !worker.isEditing;
+    // Controls are now always active
+    const disabled = false;
 
     switch (attractor.attractorType) {
       case "symmetric_icon":
@@ -630,12 +626,11 @@ function Home() {
         onCanvasSizeChange={worker.setCanvasSize}
         oversampling={worker.oversampling}
         onOversamplingChange={worker.setOversampling}
-        maxHits={worker.maxHits}
-        totalIterations={worker.totalIterations}
+        statsRef={worker.statsRef}
         maxIter={currentMaxIter}
         rendering={worker.rendering}
-        isEditing={worker.isEditing}
-        onToggleEdit={handleToggleEdit}
+        collapsed={sidebarCollapsed}
+        onToggleCollapse={() => setSidebarCollapsed(!sidebarCollapsed)}
       >
         {renderControls()}
       </Sidebar>
@@ -656,22 +651,19 @@ function Home() {
           onMouseUp={handleFractalMouseUp}
         />
 
-        <ZoomPanel
+        <SystemCommandBar
+          iterating={worker.iterating}
+          onToggleIteration={worker.toggleIteration}
+          isFractalType={attractor.isFractalType}
           onFitToView={worker.fitToView}
           onZoomIn={worker.zoomIn}
           onZoomOut={worker.zoomOut}
           onZoomReset={worker.zoomReset}
-          isFractalType={attractor.isFractalType}
           onResetFractalView={handleResetFractalView}
-        />
-
-        <ControlPanel
-          iterating={worker.iterating}
-          onToggleIteration={worker.toggleIteration}
           onOpenPalette={handleOpenPalette}
           onOpenExport={handleOpenExport}
           onShareLink={handleShareLink}
-          isFractalType={attractor.isFractalType}
+          onCycleBg={palette.cycleBgColor}
         />
       </MainContent>
 

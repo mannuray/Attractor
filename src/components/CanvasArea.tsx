@@ -9,12 +9,18 @@ const CanvasContainer = styled.div<{ $scrollable: boolean }>`
   justify-content: ${props => props.$scrollable ? "flex-start" : "center"};
   overflow: ${props => props.$scrollable ? "auto" : "hidden"};
   position: relative;
-  background: rgba(0, 0, 0, 0.3);
+  background-color: ${props => props.theme.bgPage};
+  background-image: 
+    linear-gradient(${props => props.theme.accentMuted} 1px, transparent 1px),
+    linear-gradient(90deg, ${props => props.theme.accentMuted} 1px, transparent 1px);
+  background-size: 40px 40px;
+  background-position: center center;
+  transition: background-color 0.5s ease;
 `;
 
 const renderPulse = keyframes`
-  0%, 100% { box-shadow: 0 0 15px 4px rgba(255, 30, 30, 0.6), 0 0 40px 8px rgba(255, 30, 30, 0.3); }
-  50% { box-shadow: 0 0 30px 8px rgba(255, 30, 30, 0.9), 0 0 60px 16px rgba(255, 30, 30, 0.5); }
+  0%, 100% { box-shadow: 0 0 15px 4px var(--pulse-color-1), 0 0 40px 8px var(--pulse-color-2); }
+  50% { box-shadow: 0 0 30px 8px var(--pulse-color-3), 0 0 60px 16px var(--pulse-color-4); }
 `;
 
 const CanvasWrapper = styled.div<{ $width: number; $height: number; $isFractal: boolean; $rendering: boolean }>`
@@ -23,21 +29,29 @@ const CanvasWrapper = styled.div<{ $width: number; $height: number; $isFractal: 
   height: ${props => props.$height}px;
   flex-shrink: 0;
   cursor: ${props => props.$isFractal ? "crosshair" : "default"};
-  border-radius: 12px;
+  border-radius: 4px;
   overflow: hidden;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 12px 48px rgba(0, 0, 0, 0.8);
+  border: 1px solid ${props => props.theme.accentBorder};
+  
+  --pulse-color-1: ${props => props.theme.danger}99;
+  --pulse-color-2: ${props => props.theme.danger}44;
+  --pulse-color-3: ${props => props.theme.danger}E6;
+  --pulse-color-4: ${props => props.theme.danger}80;
+  
   animation: ${props => props.$rendering ? css`${renderPulse} 1.5s ease-in-out infinite` : "none"};
 `;
 
 const StyledCanvas = styled.canvas`
   display: block;
   image-rendering: pixelated;
+  background: #000;
 `;
 
 const DragOverlay = styled.div<{ $visible: boolean }>`
   position: absolute;
-  border: 2px dashed rgba(255, 180, 120, 0.8);
-  background: rgba(255, 180, 120, 0.1);
+  border: 2px dashed ${props => props.theme.accent};
+  background: ${props => props.theme.accentMuted};
   pointer-events: none;
   display: ${props => props.$visible ? "block" : "none"};
 `;

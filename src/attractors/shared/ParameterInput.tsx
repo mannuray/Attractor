@@ -124,6 +124,7 @@ export const ParameterInput: React.FC<ParameterInputProps> = ({
   const showSlider = !disabled && min !== undefined && max !== undefined;
 
   if (showSlider) {
+    const percent = Math.max(0, Math.min(100, ((value - min!) / (max! - min!)) * 100));
     return (
       <ParameterRowWithSlider>
         <ParameterRow>
@@ -144,6 +145,7 @@ export const ParameterInput: React.FC<ParameterInputProps> = ({
           step={step}
           value={value}
           onChange={(e) => onChange(parseFloat(e.target.value))}
+          style={{ '--val': `${percent}%` } as React.CSSProperties}
         />
       </ParameterRowWithSlider>
     );
@@ -179,6 +181,7 @@ export const ParameterInputCompact: React.FC<ParameterInputProps> = ({
   const showSlider = !disabled && min !== undefined && max !== undefined;
 
   if (showSlider) {
+    const percent = Math.max(0, Math.min(100, ((value - min!) / (max! - min!)) * 100));
     return (
       <ParameterRowWithSlider>
         <ParameterRow>
@@ -199,6 +202,7 @@ export const ParameterInputCompact: React.FC<ParameterInputProps> = ({
           step={step}
           value={value}
           onChange={(e) => onChange(parseFloat(e.target.value))}
+          style={{ '--val': `${percent}%` } as React.CSSProperties}
         />
       </ParameterRowWithSlider>
     );

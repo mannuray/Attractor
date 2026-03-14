@@ -1,122 +1,148 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
 import styled from "styled-components";
-import { GlassPanel, SectionHeader, SectionTitle, StatsRow, StatLabel, StatValue, Field, Label, Select, colors } from "../attractors/shared/styles";
+import { StatsRow, StatLabel, StatValue, Field, Label, Select, colors } from "../attractors/shared/styles";
 import { AttractorType, formatCompact } from "../attractors/shared/types";
 import { CustomDropdown } from "./CustomDropdown";
+import { useTheme } from "../theme/ThemeContext";
+import { LiveStats } from "./LiveStats";
 
-const SidebarContainer = styled.aside`
-  width: 340px;
+const SidebarContainer = styled.aside<{ $collapsed: boolean }>`
+  width: ${props => props.$collapsed ? "70px" : "340px"};
   height: 100vh;
   display: flex;
   flex-direction: column;
-  background: ${colors.darkerBg};
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border-right: 1px solid ${colors.accentMuted};
+  background: ${props => props.theme.glassBg};
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border-right: 1px solid ${props => props.theme.accentBorder};
+  transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  z-index: 100;
+  overflow: hidden;
 `;
 
-const SidebarHeader = styled.div`
-  position: sticky;
-  top: 0;
-  background: ${colors.darkestBg};
-  backdrop-filter: blur(12px);
-  padding: 20px;
-  border-bottom: 1px solid ${colors.accentMuted};
-  z-index: 10;
+const SidebarHeader = styled.div<{ $collapsed: boolean }>`
+  background: rgba(0, 0, 0, 0.2);
+  padding: ${props => props.$collapsed ? "20px 0" : "24px 20px"};
+  border-bottom: 1px solid ${props => props.theme.accentMuted};
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  min-height: 80px;
+  box-sizing: border-box;
 `;
 
 const HeaderRow = styled.div`
   display: flex;
   align-items: center;
   justify-content: space-between;
+  width: 100%;
 `;
 
-const Title = styled.h1`
+const Title = styled.h1<{ $collapsed: boolean }>`
   margin: 0;
-  font-size: 22px;
-  font-weight: 700;
-  background: linear-gradient(135deg, #f59e0b 0%, #ea580c 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+  font-size: 14px;
+  font-weight: 900;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  font-family: 'JetBrains Mono', monospace;
+  color: ${props => props.theme.accent};
+  display: ${props => props.$collapsed ? "none" : "block"};
+  white-space: nowrap;
+  text-shadow: 0 0 10px ${props => props.theme.accentMuted};
 `;
 
 const InfoButton = styled.button`
-  width: 32px;
-  height: 32px;
+  width: 24px;
+  height: 24px;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 16px;
-  background: ${colors.accentSubtle};
-  border: 1px solid ${colors.accentBorderSoft};
-  border-radius: 8px;
-  color: ${colors.accentSoft};
+  font-size: 12px;
+  font-weight: 800;
+  background: transparent;
+  border: 1px solid ${props => props.theme.accentBorder};
+  border-radius: 4px;
+  color: ${props => props.theme.accentLight};
   cursor: pointer;
   transition: all 0.2s ease;
 
   &:hover {
-    background: ${colors.accentBorder};
-    border-color: ${colors.accentHover};
-    color: ${colors.accent};
+    background: ${props => props.theme.accentSubtle};
+    border-color: ${props => props.theme.accent};
+    color: white;
   }
 `;
 
-const SidebarContent = styled.div`
+const CollapseToggle = styled.button<{ $collapsed: boolean }>`
+  position: absolute;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 16px;
+  height: 32px;
+  background: ${props => props.theme.accent};
+  border: none;
+  border-radius: 4px 0 0 4px;
+  color: ${props => props.theme.bgPage};
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 101;
+  opacity: 0.4;
+  transition: all 0.2s ease;
+
+  &:hover {
+    opacity: 1;
+    width: 20px;
+  }
+
+  &::after {
+    content: '${props => props.$collapsed ? "›" : "‹"}';
+    font-size: 14px;
+    font-weight: 900;
+  }
+`;
+
+const SidebarContent = styled.div<{ $collapsed: boolean }>`
   flex: 1;
   overflow-y: auto;
+  overflow-x: hidden;
   padding: 20px;
+  opacity: ${props => props.$collapsed ? 0 : 1};
+  visibility: ${props => props.$collapsed ? "hidden" : "visible"};
+  transition: opacity 0.2s ease;
 
   &::-webkit-scrollbar {
-    width: 6px;
-  }
-  &::-webkit-scrollbar-track {
-    background: transparent;
+    width: 3px;
   }
   &::-webkit-scrollbar-thumb {
-    background: ${colors.accentBorderLight};
-    border-radius: 3px;
+    background: ${props => props.theme.accentMuted};
+    border-radius: 2px;
   }
 `;
 
-const SidebarFooter = styled.div`
-  background: ${colors.darkerBg};
+const SidebarFooter = styled.div<{ $collapsed: boolean }>`
+  background: rgba(0, 0, 0, 0.2);
   padding: 12px 20px;
-  border-top: 1px solid ${colors.accentMuted};
+  border-top: 1px solid ${props => props.theme.accentMuted};
+  display: ${props => props.$collapsed ? "none" : "block"};
 `;
 
-const SettingsCard = styled(GlassPanel)`
-  padding: 16px;
+const SettingsCard = styled.div`
   margin-bottom: 16px;
 `;
 
-const EditButton = styled.button<{ $active: boolean }>`
-  width: 100%;
-  padding: 10px 16px;
-  margin-bottom: 12px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  font-size: 13px;
-  font-weight: 600;
-  background: ${props => props.$active
-    ? "linear-gradient(135deg, #f59e0b 0%, #ea580c 100%)"
-    : colors.darkBg};
-  border: 1px solid ${props => props.$active
-    ? "transparent"
-    : colors.accentBorderLight};
-  border-radius: 10px;
-  color: ${colors.white};
+const IconWrapper = styled.div`
+  font-size: 20px;
   cursor: pointer;
-  transition: all 0.2s ease;
-
+  transition: transform 0.3s ease;
+  filter: drop-shadow(0 0 5px ${props => props.theme.accentMuted});
   &:hover {
-    background: ${props => props.$active
-      ? "linear-gradient(135deg, #f59e0b 0%, #ea580c 100%)"
-      : colors.darkerBg};
-    border-color: ${colors.accentHover};
+    transform: scale(1.1);
   }
 `;
 
@@ -185,14 +211,17 @@ interface SidebarProps {
   onCanvasSizeChange: (size: number) => void;
   oversampling: number;
   onOversamplingChange: (oversampling: number) => void;
-  maxHits: number;
-  totalIterations: number;
+  statsRef: React.MutableRefObject<{ maxHits: number; totalIterations: number }>;
   maxIter?: number;
   rendering?: boolean;
-  isEditing: boolean;
-  onToggleEdit: () => void;
   children: React.ReactNode;
+  collapsed: boolean;
+  onToggleCollapse: () => void;
 }
+
+const ComputingValue = styled(StatValue)`
+  color: ${props => props.theme.danger};
+`;
 
 export const Sidebar: React.FC<SidebarProps> = ({
   attractorType,
@@ -201,94 +230,100 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onCanvasSizeChange,
   oversampling,
   onOversamplingChange,
-  maxHits,
-  totalIterations,
+  statsRef,
   maxIter,
   rendering,
-  isEditing,
-  onToggleEdit,
   children,
+  collapsed,
+  onToggleCollapse,
 }) => {
   const navigate = useNavigate();
+  const { currentTheme, setTheme, availableThemes } = useTheme();
   const isFractal = ["mandelbrot", "julia", "burningship", "tricorn", "multibrot", "newton", "phoenix", "lyapunov"].includes(attractorType);
 
   return (
-    <SidebarContainer>
-      <SidebarHeader>
-        <HeaderRow>
-          <Title>Chaos Iterator</Title>
-          <InfoButton onClick={() => navigate("/info")} title="Info & Help">
-            ?
-          </InfoButton>
-        </HeaderRow>
+    <SidebarContainer $collapsed={collapsed}>
+      <CollapseToggle $collapsed={collapsed} onClick={onToggleCollapse} title={collapsed ? "Expand Controls" : "Collapse Controls"} />
+      
+      <SidebarHeader $collapsed={collapsed}>
+        {collapsed ? (
+          <IconWrapper onClick={onToggleCollapse} title="Expand">💠</IconWrapper>
+        ) : (
+          <HeaderRow>
+            <Title $collapsed={collapsed}>Core.System</Title>
+            <InfoButton onClick={() => navigate("/info")} title="Documentation">
+              ?
+            </InfoButton>
+          </HeaderRow>
+        )}
       </SidebarHeader>
 
-      <SidebarContent>
+      <SidebarContent $collapsed={collapsed}>
         <SettingsCard>
-          <SectionHeader as="div" style={{ cursor: "default" }}>
-            <SectionTitle>Settings</SectionTitle>
-          </SectionHeader>
+          <Field>
+            <Label>Dimensions</Label>
+            <Select
+              value={canvasSize}
+              onChange={(e) => onCanvasSizeChange(parseInt(e.target.value))}
+            >
+              {CANVAS_SIZE_OPTIONS.map((opt) => (
+                <option key={opt.value} value={opt.value}>{opt.label}</option>
+              ))}
+            </Select>
+          </Field>
 
           <Field>
-                <Label>Canvas Size</Label>
-                <Select
-                  value={canvasSize}
-                  onChange={(e) => onCanvasSizeChange(parseInt(e.target.value))}
-                >
-                  {CANVAS_SIZE_OPTIONS.map((opt) => (
-                    <option key={opt.value} value={opt.value}>{opt.label}</option>
-                  ))}
-                </Select>
-              </Field>
+            <Label>Sampling</Label>
+            <Select
+              value={oversampling}
+              onChange={(e) => onOversamplingChange(parseInt(e.target.value))}
+            >
+              {OVERSAMPLING_OPTIONS.map((opt) => (
+                <option key={opt.value} value={opt.value}>{opt.label}</option>
+              ))}
+            </Select>
+          </Field>
 
-              <Field>
-                <Label>Oversampling</Label>
-                <Select
-                  value={oversampling}
-                  onChange={(e) => onOversamplingChange(parseInt(e.target.value))}
-                >
-                  {OVERSAMPLING_OPTIONS.map((opt) => (
-                    <option key={opt.value} value={opt.value}>{opt.label}</option>
-                  ))}
-                </Select>
-              </Field>
+          <Field>
+            <Label>System.Theme</Label>
+            <Select
+              value={currentTheme}
+              onChange={(e) => setTheme(e.target.value)}
+            >
+              {availableThemes.map((t) => (
+                <option key={t.id} value={t.id}>{t.label}</option>
+              ))}
+            </Select>
+          </Field>
 
-              <Field>
-                <Label>Attractor Type</Label>
-                <CustomDropdown
-                  value={attractorType}
-                  onChange={(value) => onAttractorTypeChange(value as AttractorType)}
-                  groups={ATTRACTOR_GROUPS}
-                  placeholder="Select attractor..."
-                />
-              </Field>
-
-              <EditButton $active={isEditing} onClick={onToggleEdit}>
-                {isEditing ? "🔓 Lock Parameters" : "✏️ Edit Parameters"}
-              </EditButton>
+          <Field>
+            <Label>Module</Label>
+            <CustomDropdown
+              value={attractorType}
+              onChange={(value) => onAttractorTypeChange(value as AttractorType)}
+              groups={ATTRACTOR_GROUPS}
+              placeholder="Select module..."
+            />
+          </Field>
 
           {children}
         </SettingsCard>
       </SidebarContent>
 
-      <SidebarFooter>
+      <SidebarFooter $collapsed={collapsed}>
         <StatsRow>
           {rendering ? (
             <>
-              <StatLabel>Status</StatLabel>
-              <StatValue style={{ color: "#ef4444" }}>Rendering...</StatValue>
+              <StatLabel>Process</StatLabel>
+              <ComputingValue>Computing...</ComputingValue>
             </>
           ) : (
             <>
-              <StatLabel>{isFractal ? "Max Iterations" : "Hits/Iteration"}</StatLabel>
+              <StatLabel>{isFractal ? "Complexity" : "Density"}</StatLabel>
               {isFractal ? (
                 <StatValue>{maxIter ?? "—"}</StatValue>
               ) : (
-                <span>
-                  <StatValue>{formatCompact(maxHits)}</StatValue>
-                  <StatLabel> / </StatLabel>
-                  <StatValue>{formatCompact(totalIterations)}</StatValue>
-                </span>
+                <LiveStats statsRef={statsRef} />
               )}
             </>
           )}

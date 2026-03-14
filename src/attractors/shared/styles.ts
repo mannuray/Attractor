@@ -1,94 +1,98 @@
 import styled, { css } from "styled-components";
+import { ThemeColors } from "../../theme/themes";
 
-// Color palette
+// Color helper object that works with styled-components props
 export const colors = {
-  accent: "rgba(255, 180, 120, 1)",
-  accentSoft: "rgba(255, 180, 120, 0.8)",
-  accentLight: "rgba(255, 180, 120, 0.7)",
-  accentDim: "rgba(255, 180, 120, 0.6)",
-  accentHover: "rgba(255, 180, 120, 0.4)",
-  accentBorderLight: "rgba(255, 180, 120, 0.3)",
-  accentBorderSoft: "rgba(255, 180, 120, 0.25)",
-  accentBorder: "rgba(255, 180, 120, 0.2)",
-  accentMuted: "rgba(255, 180, 120, 0.15)",
-  accentSubtle: "rgba(255, 180, 120, 0.1)",
-  glassBg: "rgba(255, 180, 120, 0.06)",
-  darkBg: "rgba(0, 0, 0, 0.3)",
-  darkerBg: "rgba(0, 0, 0, 0.4)",
-  darkestBg: "rgba(0, 0, 0, 0.6)",
-  white: "#ffffff",
-  shadow: "rgba(0, 0, 0, 0.3)",
+  accent: (props: { theme: ThemeColors }) => props.theme.accent,
+  accentSoft: (props: { theme: ThemeColors }) => props.theme.accentSoft,
+  accentLight: (props: { theme: ThemeColors }) => props.theme.accentLight,
+  accentDim: (props: { theme: ThemeColors }) => props.theme.accentDim,
+  accentHover: (props: { theme: ThemeColors }) => props.theme.accentHover,
+  accentBorderLight: (props: { theme: ThemeColors }) => props.theme.accentBorderLight,
+  accentBorderSoft: (props: { theme: ThemeColors }) => props.theme.accentBorderSoft,
+  accentBorder: (props: { theme: ThemeColors }) => props.theme.accentBorder,
+  accentMuted: (props: { theme: ThemeColors }) => props.theme.accentMuted,
+  accentSubtle: (props: { theme: ThemeColors }) => props.theme.accentSubtle,
+  glassBg: (props: { theme: ThemeColors }) => props.theme.glassBg,
+  darkBg: (props: { theme: ThemeColors }) => props.theme.darkBg,
+  darkerBg: (props: { theme: ThemeColors }) => props.theme.darkerBg,
+  darkestBg: (props: { theme: ThemeColors }) => props.theme.darkestBg,
+  white: (props: { theme: ThemeColors }) => props.theme.white,
+  shadow: (props: { theme: ThemeColors }) => props.theme.shadow,
+  success: (props: { theme: ThemeColors }) => props.theme.success,
+  danger: (props: { theme: ThemeColors }) => props.theme.danger,
+  bgPage: (props: { theme: ThemeColors }) => props.theme.bgPage,
 };
 
 // Glass effect mixin
 export const glassEffect = css`
   background: ${colors.glassBg};
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
   border: 1px solid ${colors.accentBorder};
-  border-radius: 16px;
+  border-radius: 12px;
   box-shadow: 0 8px 32px ${colors.shadow};
 `;
 
 // Card style
 export const Card = styled.div`
-  background: rgba(0, 0, 0, 0.25);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
+  background: ${colors.darkerBg};
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
   border: 1px solid ${colors.accentBorder};
   padding: 16px;
-  border-radius: 16px;
+  border-radius: 12px;
   margin-bottom: 16px;
-  box-shadow: 0 8px 32px ${colors.shadow};
 `;
 
 // Field wrapper
 export const Field = styled.div`
-  margin-bottom: 16px;
+  margin-bottom: 20px;
 `;
 
 // Label
 export const Label = styled.label`
   display: block;
-  margin-bottom: 8px;
-  font-size: 11px;
-  font-weight: 600;
+  margin-bottom: 6px;
+  font-size: 10px;
+  font-weight: 800;
   color: ${colors.accentLight};
   text-transform: uppercase;
-  letter-spacing: 1px;
+  letter-spacing: 2px;
+  font-family: 'JetBrains Mono', 'Fira Code', monospace;
 `;
 
 // Base input styles
 const inputBase = css`
   width: 100%;
-  padding: 12px 14px;
+  padding: 8px 12px;
   font-size: 13px;
-  border-radius: 10px;
+  border-radius: 6px;
   border: 1px solid ${colors.accentBorder};
   box-sizing: border-box;
-  background: ${colors.darkBg};
+  background: ${colors.darkestBg};
   color: ${colors.white};
   font-weight: 500;
   outline: none;
   transition: all 0.2s ease;
 
   &:focus {
-    border-color: ${colors.accentBorderLight};
-    box-shadow: 0 0 0 2px ${colors.accentMuted};
+    border-color: ${colors.accent};
+    box-shadow: 0 0 0 2px ${colors.accentSubtle}, 0 0 10px ${colors.accentMuted};
   }
 
   &:disabled {
-    background: rgba(0, 0, 0, 0.25);
-    color: rgba(255, 255, 255, 0.5);
+    background: rgba(0, 0, 0, 0.3);
+    color: rgba(255, 255, 255, 0.2);
     cursor: not-allowed;
+    border-color: ${colors.accentMuted};
   }
 `;
 
 // Input
 export const Input = styled.input<{ $editable?: boolean }>`
   ${inputBase}
-  background: ${props => props.$editable ? colors.darkerBg : "rgba(0, 0, 0, 0.25)"};
-  color: ${props => props.$editable ? colors.white : "rgba(255, 255, 255, 0.5)"};
+  background: ${props => props.$editable ? props.theme.darkestBg : props.theme.darkBg};
 `;
 
 // Select
@@ -97,156 +101,131 @@ export const Select = styled.select`
   cursor: pointer;
   appearance: none;
   -webkit-appearance: none;
-  -moz-appearance: none;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23f59e0b' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='cyan' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
   background-repeat: no-repeat;
-  background-position: right 14px center;
-  padding-right: 40px;
-  background-color: rgba(0, 0, 0, 0.4);
-  border: 1px solid rgba(255, 180, 120, 0.25);
+  background-position: right 12px center;
+  padding-right: 36px;
 
-  &:hover {
-    border-color: rgba(255, 180, 120, 0.4);
-    background-color: rgba(0, 0, 0, 0.5);
-  }
-
-  &:focus {
-    border-color: #f59e0b;
-    box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.2), 0 4px 12px rgba(0, 0, 0, 0.3);
+  &:hover:not(:disabled) {
+    border-color: ${colors.accentLight};
   }
 
   option {
-    background: #1a1a2e;
-    color: white;
-    padding: 12px;
-  }
-
-  optgroup {
-    background: #0f0f1a;
-    color: #f59e0b;
-    font-weight: 600;
-    font-style: normal;
+    background: ${colors.darkestBg};
+    color: ${colors.white};
   }
 `;
 
 // Button base
 const buttonBase = css`
-  font-weight: 600;
+  font-weight: 700;
   cursor: pointer;
   border: none;
-  transition: all 0.2s ease;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  font-family: 'JetBrains Mono', 'Fira Code', monospace;
+  text-transform: uppercase;
+  letter-spacing: 1px;
 
   &:hover {
-    transform: translateY(-1px);
+    filter: brightness(1.2);
+    box-shadow: 0 0 15px ${colors.accentMuted};
   }
 
   &:active {
-    transform: translateY(0);
+    transform: scale(0.98);
   }
 
   &:disabled {
-    opacity: 0.5;
+    opacity: 0.4;
     cursor: not-allowed;
     transform: none;
+    box-shadow: none;
   }
 `;
 
-// Primary button (orange gradient)
+// Primary button
 export const ButtonPrimary = styled.button`
   ${buttonBase}
-  padding: 8px 16px;
-  font-size: 13px;
-  background: linear-gradient(135deg, #f59e0b 0%, #ea580c 100%);
-  color: white;
-  border-radius: 8px;
-  box-shadow: 0 2px 10px rgba(245, 158, 11, 0.3);
-
-  &:hover {
-    box-shadow: 0 4px 15px rgba(245, 158, 11, 0.5);
-  }
+  padding: 10px 16px;
+  font-size: 11px;
+  background: ${colors.accent};
+  color: ${colors.bgPage};
+  border-radius: 6px;
+  box-shadow: 0 4px 12px ${colors.accentMuted};
 `;
 
-// Success button (green gradient)
+// Success button
 export const ButtonSuccess = styled.button`
   ${buttonBase}
-  padding: 14px 24px;
-  font-size: 14px;
-  background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
+  padding: 12px 20px;
+  font-size: 12px;
+  background: ${colors.success};
   color: white;
-  border-radius: 12px;
-  box-shadow: 0 4px 15px rgba(34, 197, 94, 0.4);
-
-  &:hover {
-    box-shadow: 0 6px 20px rgba(34, 197, 94, 0.6);
-  }
+  border-radius: 8px;
 `;
 
-// Danger button (red gradient)
+// Danger button
 export const ButtonDanger = styled.button`
   ${buttonBase}
-  padding: 14px 24px;
-  font-size: 14px;
-  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+  padding: 12px 20px;
+  font-size: 12px;
+  background: ${colors.danger};
   color: white;
-  border-radius: 12px;
-  box-shadow: 0 4px 15px rgba(239, 68, 68, 0.4);
-
-  &:hover {
-    box-shadow: 0 6px 20px rgba(239, 68, 68, 0.6);
-  }
+  border-radius: 8px;
 `;
 
-// Secondary button (glass)
+// Secondary button
 export const ButtonSecondary = styled.button`
   ${buttonBase}
   padding: 10px 16px;
-  font-size: 13px;
-  background: ${colors.darkBg};
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
-  color: ${colors.white};
+  font-size: 11px;
+  background: transparent;
+  color: ${colors.accent};
   border: 1px solid ${colors.accentBorder};
-  border-radius: 10px;
+  border-radius: 6px;
 
   &:hover {
-    border-color: ${colors.accentBorderLight};
-    background: rgba(0, 0, 0, 0.4);
+    background: ${colors.accentSubtle};
+    border-color: ${colors.accent};
   }
 `;
 
 // Small button
 export const ButtonSmall = styled.button`
   ${buttonBase}
-  padding: 8px 12px;
-  font-size: 14px;
-  background: ${colors.darkBg};
-  color: ${colors.white};
+  padding: 6px 10px;
+  font-size: 10px;
+  background: ${colors.darkestBg};
+  color: ${colors.accentLight};
   border: 1px solid ${colors.accentBorder};
-  border-radius: 8px;
-  min-width: 36px;
+  border-radius: 4px;
+  min-width: 28px;
 
   &:hover {
-    border-color: ${colors.accentBorderLight};
-    background: rgba(0, 0, 0, 0.4);
+    border-color: ${colors.accent};
+    color: white;
   }
 `;
 
-// Floating button (for panels)
+// Floating button
 export const FloatingButton = styled.button`
   ${buttonBase}
-  width: 44px;
-  height: 44px;
+  width: 36px;
+  height: 36px;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 20px;
-  background: ${colors.accentMuted};
-  border: 1px solid ${colors.accentBorderLight};
-  border-radius: 10px;
-  color: ${colors.white};
+  font-size: 16px;
+  background: ${colors.darkestBg};
+  border: 1px solid ${colors.accentBorder};
+  border-radius: 8px;
+  color: ${colors.accent};
+  backdrop-filter: blur(8px);
 
   &:hover {
-    background: rgba(255, 180, 120, 0.25);
+    background: ${colors.accentSubtle};
+    border-color: ${colors.accent};
+    box-shadow: 0 0 12px ${colors.accentMuted};
   }
 `;
 
@@ -259,7 +238,7 @@ export const GlassPanel = styled.div`
 export const FlexRow = styled.div<{ $gap?: string; $align?: string; $justify?: string }>`
   display: flex;
   flex-direction: row;
-  gap: ${props => props.$gap || "8px"};
+  gap: ${props => props.$gap || "12px"};
   align-items: ${props => props.$align || "center"};
   justify-content: ${props => props.$justify || "flex-start"};
 `;
@@ -268,112 +247,119 @@ export const FlexRow = styled.div<{ $gap?: string; $align?: string; $justify?: s
 export const FlexColumn = styled.div<{ $gap?: string }>`
   display: flex;
   flex-direction: column;
-  gap: ${props => props.$gap || "8px"};
+  gap: ${props => props.$gap || "12px"};
 `;
 
-// Section header (collapsible)
+// Section header
 export const SectionHeader = styled.div<{ $collapsed?: boolean }>`
   display: flex;
   align-items: center;
   justify-content: space-between;
   cursor: pointer;
   padding: 8px 0;
-  border-bottom: 1px solid ${colors.accentBorder};
+  border-bottom: 1px solid ${colors.accentMuted};
   margin-bottom: ${props => props.$collapsed ? "0" : "16px"};
   user-select: none;
 
   &:hover {
-    opacity: 0.9;
+    border-color: ${colors.accentBorderLight};
   }
 `;
 
 export const SectionTitle = styled.h3`
   margin: 0;
-  font-size: 12px;
-  font-weight: 600;
-  color: ${colors.accentLight};
+  font-size: 10px;
+  font-weight: 800;
+  color: ${colors.accentDim};
   text-transform: uppercase;
-  letter-spacing: 1px;
+  letter-spacing: 2px;
+  font-family: 'JetBrains Mono', monospace;
 `;
 
 export const CollapseIcon = styled.span<{ $collapsed?: boolean }>`
-  font-size: 12px;
-  color: ${colors.accentLight};
+  font-size: 9px;
+  color: ${colors.accentDim};
   transform: rotate(${props => props.$collapsed ? "-90deg" : "0"});
-  transition: transform 0.2s ease;
-`;
-
-// Parameter grid (single column)
-export const ParameterGrid = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: 0;
+  transition: transform 0.3s ease;
 `;
 
 // Stats row
 export const StatsRow = styled.div`
   display: flex;
   justify-content: space-between;
-  font-size: 11px;
+  font-size: 9px;
   color: ${colors.accentDim};
-  padding: 8px 0;
-  border-top: 1px solid ${colors.accentBorder};
+  padding: 10px 0;
+  border-top: 1px solid ${colors.accentMuted};
+  font-family: 'JetBrains Mono', monospace;
 `;
 
 export const StatLabel = styled.span`
   font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 1px;
 `;
 
 export const StatValue = styled.span`
-  color: ${colors.white};
-  font-weight: 600;
+  color: ${colors.accentLight};
+  font-weight: 700;
 `;
 
-// Parameter row layout - horizontal with label left, value right
+// Parameter row layout
 export const ParameterRow = styled.div`
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 4px 0;
+  padding: 6px 0;
 `;
 
-// Display value as text (view mode)
+// Parameter grid
+export const ParameterGrid = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+`;
+
+// Display value as text
 export const ValueText = styled.span<{ $clickable?: boolean }>`
-  font-size: 13px;
-  font-weight: 500;
+  font-size: 12px;
+  font-weight: 700;
   color: ${colors.white};
+  font-family: 'JetBrains Mono', monospace;
   font-variant-numeric: tabular-nums;
   text-align: right;
-  ${props => props.$clickable && `
+  ${props => props.$clickable && css`
     cursor: pointer;
-    padding: 4px 8px;
-    border-radius: 6px;
+    padding: 2px 6px;
+    border-radius: 4px;
+    background: ${props.theme.accentSubtle};
     &:hover {
-      background: ${colors.accentMuted};
+      background: ${props.theme.accentMuted};
+      color: ${props.theme.accent};
+      box-shadow: 0 0 8px ${props.theme.accentSubtle};
     }
   `}
 `;
 
-// Compact inline input for editing
+// Compact inline input
 export const ValueInput = styled.input`
-  width: 90px;
+  width: 70px;
   padding: 4px 8px;
-  font-size: 13px;
-  font-weight: 500;
-  font-variant-numeric: tabular-nums;
+  font-size: 12px;
+  font-weight: 700;
+  font-family: 'JetBrains Mono', monospace;
   text-align: right;
-  background: ${colors.darkerBg};
-  border: 1px solid ${colors.accentBorderLight};
-  border-radius: 6px;
+  background: ${colors.darkestBg};
+  border: 1px solid ${colors.accentBorder};
+  border-radius: 4px;
   color: ${colors.white};
   outline: none;
 
   &:focus {
-    border-color: #f59e0b;
-    box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.2);
+    border-color: ${colors.accent};
+    box-shadow: 0 0 8px ${colors.accentSubtle};
   }
 
-  /* Hide spin buttons */
   &::-webkit-outer-spin-button,
   &::-webkit-inner-spin-button {
     -webkit-appearance: none;
@@ -389,58 +375,45 @@ export const ParameterRowWithSlider = styled.div`
   padding: 4px 0;
 `;
 
-// Range slider styled to match the glass/amber theme
+// Range slider
 export const SliderInput = styled.input.attrs({ type: "range" })`
   width: 100%;
   height: 4px;
-  margin: 4px 0 2px;
+  margin: 10px 0 8px;
   padding: 0;
   appearance: none;
   -webkit-appearance: none;
-  background: transparent;
+  background: linear-gradient(
+    to right, 
+    ${colors.accent} 0%, 
+    ${colors.accent} var(--val, 50%), 
+    ${colors.accentMuted} var(--val, 50%), 
+    ${colors.accentMuted} 100%
+  );
   cursor: pointer;
-
-  &::-webkit-slider-runnable-track {
-    height: 4px;
-    background: rgba(0, 0, 0, 0.4);
-    border-radius: 2px;
-    border: 1px solid ${colors.accentBorder};
-  }
+  border-radius: 2px;
 
   &::-webkit-slider-thumb {
     -webkit-appearance: none;
-    width: 14px;
-    height: 14px;
+    width: 12px;
+    height: 12px;
     border-radius: 50%;
     background: ${colors.accent};
-    margin-top: -6px;
-    border: none;
-    box-shadow: 0 0 4px rgba(255, 180, 120, 0.4);
-    transition: box-shadow 0.15s ease;
+    border: 2px solid ${colors.bgPage};
+    box-shadow: 0 0 8px ${colors.accentMuted};
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   }
 
   &:hover::-webkit-slider-thumb {
-    box-shadow: 0 0 8px rgba(255, 180, 120, 0.7);
-  }
-
-  &::-moz-range-track {
-    height: 4px;
-    background: rgba(0, 0, 0, 0.4);
-    border-radius: 2px;
-    border: 1px solid ${colors.accentBorder};
+    transform: scale(1.3);
+    box-shadow: 0 0 15px ${colors.accentSoft};
   }
 
   &::-moz-range-thumb {
-    width: 14px;
-    height: 14px;
+    width: 10px;
+    height: 10px;
     border-radius: 50%;
     background: ${colors.accent};
-    border: none;
-    box-shadow: 0 0 4px rgba(255, 180, 120, 0.4);
-    transition: box-shadow 0.15s ease;
-  }
-
-  &:hover::-moz-range-thumb {
-    box-shadow: 0 0 8px rgba(255, 180, 120, 0.7);
+    border: 2px solid ${colors.bgPage};
   }
 `;

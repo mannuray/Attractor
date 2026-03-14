@@ -7,47 +7,79 @@ import { ModalOverlay, ModalHeader, ModalTitle, CloseButton } from "./ModalStyle
 const ExportModalContent = styled(GlassPanel)`
   width: 320px;
   padding: 24px;
+  background: ${colors.bgPage};
+  border: 1px solid ${colors.accentBorder};
+  box-shadow: 0 0 40px rgba(0, 0, 0, 0.8), 0 0 20px ${colors.accentSubtle};
 `;
 
 const OptionList = styled.div`
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 6px;
 `;
 
 const OptionRow = styled.button`
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 12px 14px;
-  background: ${colors.darkBg};
-  border: 1px solid ${colors.accentBorder};
-  border-radius: 10px;
+  padding: 12px 16px;
+  background: ${colors.darkerBg};
+  border: 1px solid ${colors.accentMuted};
+  border-radius: 4px;
   color: ${colors.white};
-  font-size: 14px;
-  font-weight: 500;
+  font-size: 12px;
+  font-weight: 700;
+  font-family: 'JetBrains Mono', monospace;
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 
   &:hover {
-    background: ${colors.darkerBg};
-    border-color: ${colors.accentBorderLight};
+    background: ${colors.accentSubtle};
+    border-color: ${colors.accent};
+    transform: translateX(4px);
+    color: ${colors.accent};
+  }
+
+  &:active {
+    transform: translateX(2px);
   }
 `;
 
 const OptionLabel = styled.span``;
 
 const OptionDetail = styled.span`
-  font-size: 12px;
-  color: ${colors.accentLight};
+  font-size: 9px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: ${colors.accentDim};
 `;
 
 const ExportingIndicator = styled.div`
   text-align: center;
-  padding: 16px;
+  padding: 24px 16px;
   color: ${colors.accent};
-  font-size: 14px;
-  font-weight: 500;
+  font-size: 12px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  font-family: 'JetBrains Mono', monospace;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  align-items: center;
+
+  &::before {
+    content: "◈";
+    font-size: 24px;
+    animation: pulse 1.5s ease-in-out infinite;
+  }
+
+  @keyframes pulse {
+    0% { opacity: 0.4; transform: scale(0.8); }
+    50% { opacity: 1; transform: scale(1.2); text-shadow: 0 0 15px ${colors.accent}; }
+    100% { opacity: 0.4; transform: scale(0.8); }
+  }
 `;
 
 interface ExportOption {
@@ -57,11 +89,11 @@ interface ExportOption {
 }
 
 const EXPORT_OPTIONS: ExportOption[] = [
-  { label: "Current Size", size: "current", detail: "Fast" },
-  { label: "1080 x 1080", size: 1080, detail: "1080p" },
-  { label: "2048 x 2048", size: 2048, detail: "2K" },
-  { label: "4096 x 4096", size: 4096, detail: "4K" },
-  { label: "8192 x 8192", size: 8192, detail: "8K" },
+  { label: "VIEWPORT.STREAM", size: "current", detail: "RAW" },
+  { label: "EXPORT.HD", size: 1080, detail: "1080P" },
+  { label: "EXPORT.QHD", size: 1440, detail: "1440P" },
+  { label: "EXPORT.UHD", size: 2160, detail: "2160P" },
+  { label: "EXPORT.MASTER", size: 4320, detail: "4320P" },
 ];
 
 interface ExportModalProps {
@@ -79,14 +111,12 @@ export const ExportModal: React.FC<ExportModalProps> = ({
   onExportSize,
   exporting,
 }) => {
-  // Track whether we initiated a sized export so we can auto-close on completion
   const wasExporting = React.useRef(false);
 
   React.useEffect(() => {
     if (exporting) {
       wasExporting.current = true;
     } else if (wasExporting.current) {
-      // Export just finished — auto-close
       wasExporting.current = false;
       onClose();
     }
@@ -100,7 +130,8 @@ export const ExportModal: React.FC<ExportModalProps> = ({
       onExportCurrent();
       onClose();
     } else {
-      onExportSize(option.size);
+      const size = typeof option.size === 'number' ? option.size : 1080;
+      onExportSize(size);
     }
   };
 
@@ -112,12 +143,12 @@ export const ExportModal: React.FC<ExportModalProps> = ({
     <ModalOverlay onClick={handleOverlayClick}>
       <ExportModalContent onClick={(e) => e.stopPropagation()}>
         <ModalHeader>
-          <ModalTitle>Export Image</ModalTitle>
+          <ModalTitle>System.Export</ModalTitle>
           <CloseButton onClick={handleOverlayClick}>&times;</CloseButton>
         </ModalHeader>
 
         {exporting ? (
-          <ExportingIndicator>Rendering...</ExportingIndicator>
+          <ExportingIndicator>WRITING_DATA_TO_DISK...</ExportingIndicator>
         ) : (
           <OptionList>
             {EXPORT_OPTIONS.map((opt) => (

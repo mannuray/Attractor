@@ -2,34 +2,55 @@ import React, { lazy, Suspense, useState } from "react";
 import { createPortal } from "react-dom";
 import styled from "styled-components";
 import { Color } from "../model-controller/Attractor/palette";
-import { Field, Label, Input, Select, FlexRow, ButtonPrimary } from "../attractors/shared/styles";
+import { Field, Label, Input, Select, FlexRow, ButtonPrimary, colors } from "../attractors/shared/styles";
 import { ColorPickerPopup, RGB } from "../view/components/colorbar";
 import { ModalOverlay, ModalContent, ModalHeader, ModalTitle, CloseButton } from "./ModalStyles";
 
-// Lazy load ColorBar
 const ColorBar = lazy(() => import("../view/components/colorbar"));
 
 const ColorBarWrapper = styled.div`
-  margin-bottom: 20px;
+  margin-bottom: 24px;
+  background: ${colors.darkerBg};
+  padding: 12px;
+  border-radius: 4px;
+  border: 1px solid ${colors.accentMuted};
 `;
 
 const ColorPickerWrapper = styled.div`
   display: flex;
   align-items: center;
   gap: 12px;
+  background: ${colors.darkerBg};
+  padding: 10px;
+  border-radius: 4px;
+  border: 1px solid ${colors.accentBorder};
 `;
 
 const ColorPreview = styled.div<{ $color: string }>`
-  width: 40px;
-  height: 40px;
-  border-radius: 8px;
+  width: 36px;
+  height: 36px;
+  border-radius: 4px;
   background: ${props => props.$color};
-  border: 2px solid rgba(255, 180, 120, 0.3);
-  transition: transform 0.15s ease, border-color 0.15s ease;
+  border: 1px solid ${colors.accentBorder};
+  transition: all 0.2s ease;
 
   &:hover {
-    transform: scale(1.05);
-    border-color: rgba(255, 180, 120, 0.6);
+    transform: scale(1.1);
+    border-color: ${colors.accent};
+    box-shadow: 0 0 12px ${colors.accentSubtle};
+  }
+`;
+
+const ColorValueLabel = styled.span`
+  color: ${colors.accentLight};
+  font-size: 11px;
+  font-weight: 700;
+  font-family: 'JetBrains Mono', monospace;
+  cursor: pointer;
+  
+  &:hover {
+    color: ${colors.accent};
+    text-shadow: 0 0 8px ${colors.accentMuted};
   }
 `;
 
@@ -82,12 +103,12 @@ export const PaletteModal: React.FC<PaletteModalProps> = ({
     <ModalOverlay onClick={onClose}>
       <ModalContent onClick={(e) => e.stopPropagation()}>
         <ModalHeader>
-          <ModalTitle>Palette Editor</ModalTitle>
+          <ModalTitle>Engine.Palette</ModalTitle>
           <CloseButton onClick={onClose}>×</CloseButton>
         </ModalHeader>
 
         <ColorBarWrapper>
-          <Suspense fallback={<div style={{ height: 60, background: "rgba(0,0,0,0.3)", borderRadius: 8 }} />}>
+          <Suspense fallback={<div style={{ height: 40, background: 'rgba(0,0,0,0.2)', borderRadius: 4 }} />}>
             <ColorBar
               palletteArg={paletteData}
               changePalletCallback={onPaletteChange}
@@ -96,11 +117,11 @@ export const PaletteModal: React.FC<PaletteModalProps> = ({
         </ColorBarWrapper>
 
         <Field>
-          <Label>Gamma ({palGamma.toFixed(2)})</Label>
+          <Label>Signal Gamma ({palGamma.toFixed(2)})</Label>
           <Input
             type="range"
             min="0.1"
-            max="2"
+            max="2.5"
             step="0.01"
             value={palGamma}
             onChange={(e) => onGammaChange(parseFloat(e.target.value))}
@@ -109,19 +130,19 @@ export const PaletteModal: React.FC<PaletteModalProps> = ({
         </Field>
 
         <Field>
-          <Label>Scale Mode</Label>
+          <Label>Normalize</Label>
           <Select
             value={palScale ? "dynamic" : "fixed"}
             onChange={(e) => onScaleModeChange(e.target.value === "dynamic")}
           >
-            <option value="dynamic">Dynamic (Max Hits)</option>
-            <option value="fixed">Fixed Threshold</option>
+            <option value="dynamic">Auto (Peak)</option>
+            <option value="fixed">Manual (Gain)</option>
           </Select>
         </Field>
 
         {!palScale && (
           <Field>
-            <Label>Fixed Max Hits</Label>
+            <Label>Gain Threshold</Label>
             <Input
               type="number"
               value={palMax}
@@ -134,24 +155,21 @@ export const PaletteModal: React.FC<PaletteModalProps> = ({
         )}
 
         <Field>
-          <Label>Background Color (0 hits)</Label>
+          <Label>Base.Canvas</Label>
           <ColorPickerWrapper>
             <ColorPreview
               $color={bgColorHex}
               onClick={() => setBgPickerOpen(true)}
               style={{ cursor: "pointer" }}
             />
-            <span
-              style={{ color: "rgba(255,255,255,0.7)", fontSize: 13, cursor: "pointer" }}
-              onClick={() => setBgPickerOpen(true)}
-            >
-              {bgColorHex.toUpperCase()} — Click to edit
-            </span>
+            <ColorValueLabel onClick={() => setBgPickerOpen(true)}>
+              {bgColorHex.toUpperCase()}
+            </ColorValueLabel>
           </ColorPickerWrapper>
         </Field>
 
-        <FlexRow $justify="flex-end" style={{ marginTop: 20 }}>
-          <ButtonPrimary onClick={onClose}>Done</ButtonPrimary>
+        <FlexRow $justify="flex-end" style={{ marginTop: 24 }}>
+          <ButtonPrimary onClick={onClose} style={{ width: '100px' }}>Commit</ButtonPrimary>
         </FlexRow>
       </ModalContent>
 
@@ -164,8 +182,8 @@ export const PaletteModal: React.FC<PaletteModalProps> = ({
             left: 0,
             right: 0,
             bottom: 0,
-            background: "rgba(0, 0, 0, 0.6)",
-            backdropFilter: "blur(4px)",
+            background: "rgba(0, 0, 0, 0.9)",
+            backdropFilter: "blur(12px)",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",

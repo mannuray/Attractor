@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from "react";
 import styled from "styled-components";
+import { colors, glassEffect } from "../attractors/shared/styles";
 
 const DropdownContainer = styled.div`
   position: relative;
@@ -8,41 +9,42 @@ const DropdownContainer = styled.div`
 
 const DropdownButton = styled.button<{ $isOpen: boolean }>`
   width: 100%;
-  padding: 12px 14px;
-  padding-right: 40px;
-  font-size: 13px;
-  font-weight: 500;
+  padding: 8px 12px;
+  padding-right: 36px;
+  font-size: 12px;
+  font-weight: 700;
   text-align: left;
-  background: linear-gradient(135deg, #1a1020 0%, #0f0a15 100%);
-  border: 1px solid ${props => props.$isOpen ? "#f59e0b" : "rgba(255, 180, 120, 0.25)"};
-  border-radius: 10px;
-  color: white;
+  font-family: 'JetBrains Mono', monospace;
+  background: ${colors.darkestBg};
+  border: 1px solid ${props => props.$isOpen ? colors.accent : colors.accentBorder};
+  border-radius: 4px;
+  color: ${colors.white};
   cursor: pointer;
   outline: none;
   transition: all 0.2s ease;
   position: relative;
 
   &:hover {
-    border-color: rgba(255, 180, 120, 0.5);
-    background: linear-gradient(135deg, #221528 0%, #150d1c 100%);
+    border-color: ${colors.accentLight};
+    background: ${colors.accentSubtle};
   }
 
   &::after {
     content: "";
     position: absolute;
-    right: 14px;
+    right: 12px;
     top: 50%;
     transform: translateY(-50%) ${props => props.$isOpen ? "rotate(180deg)" : "rotate(0)"};
     width: 0;
     height: 0;
-    border-left: 6px solid transparent;
-    border-right: 6px solid transparent;
-    border-top: 6px solid #f59e0b;
-    transition: transform 0.2s ease;
+    border-left: 4px solid transparent;
+    border-right: 4px solid transparent;
+    border-top: 4px solid ${colors.accent};
+    transition: transform 0.3s ease;
   }
 
   ${props => props.$isOpen && `
-    box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.2), 0 4px 20px rgba(0, 0, 0, 0.4);
+    box-shadow: 0 0 15px ${colors.accentSubtle};
   `}
 `;
 
@@ -51,55 +53,53 @@ const DropdownMenu = styled.div<{ $isOpen: boolean }>`
   top: calc(100% + 4px);
   left: 0;
   right: 0;
-  max-height: ${props => props.$isOpen ? "400px" : "0"};
+  max-height: ${props => props.$isOpen ? "300px" : "0"};
   overflow-y: auto;
-  background: linear-gradient(135deg, #1a1225 0%, #0f0a15 100%);
-  border: 1px solid rgba(255, 180, 120, 0.3);
-  border-radius: 12px;
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.6), 0 0 20px rgba(245, 158, 11, 0.1);
+  ${glassEffect}
+  border-radius: 4px;
   opacity: ${props => props.$isOpen ? 1 : 0};
   visibility: ${props => props.$isOpen ? "visible" : "hidden"};
-  transform: ${props => props.$isOpen ? "translateY(0)" : "translateY(-10px)"};
-  transition: all 0.2s ease;
-  z-index: 100;
+  transform: ${props => props.$isOpen ? "translateY(0)" : "translateY(-5px)"};
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  z-index: 1000;
 
   &::-webkit-scrollbar {
-    width: 6px;
-  }
-  &::-webkit-scrollbar-track {
-    background: transparent;
+    width: 3px;
   }
   &::-webkit-scrollbar-thumb {
-    background: rgba(245, 158, 11, 0.3);
-    border-radius: 3px;
+    background: ${colors.accentMuted};
+    border-radius: 2px;
   }
 `;
 
 const GroupLabel = styled.div`
-  padding: 10px 14px 6px;
-  font-size: 10px;
-  font-weight: 700;
+  padding: 8px 12px 4px;
+  font-size: 8px;
+  font-weight: 800;
   text-transform: uppercase;
-  letter-spacing: 1.5px;
-  color: #f59e0b;
-  background: linear-gradient(90deg, #2a1a35 0%, #1a1225 100%);
-  border-bottom: 1px solid rgba(245, 158, 11, 0.3);
+  letter-spacing: 2px;
+  color: ${colors.accentLight};
+  background: ${colors.accentSubtle};
+  border-bottom: 1px solid ${colors.accentMuted};
   position: sticky;
   top: 0;
+  z-index: 10;
+  font-family: 'JetBrains Mono', monospace;
 `;
 
 const OptionItem = styled.button<{ $isSelected: boolean }>`
   width: 100%;
-  padding: 10px 14px;
+  padding: 8px 12px;
   padding-left: 20px;
-  font-size: 13px;
-  font-weight: 500;
+  font-size: 11px;
+  font-weight: 600;
   text-align: left;
+  font-family: 'JetBrains Mono', monospace;
   background: ${props => props.$isSelected
-    ? "linear-gradient(90deg, #3d2a1a 0%, #1a1225 100%)"
-    : "#1a1225"};
+    ? colors.accentSubtle
+    : "transparent"};
   border: none;
-  color: ${props => props.$isSelected ? "#f59e0b" : "rgba(255, 255, 255, 0.85)"};
+  color: ${props => props.$isSelected ? colors.accent : "rgba(255, 255, 255, 0.6)"};
   cursor: pointer;
   outline: none;
   transition: all 0.15s ease;
@@ -107,33 +107,27 @@ const OptionItem = styled.button<{ $isSelected: boolean }>`
 
   ${props => props.$isSelected && `
     &::before {
-      content: "";
+      content: ">";
       position: absolute;
       left: 8px;
       top: 50%;
       transform: translateY(-50%);
-      width: 4px;
-      height: 4px;
-      background: #f59e0b;
-      border-radius: 50%;
-      box-shadow: 0 0 6px #f59e0b;
+      color: ${colors.accent};
+      font-size: 10px;
     }
   `}
 
   &:hover {
-    background: linear-gradient(90deg, #2a1a15 0%, #1a1225 100%);
+    background: ${colors.accentMuted};
     color: white;
-  }
-
-  &:active {
-    background: #3d2a1a;
+    padding-left: 24px;
   }
 `;
 
 const Divider = styled.div`
   height: 1px;
-  background: linear-gradient(90deg, rgba(255, 180, 120, 0.2) 0%, transparent 80%);
-  margin: 4px 0;
+  background: ${colors.accentMuted};
+  margin: 2px 0;
 `;
 
 interface Option {
@@ -162,12 +156,10 @@ export const CustomDropdown: React.FC<CustomDropdownProps> = ({
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
-  // Find current label
   const currentLabel = groups
     .flatMap(g => g.options)
     .find(opt => opt.value === value)?.label || placeholder;
 
-  // Close on outside click
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
       if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
@@ -181,7 +173,6 @@ export const CustomDropdown: React.FC<CustomDropdownProps> = ({
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [isOpen]);
 
-  // Close on escape
   useEffect(() => {
     const handleEscape = (e: KeyboardEvent) => {
       if (e.key === "Escape") setIsOpen(false);

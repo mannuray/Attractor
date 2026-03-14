@@ -2,34 +2,47 @@ import React, { useState, useEffect } from "react";
 import styled from "styled-components";
 import { GlassPanel, FlexRow, FloatingButton, colors } from "../attractors/shared/styles";
 
-const ZoomPanelContainer = styled(GlassPanel)`
+const ZoomPanelContainer = styled(GlassPanel)<{ $sidebarCollapsed: boolean }>`
   position: fixed;
-  bottom: 20px;
-  left: 360px;  /* 340px sidebar + 20px margin */
-  padding: 8px;
+  bottom: 24px;
+  left: ${props => props.$sidebarCollapsed ? "94px" : "364px"};
+  padding: 6px;
   z-index: 100;
+  border-radius: 8px;
+  transition: left 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  background: ${colors.darkestBg};
+  border: 1px solid ${colors.accentBorder};
 `;
 
 const ControlPanelContainer = styled(GlassPanel)`
   position: fixed;
-  bottom: 20px;
-  right: 20px;
-  padding: 8px;
+  bottom: 24px;
+  right: 24px;
+  padding: 6px;
   z-index: 100;
+  border-radius: 8px;
+  background: ${colors.darkestBg};
+  border: 1px solid ${colors.accentBorder};
 `;
 
 const IconButton = styled(FloatingButton)`
-  font-size: 18px;
+  font-size: 14px;
+  width: 32px;
+  height: 32px;
+  border-radius: 4px;
+  font-family: 'JetBrains Mono', monospace;
+  font-weight: 800;
 `;
 
 const StartButton = styled(IconButton)<{ $iterating: boolean }>`
-  background: ${props => props.$iterating
-    ? "linear-gradient(135deg, #ef4444 0%, #dc2626 100%)"
-    : "linear-gradient(135deg, #22c55e 0%, #16a34a 100%)"};
-  box-shadow: ${props => props.$iterating
-    ? "0 2px 10px rgba(239, 68, 68, 0.3)"
-    : "0 2px 10px rgba(34, 197, 94, 0.3)"};
+  background: ${props => props.$iterating ? colors.danger : colors.success};
+  box-shadow: 0 4px 12px ${props => props.$iterating ? props.theme.danger : props.theme.success}44;
   border: none;
+  color: ${colors.bgPage};
+
+  &:hover {
+    transform: scale(1.1);
+  }
 `;
 
 const ShareButtonWrapper = styled.div`
@@ -42,15 +55,27 @@ const CopiedTooltip = styled.span`
   bottom: 100%;
   left: 50%;
   transform: translateX(-50%);
-  margin-bottom: 6px;
-  padding: 4px 10px;
-  font-size: 11px;
-  font-weight: 600;
-  color: ${colors.white};
+  margin-bottom: 8px;
+  padding: 4px 12px;
+  font-size: 9px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  font-family: 'JetBrains Mono', monospace;
+  color: ${colors.bgPage};
   background: ${colors.accent};
-  border-radius: 6px;
+  border-radius: 2px;
   white-space: nowrap;
   pointer-events: none;
+  box-shadow: 0 0 15px ${colors.accentSoft};
+  animation: fadeInOut 2s ease-in-out forwards;
+
+  @keyframes fadeInOut {
+    0% { opacity: 0; transform: translateX(-50%) translateY(5px); }
+    15% { opacity: 1; transform: translateX(-50%) translateY(0); }
+    85% { opacity: 1; transform: translateX(-50%) translateY(0); }
+    100% { opacity: 0; transform: translateX(-50%) translateY(-5px); }
+  }
 `;
 
 interface ZoomPanelProps {
@@ -60,6 +85,7 @@ interface ZoomPanelProps {
   onZoomReset: () => void;
   isFractalType: boolean;
   onResetFractalView?: () => void;
+  sidebarCollapsed?: boolean;
 }
 
 export const ZoomPanel: React.FC<ZoomPanelProps> = ({
@@ -69,16 +95,17 @@ export const ZoomPanel: React.FC<ZoomPanelProps> = ({
   onZoomReset,
   isFractalType,
   onResetFractalView,
+  sidebarCollapsed = false,
 }) => {
   return (
-    <ZoomPanelContainer>
+    <ZoomPanelContainer $sidebarCollapsed={sidebarCollapsed}>
       <FlexRow $gap="4px">
-        <FloatingButton onClick={onFitToView} title="Fit to View">⊡</FloatingButton>
-        <FloatingButton onClick={onZoomIn} title="Zoom In">+</FloatingButton>
-        <FloatingButton onClick={onZoomOut} title="Zoom Out">−</FloatingButton>
-        <FloatingButton onClick={onZoomReset} title="Reset Zoom">1:1</FloatingButton>
+        <IconButton onClick={onFitToView} title="FIT">FIT</IconButton>
+        <IconButton onClick={onZoomIn} title="ZOOM IN">+</IconButton>
+        <IconButton onClick={onZoomOut} title="ZOOM OUT">−</IconButton>
+        <IconButton onClick={onZoomReset} title="RESET">1:1</IconButton>
         {isFractalType && onResetFractalView && (
-          <FloatingButton onClick={onResetFractalView} title="Reset View">↺</FloatingButton>
+          <IconButton onClick={onResetFractalView} title="RECENTER">↺</IconButton>
         )}
       </FlexRow>
     </ZoomPanelContainer>
@@ -119,25 +146,25 @@ export const ControlPanel: React.FC<ControlPanelProps> = ({
     <ControlPanelContainer>
       <FlexRow $gap="4px">
         {isFractalType ? (
-          <IconButton onClick={onToggleIteration} title="Render">
-            🔄
+          <IconButton onClick={onToggleIteration} title="PROCESS">
+            RUN
           </IconButton>
         ) : (
-          <StartButton $iterating={iterating} onClick={onToggleIteration} title={iterating ? "Stop" : "Start"}>
-            {iterating ? "⏹" : "▶"}
+          <StartButton $iterating={iterating} onClick={onToggleIteration} title={iterating ? "STOP" : "START"}>
+            {iterating ? "OFF" : "ON"}
           </StartButton>
         )}
-        <IconButton onClick={onOpenPalette} title="Palette">
-          🎨
+        <IconButton onClick={onOpenPalette} title="PALETTE">
+          LUT
         </IconButton>
-        <IconButton onClick={onOpenExport} title="Export">
-          💾
+        <IconButton onClick={onOpenExport} title="EXPORT">
+          OUT
         </IconButton>
         <ShareButtonWrapper>
-          <IconButton onClick={handleShare} title="Copy Share Link">
-            🔗
+          <IconButton onClick={handleShare} title="SHARE">
+            LINK
           </IconButton>
-          {copied && <CopiedTooltip>Copied!</CopiedTooltip>}
+          {copied && <CopiedTooltip>SYNC_COMPLETE</CopiedTooltip>}
         </ShareButtonWrapper>
       </FlexRow>
     </ControlPanelContainer>

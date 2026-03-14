@@ -13,35 +13,37 @@ let fractalParams = null;
 let offscreenCanvas = null;
 let ctx = null;
 let colorLUT = null;
-let currentPalette = null; // Store palette for final render interpolation
+let currentPalette = null; 
 let canvasSize = 0;
 let configAlias = 2;
 let colorLUTSize = 2048;
 
 // Palette gamma and max hits scaling
-let palGamma = 1.0;       // Gamma correction for color distribution
-let palScale = false;     // true = dynamic (use maxHits), false = fixed (use palMax)
-let palMax = 10000;       // Fixed max value when palScale is false
-let bgColor = { r: 255, g: 255, b: 255 }; // Background color for 0-hit pixels
-let progressiveTimeoutId = null; // Tracks pending progressive full render
+let palGamma = 1.0;       
+let palScale = false;     
+let palMax = 10000;       
+let bgColor = { r: 0, g: 0, b: 0 }; 
+let progressiveTimeoutId = null; 
 
-// Pre-computed gamma lookup table: maps linear LUT index → gamma-corrected LUT index
-let gammaLUT = null;      // Uint16Array of size colorLUTSize
+// Pre-computed gamma lookup table
+let gammaLUT = null;      
 
 // Cached ImageData to avoid per-frame allocation
 let cachedImageData = null;
 let cachedData32 = null;
 let cachedImageSize = 0;
 
+// SharedArrayBuffer for zero-copy transfers (if supported)
+let sharedHitsBuffer = null;
+let sharedHitsArray = null;
+
 // ============================================
 // COLOR PALETTE MANAGEMENT
 // ============================================
 
-// Binary search for palette color index
 function findColorIndex(palette, position) {
   let low = 0;
   let high = palette.length - 2;
-
   while (low < high) {
     const mid = (low + high + 1) >> 1;
     if (palette[mid].position <= position) {
@@ -53,19 +55,13 @@ function findColorIndex(palette, position) {
   return low;
 }
 
-// Interpolate color from palette
 function interpolatePaletteColor(palette, position) {
-  // Note: position 0 is now handled by the palette itself (first entry)
-  // Background pixels (0 hits) are handled separately in getColorRGB
   const normalizedPos = Math.min(1, Math.max(0, position));
-
   const i = findColorIndex(palette, normalizedPos);
   const c1 = palette[i];
   const c2 = palette[i + 1];
-
   const range = c2.position - c1.position;
   const t = range === 0 ? 0 : (normalizedPos - c1.position) / range;
-
   return {
     red: Math.round(t * (c2.red - c1.red) + c1.red),
     green: Math.round(t * (c2.green - c1.green) + c1.green),
@@ -73,24 +69,17 @@ function interpolatePaletteColor(palette, position) {
   };
 }
 
-// Build color lookup table from palette
 function buildColorLUT(palette, lutSize) {
   colorLUT = new Uint32Array(lutSize);
   colorLUTSize = lutSize;
-
   for (let i = 0; i < lutSize; i++) {
-    const ratio = i / lutSize; // Map to palette range 0-1
+    const ratio = i / lutSize; 
     const col = interpolatePaletteColor(palette, ratio);
-    // Pack RGBA into single 32-bit value (ABGR format for ImageData)
     colorLUT[i] = (255 << 24) | (col.blue << 16) | (col.green << 8) | col.red;
   }
-
-  // Rebuild gamma LUT whenever palette is built
   buildGammaLUT();
 }
 
-// Build gamma lookup table: gammaLUT[linearIndex] = gamma-corrected LUT index
-// This eliminates Math.pow() from the per-pixel hot path
 function buildGammaLUT() {
   gammaLUT = new Uint16Array(colorLUTSize);
   for (let i = 0; i < colorLUTSize; i++) {
@@ -100,7 +89,6 @@ function buildGammaLUT() {
   }
 }
 
-// Get or create a cached ImageData of the given size
 function getImageData(size) {
   if (cachedImageSize !== size || !cachedImageData) {
     cachedImageData = ctx.createImageData(size, size);
@@ -114,24 +102,14 @@ function getImageData(size) {
 // OFFSCREEN CANVAS RENDERING
 // ============================================
 
-// Get color for a pixel with anti-aliasing
 function getColorRGB(x, y, hits, maxHits, iteratorSize) {
-  // Return background color (ABGR format)
   const bgColorPacked = (255 << 24) | (bgColor.b << 16) | (bgColor.g << 8) | bgColor.r;
+  if (!colorLUT) return bgColorPacked;
 
-  if (!colorLUT) {
-    return bgColorPacked;
-  }
-
-  // Determine the divisor based on scaling mode
   const divisor = palScale ? maxHits : palMax;
-  if (divisor === 0) {
-    return bgColorPacked;
-  }
+  if (divisor === 0) return bgColorPacked;
 
-  let totalR = 0,
-    totalG = 0,
-    totalB = 0;
+  let totalR = 0, totalG = 0, totalB = 0;
   const startX = x * configAlias;
   const startY = y * configAlias;
   const lutSize = colorLUT.length;
@@ -143,7 +121,6 @@ function getColorRGB(x, y, hits, maxHits, iteratorSize) {
       const col = startX + dx;
       const hitVal = hits[col * iteratorSize + row] || 0;
 
-      // Background (no hits) uses custom background color
       if (hitVal === 0) {
         totalR += bgColor.r;
         totalG += bgColor.g;
@@ -151,7 +128,6 @@ function getColorRGB(x, y, hits, maxHits, iteratorSize) {
         continue;
       }
 
-      // Normalize hit value and use pre-computed gamma LUT
       const linearIndex = Math.min(lutSize - 1, Math.floor(Math.min(1, hitVal * invDivisor) * lutSize));
       const lutIndex = gammaLUT ? gammaLUT[linearIndex] : linearIndex;
       const color = colorLUT[lutIndex];
@@ -168,10 +144,8 @@ function getColorRGB(x, y, hits, maxHits, iteratorSize) {
   return (255 << 24) | (b << 16) | (g << 8) | r;
 }
 
-// Render to OffscreenCanvas
 function render() {
   if (!ctx || !iterCanvas || !colorLUT) return;
-
   const size = canvasSize;
   const hits = iterCanvas.getHits();
   const maxHits = iterCanvas.getMaxHits();
@@ -184,37 +158,31 @@ function render() {
   }
 
   const { imageData, data32 } = getImageData(size);
-
   for (let y = 0; y < size; y++) {
     for (let x = 0; x < size; x++) {
       const idx = y * size + x;
       data32[idx] = getColorRGB(x, y, hits, maxHits, iteratorSize);
     }
   }
-
   ctx.putImageData(imageData, 0, 0);
 }
 
-// ============================================
-// LEGACY MODE (for browsers without OffscreenCanvas)
-// ============================================
-
 function sendHits() {
   if (!iterCanvas) return;
+  
+  // If we are using SharedArrayBuffer, we don't need to copy, just notify
+  if (sharedHitsArray && sharedHitsArray === iterCanvas.getHits()) {
+     self.postMessage({ 
+        type: "result_shared", 
+        payload: { maxHits: iterCanvas.getMaxHits(), iteratorSize: iterCanvas.iterator_size } 
+     });
+     return;
+  }
 
   const hitsCopy = new Uint32Array(iterCanvas.getHits());
-  const buffer = hitsCopy.buffer;
-
   self.postMessage(
-    {
-      type: "result",
-      payload: {
-        hits: hitsCopy,
-        maxHits: iterCanvas.getMaxHits(),
-        iteratorSize: iterCanvas.iterator_size,
-      },
-    },
-    [buffer]
+    { type: "result", payload: { hits: hitsCopy, maxHits: iterCanvas.getMaxHits(), iteratorSize: iterCanvas.iterator_size } },
+    [hitsCopy.buffer]
   );
 }
 
@@ -226,281 +194,145 @@ self.onmessage = (event) => {
   const { type, payload } = event.data;
 
   if (type === "initialize") {
-    const { point, size, alias, scale, iterator, palette, colorLUTSize: lutSize } = payload;
-
-    // Initialize palette settings
+    const { point, size, alias, scale, iterator, palette, colorLUTSize: lutSize, useSharedBuffer } = payload;
     if (payload.palGamma !== undefined) palGamma = payload.palGamma;
     if (payload.palScale !== undefined) palScale = payload.palScale;
     if (payload.palMax !== undefined) palMax = payload.palMax;
     if (payload.bgColor !== undefined) bgColor = payload.bgColor;
 
-    // Check if this is a fractal type
     const fractalTypes = ["mandelbrot", "julia", "burningship", "tricorn", "multibrot", "newton", "phoenix", "lyapunov"];
     fractalMode = fractalTypes.includes(iterator.name);
 
-    // Check for OffscreenCanvas mode
     if (payload.mode === "offscreen" && payload.canvas) {
       mode = "offscreen";
       offscreenCanvas = payload.canvas;
-      ctx = offscreenCanvas.getContext("2d");
+      ctx = offscreenCanvas.getContext("2d", { alpha: false }); // Optimize 2D context
       canvasSize = size;
       configAlias = alias;
-
-      // Build color LUT from palette and store palette for final render
       if (palette && lutSize) {
         currentPalette = palette;
         buildColorLUT(palette, lutSize);
       }
     } else {
       mode = "legacy";
-      if (palette) {
-        currentPalette = palette;
-      }
+      if (palette) currentPalette = palette;
     }
 
     if (fractalMode) {
-      // Fractal mode: store parameters and render immediately
-      fractalParams = {
-        type: iterator.name,
-        ...iterator.parameters,
-      };
-      // Handle Lyapunov sequence (string parameter)
-      if (iterator.sequence) {
-        fractalParams.sequence = iterator.sequence;
-      }
-      iterCanvas = null; // Not used for fractals
-
-      if (mode === "offscreen") {
-        renderFractalProgressive();
-      }
+      fractalParams = { type: iterator.name, ...iterator.parameters };
+      if (iterator.sequence) fractalParams.sequence = iterator.sequence;
+      iterCanvas = null;
+      if (mode === "offscreen") renderFractalProgressive();
     } else {
-      // Attractor mode: initialize iterator and canvas
       it = iteratorBuilder(iterator);
-      iterCanvas = new IterationCanvas(point, size, alias, scale, it);
-
+      iterCanvas = new IterationCanvas(point, size, alias, scale, it, useSharedBuffer);
       if (mode === "offscreen") {
         render();
-        self.postMessage({
-          type: "stats",
-          payload: { maxHits: iterCanvas.getMaxHits(), totalIterations: iterCanvas.getTotalIterations() },
-        });
+        self.postMessage({ type: "stats", payload: { maxHits: iterCanvas.getMaxHits(), totalIterations: iterCanvas.getTotalIterations() } });
       } else {
+        // Send initial buffer if shared
+        if (iterCanvas.isShared) {
+           self.postMessage({
+              type: "init_shared",
+              payload: { buffer: iterCanvas.getHits().buffer }
+           });
+        }
         sendHits();
       }
     }
   } else if (type === "iterate") {
-    // Fractals don't iterate - they render once completely
     if (fractalMode) {
-      // Just re-render the fractal (in case palette changed)
       if (mode === "offscreen") {
         renderFractal();
-        self.postMessage({
-          type: "stats",
-          payload: { maxHits: 0, totalIterations: 0, fractalComplete: true },
-        });
+        self.postMessage({ type: "stats", payload: { maxHits: 0, totalIterations: 0, fractalComplete: true } });
       }
       return;
     }
-
     if (!iterCanvas) return;
-
     iterCanvas.iterate();
-
     if (mode === "offscreen") {
       render();
-      self.postMessage({
-        type: "stats",
-        payload: { maxHits: iterCanvas.getMaxHits(), totalIterations: iterCanvas.getTotalIterations() },
-      });
+      self.postMessage({ type: "stats", payload: { maxHits: iterCanvas.getMaxHits(), totalIterations: iterCanvas.getTotalIterations() } });
     } else {
       sendHits();
     }
   } else if (type === "updatePalette") {
-    // Update color LUT when palette changes
     const { palette, colorLUTSize: lutSize } = payload;
     if (palette && lutSize) {
       currentPalette = palette;
       buildColorLUT(palette, lutSize);
-
-      // Skip render if a progressive full render is pending — it will use the updated LUT
       if (mode === "offscreen" && progressiveTimeoutId === null) {
         if (fractalMode) {
           renderFractal();
-          self.postMessage({
-            type: "stats",
-            payload: { maxHits: 0, totalIterations: 0, fractalComplete: true },
-          });
+          self.postMessage({ type: "stats", payload: { maxHits: 0, totalIterations: 0, fractalComplete: true } });
         } else {
           render();
-          self.postMessage({
-            type: "stats",
-            payload: { maxHits: iterCanvas ? iterCanvas.getMaxHits() : 0, totalIterations: iterCanvas ? iterCanvas.getTotalIterations() : 0 },
-          });
+          self.postMessage({ type: "stats", payload: { maxHits: iterCanvas ? iterCanvas.getMaxHits() : 0, totalIterations: iterCanvas ? iterCanvas.getTotalIterations() : 0 } });
         }
       }
     }
   } else if (type === "updatePaletteSettings") {
-    // Update palette gamma and scaling settings
     if (payload.palGamma !== undefined) palGamma = payload.palGamma;
     if (payload.palScale !== undefined) palScale = payload.palScale;
     if (payload.palMax !== undefined) palMax = payload.palMax;
     if (payload.bgColor !== undefined) bgColor = payload.bgColor;
     buildGammaLUT();
-
-    // Skip render if a progressive full render is pending — it will use the updated settings
     if (mode === "offscreen" && progressiveTimeoutId === null) {
       if (fractalMode) {
         renderFractal();
-        self.postMessage({
-          type: "stats",
-          payload: { maxHits: 0, totalIterations: 0, fractalComplete: true },
-        });
+        self.postMessage({ type: "stats", payload: { maxHits: 0, totalIterations: 0, fractalComplete: true } });
       } else {
         render();
-        self.postMessage({
-          type: "stats",
-          payload: { maxHits: iterCanvas ? iterCanvas.getMaxHits() : 0, totalIterations: iterCanvas ? iterCanvas.getTotalIterations() : 0 },
-        });
+        self.postMessage({ type: "stats", payload: { maxHits: iterCanvas ? iterCanvas.getMaxHits() : 0, totalIterations: iterCanvas ? iterCanvas.getTotalIterations() : 0 } });
       }
     }
   } else if (type === "exportImage") {
-    // Export image as blob for save functionality
     if (mode === "offscreen" && offscreenCanvas) {
       offscreenCanvas.convertToBlob({ type: "image/png" }).then((blob) => {
-        self.postMessage({
-          type: "imageExport",
-          payload: { blob },
-        });
-      });
-    }
-  } else if (type === "finalRender") {
-    // High-quality final render using true interpolation (no LUT)
-    if (mode === "offscreen" && ctx && iterCanvas && currentPalette) {
-      renderFinal();
-      self.postMessage({
-        type: "finalRenderComplete",
-        payload: { maxHits: iterCanvas.getMaxHits(), totalIterations: iterCanvas.getTotalIterations() },
+        self.postMessage({ type: "imageExport", payload: { blob } });
       });
     }
   }
 };
 
 // ============================================
-// FINAL HIGH-QUALITY RENDER (True Interpolation)
-// ============================================
-
-function renderFinal() {
-  if (!ctx || !iterCanvas || !currentPalette) return;
-
-  const size = canvasSize;
-  const hits = iterCanvas.getHits();
-  const maxHits = iterCanvas.getMaxHits();
-  const iteratorSize = iterCanvas.iterator_size;
-
-  if (maxHits === 0) {
-    ctx.fillStyle = `rgb(${bgColor.r}, ${bgColor.g}, ${bgColor.b})`;
-    ctx.fillRect(0, 0, size, size);
-    return;
-  }
-
-  const { imageData, data32 } = getImageData(size);
-
-  // Determine the divisor based on scaling mode
-  const divisor = palScale ? maxHits : palMax;
-  const invDivisor = 1 / divisor;
-
-  for (let y = 0; y < size; y++) {
-    for (let x = 0; x < size; x++) {
-      const idx = y * size + x;
-      data32[idx] = getColorRGBInterpolated(x, y, hits, invDivisor, iteratorSize);
-    }
-  }
-
-  ctx.putImageData(imageData, 0, 0);
-}
-
-// Get color using true interpolation (no LUT) for final render
-function getColorRGBInterpolated(x, y, hits, invDivisor, iteratorSize) {
-  let totalR = 0, totalG = 0, totalB = 0;
-  const startX = x * configAlias;
-  const startY = y * configAlias;
-
-  for (let dy = 0; dy < configAlias; dy++) {
-    const row = startY + dy;
-    for (let dx = 0; dx < configAlias; dx++) {
-      const col = startX + dx;
-      const hitVal = hits[col * iteratorSize + row] || 0;
-
-      // Background (no hits) uses custom background color
-      if (hitVal === 0) {
-        totalR += bgColor.r;
-        totalG += bgColor.g;
-        totalB += bgColor.b;
-        continue;
-      }
-
-      // Normalize and apply gamma - TRUE INTERPOLATION
-      let ratio = Math.min(1, hitVal * invDivisor);
-      if (palGamma !== 1.0) {
-        ratio = Math.pow(ratio, palGamma);
-      }
-
-      // Direct palette interpolation (no LUT quantization)
-      const color = interpolatePaletteColor(currentPalette, ratio);
-      totalR += color.red;
-      totalG += color.green;
-      totalB += color.blue;
-    }
-  }
-
-  const aliasSq = configAlias * configAlias;
-  const r = Math.round(totalR / aliasSq);
-  const g = Math.round(totalG / aliasSq);
-  const b = Math.round(totalB / aliasSq);
-  return (255 << 24) | (b << 16) | (g << 8) | r;
-}
-
-// ============================================
 // FRACTAL RENDERING (Escape-Time Algorithm)
 // ============================================
 
-// Render Mandelbrot set with oversampling
 function renderMandelbrot() {
   if (!ctx || !colorLUT) return;
-
   const size = canvasSize;
   const { centerX, centerY, zoom, maxIter } = fractalParams;
   const alias = configAlias;
 
-  // Calculate view bounds
-  const range = 3.0 / zoom; // Default view is about 3 units wide
+  const range = 3.0 / zoom;
   const xMin = centerX - range / 2;
   const yMin = centerY - range / 2;
   const pixelSize = range / size;
-  const subPixelSize = pixelSize / alias;
-
   const { imageData, data32 } = getImageData(size);
   const lutSize = colorLUT.length;
   const aliasSq = alias * alias;
-
-  // Background color packed
   const bgColorPacked = (255 << 24) | (bgColor.b << 16) | (bgColor.g << 8) | bgColor.r;
 
   for (let py = 0; py < size; py++) {
     for (let px = 0; px < size; px++) {
       let totalR = 0, totalG = 0, totalB = 0;
 
-      // Oversample: render alias × alias subpixels
       for (let sy = 0; sy < alias; sy++) {
         for (let sx = 0; sx < alias; sx++) {
           const x0 = xMin + (px + (sx + 0.5) / alias) * pixelSize;
           const y0 = yMin + (py + (sy + 0.5) / alias) * pixelSize;
 
-          // Mandelbrot iteration: z = z² + c, where c = (x0, y0)
-          let x = 0, y = 0;
-          let iter = 0;
-          let x2 = 0, y2 = 0;
+          // OPTIMIZATION: Cardioid and Period-2 Bulb checking
+          const y0sq = y0 * y0;
+          const x_minus_quarter = x0 - 0.25;
+          const q = x_minus_quarter * x_minus_quarter + y0sq;
+          if (q * (q + x_minus_quarter) <= 0.25 * y0sq || (x0 + 1) * (x0 + 1) + y0sq <= 0.0625) {
+            totalR += bgColor.r; totalG += bgColor.g; totalB += bgColor.b;
+            continue;
+          }
 
+          let x = 0, y = 0, iter = 0, x2 = 0, y2 = 0;
           while (x2 + y2 <= 4 && iter < maxIter) {
             y = 2 * x * y + y0;
             x = x2 - y2 + x0;
@@ -510,56 +342,39 @@ function renderMandelbrot() {
           }
 
           if (iter === maxIter) {
-            // Point is in the set - use background
-            totalR += bgColor.r;
-            totalG += bgColor.g;
-            totalB += bgColor.b;
+            totalR += bgColor.r; totalG += bgColor.g; totalB += bgColor.b;
           } else {
-            // Smooth coloring using escape value
             const log_zn = Math.log(x2 + y2) / 2;
             const nu = Math.log(log_zn / Math.LN2) / Math.LN2;
             const smoothIter = iter + 1 - nu;
-
-            let ratio = smoothIter / maxIter;
-            ratio = Math.min(1, Math.max(0, ratio));
-
+            let ratio = Math.min(1, Math.max(0, smoothIter / maxIter));
             const linearIndex = Math.min(lutSize - 1, Math.floor(ratio * lutSize));
             const lutIndex = gammaLUT ? gammaLUT[linearIndex] : linearIndex;
             const color = colorLUT[lutIndex];
-            totalR += color & 0xff;
-            totalG += (color >> 8) & 0xff;
-            totalB += (color >> 16) & 0xff;
+            totalR += color & 0xff; totalG += (color >> 8) & 0xff; totalB += (color >> 16) & 0xff;
           }
         }
       }
 
-      // Average the colors
       const avgR = Math.round(totalR / aliasSq);
       const avgG = Math.round(totalG / aliasSq);
       const avgB = Math.round(totalB / aliasSq);
-
-      const idx = py * size + px;
-      data32[idx] = (255 << 24) | (avgB << 16) | (avgG << 8) | avgR;
+      data32[py * size + px] = (255 << 24) | (avgB << 16) | (avgG << 8) | avgR;
     }
   }
-
   ctx.putImageData(imageData, 0, 0);
 }
 
-// Render Julia set with oversampling
 function renderJulia() {
   if (!ctx || !colorLUT) return;
-
   const size = canvasSize;
   const { cReal, cImag, centerX, centerY, zoom, maxIter } = fractalParams;
   const alias = configAlias;
 
-  // Calculate view bounds
   const range = 3.0 / zoom;
   const xMin = centerX - range / 2;
   const yMin = centerY - range / 2;
   const pixelSize = range / size;
-
   const { imageData, data32 } = getImageData(size);
   const lutSize = colorLUT.length;
   const aliasSq = alias * alias;
@@ -568,14 +383,10 @@ function renderJulia() {
     for (let px = 0; px < size; px++) {
       let totalR = 0, totalG = 0, totalB = 0;
 
-      // Oversample: render alias × alias subpixels
       for (let sy = 0; sy < alias; sy++) {
         for (let sx = 0; sx < alias; sx++) {
-          const x0 = xMin + (px + (sx + 0.5) / alias) * pixelSize;
-          const y0 = yMin + (py + (sy + 0.5) / alias) * pixelSize;
-
-          // Julia iteration: z = z² + c, where z starts at (x0, y0) and c is constant
-          let x = x0, y = y0;
+          let x = xMin + (px + (sx + 0.5) / alias) * pixelSize;
+          let y = yMin + (py + (sy + 0.5) / alias) * pixelSize;
           let iter = 0;
           let x2 = x * x, y2 = y * y;
 
@@ -588,46 +399,31 @@ function renderJulia() {
           }
 
           if (iter === maxIter) {
-            // Point is in the set - use background
-            totalR += bgColor.r;
-            totalG += bgColor.g;
-            totalB += bgColor.b;
+            totalR += bgColor.r; totalG += bgColor.g; totalB += bgColor.b;
           } else {
-            // Smooth coloring
             const log_zn = Math.log(x2 + y2) / 2;
             const nu = Math.log(log_zn / Math.LN2) / Math.LN2;
             const smoothIter = iter + 1 - nu;
-
-            let ratio = smoothIter / maxIter;
-            ratio = Math.min(1, Math.max(0, ratio));
-
+            let ratio = Math.min(1, Math.max(0, smoothIter / maxIter));
             const linearIndex = Math.min(lutSize - 1, Math.floor(ratio * lutSize));
             const lutIndex = gammaLUT ? gammaLUT[linearIndex] : linearIndex;
             const color = colorLUT[lutIndex];
-            totalR += color & 0xff;
-            totalG += (color >> 8) & 0xff;
-            totalB += (color >> 16) & 0xff;
+            totalR += color & 0xff; totalG += (color >> 8) & 0xff; totalB += (color >> 16) & 0xff;
           }
         }
       }
 
-      // Average the colors
       const avgR = Math.round(totalR / aliasSq);
       const avgG = Math.round(totalG / aliasSq);
       const avgB = Math.round(totalB / aliasSq);
-
-      const idx = py * size + px;
-      data32[idx] = (255 << 24) | (avgB << 16) | (avgG << 8) | avgR;
+      data32[py * size + px] = (255 << 24) | (avgB << 16) | (avgG << 8) | avgR;
     }
   }
-
   ctx.putImageData(imageData, 0, 0);
 }
 
-// Render Burning Ship fractal with oversampling
 function renderBurningShip() {
   if (!ctx || !colorLUT) return;
-
   const size = canvasSize;
   const { centerX, centerY, zoom, maxIter } = fractalParams;
   const alias = configAlias;
@@ -636,7 +432,6 @@ function renderBurningShip() {
   const xMin = centerX - range / 2;
   const yMin = centerY - range / 2;
   const pixelSize = range / size;
-
   const { imageData, data32 } = getImageData(size);
   const lutSize = colorLUT.length;
   const aliasSq = alias * alias;
@@ -649,11 +444,7 @@ function renderBurningShip() {
         for (let sx = 0; sx < alias; sx++) {
           const x0 = xMin + (px + (sx + 0.5) / alias) * pixelSize;
           const y0 = yMin + (py + (sy + 0.5) / alias) * pixelSize;
-
-          // Burning Ship: z = (|Re(z)| + i|Im(z)|)² + c
-          let x = 0, y = 0;
-          let iter = 0;
-          let x2 = 0, y2 = 0;
+          let x = 0, y = 0, iter = 0, x2 = 0, y2 = 0;
 
           while (x2 + y2 <= 4 && iter < maxIter) {
             x = Math.abs(x);
@@ -666,23 +457,16 @@ function renderBurningShip() {
           }
 
           if (iter === maxIter) {
-            totalR += bgColor.r;
-            totalG += bgColor.g;
-            totalB += bgColor.b;
+            totalR += bgColor.r; totalG += bgColor.g; totalB += bgColor.b;
           } else {
             const log_zn = Math.log(x2 + y2) / 2;
             const nu = Math.log(log_zn / Math.LN2) / Math.LN2;
             const smoothIter = iter + 1 - nu;
-
-            let ratio = smoothIter / maxIter;
-            ratio = Math.min(1, Math.max(0, ratio));
-
+            let ratio = Math.min(1, Math.max(0, smoothIter / maxIter));
             const linearIndex = Math.min(lutSize - 1, Math.floor(ratio * lutSize));
             const lutIndex = gammaLUT ? gammaLUT[linearIndex] : linearIndex;
             const color = colorLUT[lutIndex];
-            totalR += color & 0xff;
-            totalG += (color >> 8) & 0xff;
-            totalB += (color >> 16) & 0xff;
+            totalR += color & 0xff; totalG += (color >> 8) & 0xff; totalB += (color >> 16) & 0xff;
           }
         }
       }
@@ -690,19 +474,14 @@ function renderBurningShip() {
       const avgR = Math.round(totalR / aliasSq);
       const avgG = Math.round(totalG / aliasSq);
       const avgB = Math.round(totalB / aliasSq);
-
-      const idx = py * size + px;
-      data32[idx] = (255 << 24) | (avgB << 16) | (avgG << 8) | avgR;
+      data32[py * size + px] = (255 << 24) | (avgB << 16) | (avgG << 8) | avgR;
     }
   }
-
   ctx.putImageData(imageData, 0, 0);
 }
 
-// Render Tricorn (Mandelbar) fractal with oversampling
 function renderTricorn() {
   if (!ctx || !colorLUT) return;
-
   const size = canvasSize;
   const { centerX, centerY, zoom, maxIter } = fractalParams;
   const alias = configAlias;
@@ -711,7 +490,6 @@ function renderTricorn() {
   const xMin = centerX - range / 2;
   const yMin = centerY - range / 2;
   const pixelSize = range / size;
-
   const { imageData, data32 } = getImageData(size);
   const lutSize = colorLUT.length;
   const aliasSq = alias * alias;
@@ -724,11 +502,7 @@ function renderTricorn() {
         for (let sx = 0; sx < alias; sx++) {
           const x0 = xMin + (px + (sx + 0.5) / alias) * pixelSize;
           const y0 = yMin + (py + (sy + 0.5) / alias) * pixelSize;
-
-          // Tricorn: z = conj(z)² + c (conjugate before squaring)
-          let x = 0, y = 0;
-          let iter = 0;
-          let x2 = 0, y2 = 0;
+          let x = 0, y = 0, iter = 0, x2 = 0, y2 = 0;
 
           while (x2 + y2 <= 4 && iter < maxIter) {
             y = -y;
@@ -741,23 +515,16 @@ function renderTricorn() {
           }
 
           if (iter === maxIter) {
-            totalR += bgColor.r;
-            totalG += bgColor.g;
-            totalB += bgColor.b;
+            totalR += bgColor.r; totalG += bgColor.g; totalB += bgColor.b;
           } else {
             const log_zn = Math.log(x2 + y2) / 2;
             const nu = Math.log(log_zn / Math.LN2) / Math.LN2;
             const smoothIter = iter + 1 - nu;
-
-            let ratio = smoothIter / maxIter;
-            ratio = Math.min(1, Math.max(0, ratio));
-
+            let ratio = Math.min(1, Math.max(0, smoothIter / maxIter));
             const linearIndex = Math.min(lutSize - 1, Math.floor(ratio * lutSize));
             const lutIndex = gammaLUT ? gammaLUT[linearIndex] : linearIndex;
             const color = colorLUT[lutIndex];
-            totalR += color & 0xff;
-            totalG += (color >> 8) & 0xff;
-            totalB += (color >> 16) & 0xff;
+            totalR += color & 0xff; totalG += (color >> 8) & 0xff; totalB += (color >> 16) & 0xff;
           }
         }
       }
@@ -765,19 +532,14 @@ function renderTricorn() {
       const avgR = Math.round(totalR / aliasSq);
       const avgG = Math.round(totalG / aliasSq);
       const avgB = Math.round(totalB / aliasSq);
-
-      const idx = py * size + px;
-      data32[idx] = (255 << 24) | (avgB << 16) | (avgG << 8) | avgR;
+      data32[py * size + px] = (255 << 24) | (avgB << 16) | (avgG << 8) | avgR;
     }
   }
-
   ctx.putImageData(imageData, 0, 0);
 }
 
-// Render Multibrot fractal (z^n + c) with oversampling
 function renderMultibrot() {
   if (!ctx || !colorLUT) return;
-
   const size = canvasSize;
   const { centerX, centerY, zoom, maxIter, power } = fractalParams;
   const alias = configAlias;
@@ -786,7 +548,6 @@ function renderMultibrot() {
   const xMin = centerX - range / 2;
   const yMin = centerY - range / 2;
   const pixelSize = range / size;
-
   const { imageData, data32 } = getImageData(size);
   const lutSize = colorLUT.length;
   const aliasSq = alias * alias;
@@ -799,10 +560,7 @@ function renderMultibrot() {
         for (let sx = 0; sx < alias; sx++) {
           const x0 = xMin + (px + (sx + 0.5) / alias) * pixelSize;
           const y0 = yMin + (py + (sy + 0.5) / alias) * pixelSize;
-
-          // Multibrot: z = z^n + c (using polar form)
-          let x = 0, y = 0;
-          let iter = 0;
+          let x = 0, y = 0, iter = 0;
 
           while (x * x + y * y <= 4 && iter < maxIter) {
             const r = Math.sqrt(x * x + y * y);
@@ -814,24 +572,17 @@ function renderMultibrot() {
           }
 
           if (iter === maxIter) {
-            totalR += bgColor.r;
-            totalG += bgColor.g;
-            totalB += bgColor.b;
+            totalR += bgColor.r; totalG += bgColor.g; totalB += bgColor.b;
           } else {
             const r2 = x * x + y * y;
             const log_zn = Math.log(r2) / 2;
             const nu = Math.log(log_zn / Math.log(power)) / Math.log(power);
             const smoothIter = iter + 1 - nu;
-
-            let ratio = smoothIter / maxIter;
-            ratio = Math.min(1, Math.max(0, ratio));
-
+            let ratio = Math.min(1, Math.max(0, smoothIter / maxIter));
             const linearIndex = Math.min(lutSize - 1, Math.floor(ratio * lutSize));
             const lutIndex = gammaLUT ? gammaLUT[linearIndex] : linearIndex;
             const color = colorLUT[lutIndex];
-            totalR += color & 0xff;
-            totalG += (color >> 8) & 0xff;
-            totalB += (color >> 16) & 0xff;
+            totalR += color & 0xff; totalG += (color >> 8) & 0xff; totalB += (color >> 16) & 0xff;
           }
         }
       }
@@ -839,19 +590,14 @@ function renderMultibrot() {
       const avgR = Math.round(totalR / aliasSq);
       const avgG = Math.round(totalG / aliasSq);
       const avgB = Math.round(totalB / aliasSq);
-
-      const idx = py * size + px;
-      data32[idx] = (255 << 24) | (avgB << 16) | (avgG << 8) | avgR;
+      data32[py * size + px] = (255 << 24) | (avgB << 16) | (avgG << 8) | avgR;
     }
   }
-
   ctx.putImageData(imageData, 0, 0);
 }
 
-// Render Newton fractal (z³ - 1 = 0) with oversampling
 function renderNewton() {
   if (!ctx || !colorLUT) return;
-
   const size = canvasSize;
   const { centerX, centerY, zoom, maxIter } = fractalParams;
   const alias = configAlias;
@@ -860,12 +606,10 @@ function renderNewton() {
   const xMin = centerX - range / 2;
   const yMin = centerY - range / 2;
   const pixelSize = range / size;
-
   const { imageData, data32 } = getImageData(size);
   const lutSize = colorLUT.length;
   const aliasSq = alias * alias;
 
-  // Three roots of z³ - 1 = 0
   const roots = [
     { x: 1, y: 0 },
     { x: -0.5, y: Math.sqrt(3) / 2 },
@@ -881,35 +625,26 @@ function renderNewton() {
         for (let sx = 0; sx < alias; sx++) {
           let x = xMin + (px + (sx + 0.5) / alias) * pixelSize;
           let y = yMin + (py + (sy + 0.5) / alias) * pixelSize;
-
-          let iter = 0;
-          let rootIndex = -1;
+          let iter = 0, rootIndex = -1;
 
           for (iter = 0; iter < maxIter; iter++) {
             const x2 = x * x, y2 = y * y;
             const r2 = x2 + y2;
             if (r2 < 1e-10) break;
 
-            const zx2 = x2 - y2;
-            const zy2 = 2 * x * y;
+            const zx2 = x2 - y2, zy2 = 2 * x * y;
+            const zx3 = x * zx2 - y * zy2, zy3 = x * zy2 + y * zx2;
 
-            const zx3 = x * zx2 - y * zy2;
-            const zy3 = x * zy2 + y * zx2;
-
-            const denom_x = 3 * zx2;
-            const denom_y = 3 * zy2;
+            const denom_x = 3 * zx2, denom_y = 3 * zy2;
             const denom_r2 = denom_x * denom_x + denom_y * denom_y;
             if (denom_r2 < 1e-10) break;
 
-            const num_x = 2 * zx3 + 1;
-            const num_y = 2 * zy3;
-
+            const num_x = 2 * zx3 + 1, num_y = 2 * zy3;
             x = (num_x * denom_x + num_y * denom_y) / denom_r2;
             y = (num_y * denom_x - num_x * denom_y) / denom_r2;
 
             for (let r = 0; r < 3; r++) {
-              const dx = x - roots[r].x;
-              const dy = y - roots[r].y;
+              const dx = x - roots[r].x, dy = y - roots[r].y;
               if (dx * dx + dy * dy < tolerance) {
                 rootIndex = r;
                 break;
@@ -920,18 +655,13 @@ function renderNewton() {
 
           if (rootIndex >= 0) {
             const brightness = 1 - iter / maxIter;
-            let ratio = (rootIndex / 3 + brightness * 0.3) % 1;
-            ratio = Math.min(1, Math.max(0, ratio));
+            let ratio = Math.min(1, Math.max(0, (rootIndex / 3 + brightness * 0.3) % 1));
             const linearIndex = Math.min(lutSize - 1, Math.floor(ratio * lutSize));
             const lutIndex = gammaLUT ? gammaLUT[linearIndex] : linearIndex;
             const color = colorLUT[lutIndex];
-            totalR += color & 0xff;
-            totalG += (color >> 8) & 0xff;
-            totalB += (color >> 16) & 0xff;
+            totalR += color & 0xff; totalG += (color >> 8) & 0xff; totalB += (color >> 16) & 0xff;
           } else {
-            totalR += bgColor.r;
-            totalG += bgColor.g;
-            totalB += bgColor.b;
+            totalR += bgColor.r; totalG += bgColor.g; totalB += bgColor.b;
           }
         }
       }
@@ -939,19 +669,14 @@ function renderNewton() {
       const avgR = Math.round(totalR / aliasSq);
       const avgG = Math.round(totalG / aliasSq);
       const avgB = Math.round(totalB / aliasSq);
-
-      const idx = py * size + px;
-      data32[idx] = (255 << 24) | (avgB << 16) | (avgG << 8) | avgR;
+      data32[py * size + px] = (255 << 24) | (avgB << 16) | (avgG << 8) | avgR;
     }
   }
-
   ctx.putImageData(imageData, 0, 0);
 }
 
-// Render Phoenix fractal with oversampling
 function renderPhoenix() {
   if (!ctx || !colorLUT) return;
-
   const size = canvasSize;
   const { centerX, centerY, zoom, maxIter, cReal, cImag, p } = fractalParams;
   const alias = configAlias;
@@ -960,7 +685,6 @@ function renderPhoenix() {
   const xMin = centerX - range / 2;
   const yMin = centerY - range / 2;
   const pixelSize = range / size;
-
   const { imageData, data32 } = getImageData(size);
   const lutSize = colorLUT.length;
   const aliasSq = alias * alias;
@@ -973,42 +697,29 @@ function renderPhoenix() {
         for (let sx = 0; sx < alias; sx++) {
           const x0 = xMin + (px + (sx + 0.5) / alias) * pixelSize;
           const y0 = yMin + (py + (sy + 0.5) / alias) * pixelSize;
-
-          // Phoenix: z_new = z² + c + p * z_prev
-          let x = x0, y = y0;
-          let prevX = 0, prevY = 0;
-          let iter = 0;
+          let x = x0, y = y0, prevX = 0, prevY = 0, iter = 0;
 
           while (x * x + y * y <= 4 && iter < maxIter) {
             const x2 = x * x, y2 = y * y;
             const newX = x2 - y2 + cReal + p * prevX;
             const newY = 2 * x * y + cImag + p * prevY;
-            prevX = x;
-            prevY = y;
-            x = newX;
-            y = newY;
+            prevX = x; prevY = y;
+            x = newX; y = newY;
             iter++;
           }
 
           if (iter === maxIter) {
-            totalR += bgColor.r;
-            totalG += bgColor.g;
-            totalB += bgColor.b;
+            totalR += bgColor.r; totalG += bgColor.g; totalB += bgColor.b;
           } else {
             const r2 = x * x + y * y;
             const log_zn = Math.log(r2) / 2;
             const nu = Math.log(log_zn / Math.LN2) / Math.LN2;
             const smoothIter = iter + 1 - nu;
-
-            let ratio = smoothIter / maxIter;
-            ratio = Math.min(1, Math.max(0, ratio));
-
+            let ratio = Math.min(1, Math.max(0, smoothIter / maxIter));
             const linearIndex = Math.min(lutSize - 1, Math.floor(ratio * lutSize));
             const lutIndex = gammaLUT ? gammaLUT[linearIndex] : linearIndex;
             const color = colorLUT[lutIndex];
-            totalR += color & 0xff;
-            totalG += (color >> 8) & 0xff;
-            totalB += (color >> 16) & 0xff;
+            totalR += color & 0xff; totalG += (color >> 8) & 0xff; totalB += (color >> 16) & 0xff;
           }
         }
       }
@@ -1016,19 +727,14 @@ function renderPhoenix() {
       const avgR = Math.round(totalR / aliasSq);
       const avgG = Math.round(totalG / aliasSq);
       const avgB = Math.round(totalB / aliasSq);
-
-      const idx = py * size + px;
-      data32[idx] = (255 << 24) | (avgB << 16) | (avgG << 8) | avgR;
+      data32[py * size + px] = (255 << 24) | (avgB << 16) | (avgG << 8) | avgR;
     }
   }
-
   ctx.putImageData(imageData, 0, 0);
 }
 
-// Render Lyapunov fractal with oversampling
 function renderLyapunov() {
   if (!ctx || !colorLUT) return;
-
   const size = canvasSize;
   const { aMin, aMax, bMin, bMax, maxIter, sequence } = fractalParams;
   const alias = configAlias;
@@ -1036,7 +742,6 @@ function renderLyapunov() {
   const { imageData, data32 } = getImageData(size);
   const lutSize = colorLUT.length;
   const aliasSq = alias * alias;
-
   const seqLen = sequence.length;
   const aRange = aMax - aMin;
   const bRange = bMax - bMin;
@@ -1049,42 +754,26 @@ function renderLyapunov() {
         for (let sx = 0; sx < alias; sx++) {
           const a = aMin + ((px + (sx + 0.5) / alias) / size) * aRange;
           const b = bMin + ((py + (sy + 0.5) / alias) / size) * bRange;
-
-          // Lyapunov exponent calculation
-          let x = 0.5;
-          let lyapunov = 0;
+          let x = 0.5, lyapunov = 0;
 
           for (let n = 0; n < maxIter; n++) {
             const r = sequence[n % seqLen] === 'A' ? a : b;
             x = r * x * (1 - x);
             const deriv = Math.abs(r * (1 - 2 * x));
-            if (deriv > 0) {
-              lyapunov += Math.log(deriv);
-            }
+            if (deriv > 0) lyapunov += Math.log(deriv);
           }
 
           lyapunov /= maxIter;
 
           if (isNaN(lyapunov) || !isFinite(lyapunov)) {
-            totalR += bgColor.r;
-            totalG += bgColor.g;
-            totalB += bgColor.b;
+            totalR += bgColor.r; totalG += bgColor.g; totalB += bgColor.b;
           } else {
-            let ratio;
-            if (lyapunov < 0) {
-              ratio = Math.min(1, -lyapunov / 2);
-            } else {
-              ratio = 0;
-            }
-
+            let ratio = lyapunov < 0 ? Math.min(1, -lyapunov / 2) : 0;
             ratio = Math.min(1, Math.max(0, ratio));
-
             const linearIndex = Math.min(lutSize - 1, Math.floor(ratio * lutSize));
             const lutIndex = gammaLUT ? gammaLUT[linearIndex] : linearIndex;
             const color = colorLUT[lutIndex];
-            totalR += color & 0xff;
-            totalG += (color >> 8) & 0xff;
-            totalB += (color >> 16) & 0xff;
+            totalR += color & 0xff; totalG += (color >> 8) & 0xff; totalB += (color >> 16) & 0xff;
           }
         }
       }
@@ -1092,357 +781,248 @@ function renderLyapunov() {
       const avgR = Math.round(totalR / aliasSq);
       const avgG = Math.round(totalG / aliasSq);
       const avgB = Math.round(totalB / aliasSq);
-
-      const idx = py * size + px;
-      data32[idx] = (255 << 24) | (avgB << 16) | (avgG << 8) | avgR;
+      data32[py * size + px] = (255 << 24) | (avgB << 16) | (avgG << 8) | avgR;
     }
   }
-
   ctx.putImageData(imageData, 0, 0);
 }
 
-// Progressive fractal rendering: fast low-res preview, then full-quality render
 function renderFractalProgressive() {
   if (!fractalParams || !ctx) return;
-
   const fullSize = canvasSize;
   const fullAlias = configAlias;
 
-  // --- Preview pass: 1/4 size, no oversampling ---
   const previewSize = Math.max(1, Math.floor(fullSize / 4));
-
-  // Render preview into a temporary OffscreenCanvas
   const previewCanvas = new OffscreenCanvas(previewSize, previewSize);
-  const previewCtx = previewCanvas.getContext("2d");
+  const previewCtx = previewCanvas.getContext("2d", { alpha: false });
 
-  // Swap globals for preview render
   const savedCtx = ctx;
   canvasSize = previewSize;
   configAlias = 1;
   ctx = previewCtx;
+  renderFractal();
 
-  renderFractal();  // renders preview-size image to previewCtx
-
-  // Restore globals
   ctx = savedCtx;
   canvasSize = fullSize;
   configAlias = fullAlias;
 
-  // Scale preview up to fill the full canvas
   ctx.imageSmoothingEnabled = true;
   ctx.imageSmoothingQuality = "low";
   ctx.drawImage(previewCanvas, 0, 0, fullSize, fullSize);
   ctx.imageSmoothingEnabled = false;
 
-  // Notify preview is ready
-  self.postMessage({
-    type: "stats",
-    payload: { maxHits: 0, totalIterations: 0, fractalPreview: true },
-  });
+  self.postMessage({ type: "stats", payload: { maxHits: 0, totalIterations: 0, fractalPreview: true } });
 
-  // Yield long enough for the browser compositor to present the preview frame.
-  // OffscreenCanvas auto-commits at the next vsync (~16ms at 60fps).
-  // 50ms guarantees at least one vsync has passed on any display.
   progressiveTimeoutId = setTimeout(() => {
     progressiveTimeoutId = null;
     renderFractal();
-    self.postMessage({
-      type: "stats",
-      payload: { maxHits: 0, totalIterations: 0, fractalComplete: true },
-    });
+    self.postMessage({ type: "stats", payload: { maxHits: 0, totalIterations: 0, fractalComplete: true } });
   }, 50);
 }
 
-// Render fractal based on type
 function renderFractal() {
   if (!fractalParams) return;
-
-  if (fractalParams.type === "mandelbrot") {
-    renderMandelbrot();
-  } else if (fractalParams.type === "julia") {
-    renderJulia();
-  } else if (fractalParams.type === "burningship") {
-    renderBurningShip();
-  } else if (fractalParams.type === "tricorn") {
-    renderTricorn();
-  } else if (fractalParams.type === "multibrot") {
-    renderMultibrot();
-  } else if (fractalParams.type === "newton") {
-    renderNewton();
-  } else if (fractalParams.type === "phoenix") {
-    renderPhoenix();
-  } else if (fractalParams.type === "lyapunov") {
-    renderLyapunov();
+  switch (fractalParams.type) {
+    case "mandelbrot": renderMandelbrot(); break;
+    case "julia": renderJulia(); break;
+    case "burningship": renderBurningShip(); break;
+    case "tricorn": renderTricorn(); break;
+    case "multibrot": renderMultibrot(); break;
+    case "newton": renderNewton(); break;
+    case "phoenix": renderPhoenix(); break;
+    case "lyapunov": renderLyapunov(); break;
   }
 }
 
 // ============================================
-// ITERATORS
+// ZERO-ALLOCATION ITERATORS (Highly Optimized)
 // ============================================
+// These iterators update a Float64Array in place instead of creating objects
 
 class SymmetricIconIterator {
   constructor(alpha, betha, gamma, delta, omega, lambda, degree, npdegree) {
-    this.alpha = alpha;
-    this.betha = betha;
-    this.gamma = gamma;
-    this.delta = delta;
-    this.omega = omega;
-    this.lambda = lambda;
-    this.degree = degree;
-    this.npdegree = npdegree;
+    this.alpha = alpha; this.betha = betha; this.gamma = gamma; this.delta = delta;
+    this.omega = omega; this.lambda = lambda; this.degree = degree; this.npdegree = npdegree;
   }
-
-  iterate(point) {
-    let zzbar, zz;
-    let zreal, zimag;
-    let za, zb, zn, zc, zd;
-    let { xpos, ypos } = point;
-
-    zzbar = xpos * xpos + ypos * ypos;
+  iterate(p) {
+    const xpos = p[0], ypos = p[1];
+    const zzbar = xpos * xpos + ypos * ypos;
+    let zz, zc = 0, zd = 0, zreal, zimag, za, zb, zn;
 
     if (this.delta !== 0) {
       zz = Math.sqrt(zzbar);
-      zc = 1;
-      zd = 0;
-      zreal = xpos / zz;
-      zimag = ypos / zz;
-
+      zc = 1; zd = 0;
+      zreal = xpos / zz; zimag = ypos / zz;
       for (let j = 0; j < this.npdegree * this.degree; j++) {
         za = zc * zreal - zd * zimag;
         zb = zd * zreal + zc * zimag;
-        zc = za;
-        zd = zb;
+        zc = za; zd = zb;
       }
     } else {
-      zc = 0;
       zz = 0;
     }
 
-    zreal = xpos;
-    zimag = ypos;
-
+    zreal = xpos; zimag = ypos;
     for (let i = 0; i < this.degree - 2; i++) {
       za = zreal * xpos - zimag * ypos;
       zb = zimag * xpos + zreal * ypos;
-      zreal = za;
-      zimag = zb;
+      zreal = za; zimag = zb;
     }
 
     zn = xpos * zreal - ypos * zimag;
-    const p =
-      this.lambda +
-      this.alpha * zzbar +
-      this.betha * zn +
-      this.delta * zz * zc;
-
-    let nxpos = p * xpos + this.gamma * zreal - this.omega * ypos;
-    let nypos = p * ypos - this.gamma * zimag + this.omega * xpos;
-
-    return { xpos: nxpos, ypos: nypos };
+    const factor = this.lambda + this.alpha * zzbar + this.betha * zn + this.delta * zz * zc;
+    
+    p[0] = factor * xpos + this.gamma * zreal - this.omega * ypos;
+    p[1] = factor * ypos - this.gamma * zimag + this.omega * xpos;
   }
 }
 
 class CliffordIterator {
   constructor(alpha, beta, gamma, delta) {
-    this.alpha = alpha;
-    this.beta = beta;
-    this.gamma = gamma;
-    this.delta = delta;
+    this.alpha = alpha; this.beta = beta; this.gamma = gamma; this.delta = delta;
   }
-  iterate(point) {
-    let { xpos, ypos } = point;
-    return {
-      xpos: Math.sin(this.alpha * ypos) + this.gamma * Math.cos(this.alpha * xpos),
-      ypos: Math.sin(this.beta * xpos) + this.delta * Math.cos(this.beta * ypos),
-    };
+  iterate(p) {
+    const x = p[0], y = p[1];
+    p[0] = Math.sin(this.alpha * y) + this.gamma * Math.cos(this.alpha * x);
+    p[1] = Math.sin(this.beta * x) + this.delta * Math.cos(this.beta * y);
   }
 }
 
 class DeJongIterator {
   constructor(alpha, beta, gamma, delta) {
-    this.alpha = alpha;
-    this.beta = beta;
-    this.gamma = gamma;
-    this.delta = delta;
+    this.alpha = alpha; this.beta = beta; this.gamma = gamma; this.delta = delta;
   }
-  iterate(point) {
-    const { xpos, ypos } = point;
-    return {
-      xpos: Math.sin(this.alpha * ypos) - Math.cos(this.beta * xpos),
-      ypos: Math.sin(this.gamma * xpos) - Math.cos(this.delta * ypos),
-    };
+  iterate(p) {
+    const x = p[0], y = p[1];
+    p[0] = Math.sin(this.alpha * y) - Math.cos(this.beta * x);
+    p[1] = Math.sin(this.gamma * x) - Math.cos(this.delta * y);
   }
 }
 
 class JasonRampe1Iterator {
   constructor(alpha, beta, gamma, delta) {
-    this.alpha = alpha;
-    this.beta = beta;
-    this.gamma = gamma;
-    this.delta = delta;
+    this.alpha = alpha; this.beta = beta; this.gamma = gamma; this.delta = delta;
   }
-  iterate(point) {
-    const { xpos, ypos } = point;
-    return {
-      xpos: Math.cos(ypos * this.beta) + this.gamma * Math.sin(xpos * this.beta),
-      ypos: Math.cos(xpos * this.alpha) + this.delta * Math.sin(ypos * this.alpha),
-    };
+  iterate(p) {
+    const x = p[0], y = p[1];
+    p[0] = Math.cos(y * this.beta) + this.gamma * Math.sin(x * this.beta);
+    p[1] = Math.cos(x * this.alpha) + this.delta * Math.sin(y * this.alpha);
   }
 }
 
 class JasonRampe2Iterator {
   constructor(alpha, beta, gamma, delta) {
-    this.alpha = alpha;
-    this.beta = beta;
-    this.gamma = gamma;
-    this.delta = delta;
+    this.alpha = alpha; this.beta = beta; this.gamma = gamma; this.delta = delta;
   }
-  iterate(point) {
-    const { xpos, ypos } = point;
-    return {
-      xpos: Math.cos(ypos * this.beta) + this.gamma * Math.cos(xpos * this.beta),
-      ypos: Math.cos(xpos * this.alpha) + this.delta * Math.cos(ypos * this.alpha),
-    };
+  iterate(p) {
+    const x = p[0], y = p[1];
+    p[0] = Math.cos(y * this.beta) + this.gamma * Math.cos(x * this.beta);
+    p[1] = Math.cos(x * this.alpha) + this.delta * Math.cos(y * this.alpha);
   }
 }
 
 class JasonRampe3Iterator {
   constructor(alpha, beta, gamma, delta) {
-    this.alpha = alpha;
-    this.beta = beta;
-    this.gamma = gamma;
-    this.delta = delta;
+    this.alpha = alpha; this.beta = beta; this.gamma = gamma; this.delta = delta;
   }
-  iterate(point) {
-    const { xpos, ypos } = point;
-    return {
-      xpos: Math.sin(ypos * this.beta) + this.gamma * Math.cos(xpos * this.beta),
-      ypos: Math.cos(xpos * this.alpha) + this.delta * Math.sin(ypos * this.alpha),
-    };
+  iterate(p) {
+    const x = p[0], y = p[1];
+    p[0] = Math.sin(y * this.beta) + this.gamma * Math.cos(x * this.beta);
+    p[1] = Math.cos(x * this.alpha) + this.delta * Math.sin(y * this.alpha);
   }
 }
 
 class TinkerbellIterator {
   constructor(alpha, beta, gamma, delta) {
-    this.alpha = alpha;
-    this.beta = beta;
-    this.gamma = gamma;
-    this.delta = delta;
+    this.alpha = alpha; this.beta = beta; this.gamma = gamma; this.delta = delta;
   }
-  iterate(point) {
-    const { xpos, ypos } = point;
-    return {
-      xpos: xpos * xpos - ypos * ypos + this.alpha * xpos + this.beta * ypos,
-      ypos: 2 * xpos * ypos + this.gamma * xpos + this.delta * ypos,
-    };
+  iterate(p) {
+    const x = p[0], y = p[1];
+    p[0] = x * x - y * y + this.alpha * x + this.beta * y;
+    p[1] = 2 * x * y + this.gamma * x + this.delta * y;
   }
 }
 
 class HenonIterator {
   constructor(alpha, beta) {
-    this.alpha = alpha;
-    this.beta = beta;
+    this.alpha = alpha; this.beta = beta;
   }
-  iterate(point) {
-    const { xpos, ypos } = point;
-    return {
-      xpos: 1 - this.alpha * xpos * xpos + ypos,
-      ypos: this.beta * xpos,
-    };
+  iterate(p) {
+    const x = p[0], y = p[1];
+    p[0] = 1 - this.alpha * x * x + y;
+    p[1] = this.beta * x;
   }
 }
 
 class BedheadIterator {
   constructor(alpha, beta) {
-    this.alpha = alpha;
-    this.beta = beta;
+    this.alpha = alpha; this.beta = beta;
   }
-  iterate(point) {
-    const { xpos, ypos } = point;
-    return {
-      xpos: Math.sin(xpos * ypos / this.beta) * ypos + Math.cos(this.alpha * xpos - ypos),
-      ypos: xpos + Math.sin(ypos) / this.beta,
-    };
+  iterate(p) {
+    const x = p[0], y = p[1];
+    p[0] = Math.sin(x * y / this.beta) * y + Math.cos(this.alpha * x - y);
+    p[1] = x + Math.sin(y) / this.beta;
   }
 }
 
 class SvenssonIterator {
   constructor(alpha, beta, gamma, delta) {
-    this.alpha = alpha;
-    this.beta = beta;
-    this.gamma = gamma;
-    this.delta = delta;
+    this.alpha = alpha; this.beta = beta; this.gamma = gamma; this.delta = delta;
   }
-  iterate(point) {
-    const { xpos, ypos } = point;
-    return {
-      xpos: this.delta * Math.sin(this.alpha * xpos) - Math.sin(this.beta * ypos),
-      ypos: this.gamma * Math.cos(this.alpha * xpos) + Math.cos(this.beta * ypos),
-    };
+  iterate(p) {
+    const x = p[0], y = p[1];
+    p[0] = this.delta * Math.sin(this.alpha * x) - Math.sin(this.beta * y);
+    p[1] = this.gamma * Math.cos(this.alpha * x) + Math.cos(this.beta * y);
   }
 }
 
 class FractalDreamIterator {
   constructor(alpha, beta, gamma, delta) {
-    this.alpha = alpha;
-    this.beta = beta;
-    this.gamma = gamma;
-    this.delta = delta;
+    this.alpha = alpha; this.beta = beta; this.gamma = gamma; this.delta = delta;
   }
-  iterate(point) {
-    const { xpos, ypos } = point;
-    return {
-      xpos: Math.sin(ypos * this.beta) + this.gamma * Math.sin(xpos * this.beta),
-      ypos: Math.sin(xpos * this.alpha) + this.delta * Math.sin(ypos * this.alpha),
-    };
+  iterate(p) {
+    const x = p[0], y = p[1];
+    p[0] = Math.sin(y * this.beta) + this.gamma * Math.sin(x * this.beta);
+    p[1] = Math.sin(x * this.alpha) + this.delta * Math.sin(y * this.alpha);
   }
 }
 
 class HopalongIterator {
   constructor(alpha, beta, gamma) {
-    this.alpha = alpha;
-    this.beta = beta;
-    this.gamma = gamma;
+    this.alpha = alpha; this.beta = beta; this.gamma = gamma;
   }
-  iterate(point) {
-    const { xpos, ypos } = point;
-    const sign = xpos >= 0 ? 1 : -1;
-    return {
-      xpos: ypos - sign * Math.sqrt(Math.abs(this.beta * xpos - this.gamma)),
-      ypos: this.alpha - xpos,
-    };
+  iterate(p) {
+    const x = p[0], y = p[1];
+    const sign = x >= 0 ? 1 : -1;
+    p[0] = y - sign * Math.sqrt(Math.abs(this.beta * x - this.gamma));
+    p[1] = this.alpha - x;
   }
 }
 
 class GumowskiMiraIterator {
   constructor(mu, alpha, sigma) {
-    this.mu = mu;
-    this.alpha = alpha;
-    this.sigma = sigma;
+    this.mu = mu; this.alpha = alpha; this.sigma = sigma;
   }
   f(x) {
     return this.mu * x + (2 * (1 - this.mu) * x * x) / (1 + x * x);
   }
-  iterate(point) {
-    const { xpos, ypos } = point;
-    const fx = this.f(xpos);
-    const nxpos = ypos + this.alpha * (1 - this.sigma * ypos * ypos) * ypos + fx;
-    const nypos = -xpos + this.f(nxpos);
-    return { xpos: nxpos, ypos: nypos };
+  iterate(p) {
+    const x = p[0], y = p[1];
+    const fx = this.f(x);
+    const nx = y + this.alpha * (1 - this.sigma * y * y) * y + fx;
+    p[0] = nx;
+    p[1] = -x + this.f(nx);
   }
 }
 
 class SprottIterator {
   constructor(a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12) {
-    this.a = [a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12];
+    this.a = new Float64Array([a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12]);
   }
-  iterate(point) {
-    const { xpos, ypos } = point;
-    const a = this.a;
-    return {
-      xpos: a[0] + a[1]*xpos + a[2]*xpos*xpos + a[3]*xpos*ypos + a[4]*ypos + a[5]*ypos*ypos,
-      ypos: a[6] + a[7]*xpos + a[8]*xpos*xpos + a[9]*xpos*ypos + a[10]*ypos + a[11]*ypos*ypos,
-    };
+  iterate(p) {
+    const x = p[0], y = p[1], a = this.a;
+    p[0] = a[0] + a[1]*x + a[2]*x*x + a[3]*x*y + a[4]*y + a[5]*y*y;
+    p[1] = a[6] + a[7]*x + a[8]*x*x + a[9]*x*y + a[10]*y + a[11]*y*y;
   }
 }
 
@@ -1451,69 +1031,49 @@ class SymmetricFractalIterator {
     this.a = a; this.b = b; this.c = c; this.d = d;
     this.alpha = alpha; this.beta = beta;
     this.p = p; this.reflect = reflect;
-    this.angles = [];
-    for (let i = 0; i < p; i++) {
-      this.angles.push(2 * Math.PI * i / p);
-    }
+    this.angles = new Float64Array(p);
+    for (let i = 0; i < p; i++) this.angles[i] = 2 * Math.PI * i / p;
   }
-  iterate(point) {
-    let { xpos, ypos } = point;
-    // Apply affine transform
-    let nx = this.a * xpos + this.b * ypos + this.alpha;
-    let ny = this.c * xpos + this.d * ypos + this.beta;
-    // Apply random rotation from symmetry group
+  iterate(p) {
+    const x = p[0], y = p[1];
+    let nx = this.a * x + this.b * y + this.alpha;
+    let ny = this.c * x + this.d * y + this.beta;
     const angle = this.angles[Math.floor(Math.random() * this.p)];
-    const cos = Math.cos(angle);
-    const sin = Math.sin(angle);
+    const cos = Math.cos(angle), sin = Math.sin(angle);
     let rx = nx * cos - ny * sin;
     let ry = nx * sin + ny * cos;
-    // Optionally reflect for dihedral symmetry
-    if (this.reflect && Math.random() < 0.5) {
-      rx = -rx;
-    }
-    return { xpos: rx, ypos: ry };
+    if (this.reflect && Math.random() < 0.5) rx = -rx;
+    p[0] = rx; p[1] = ry;
   }
 }
 
 class DeRhamIterator {
   constructor(alpha, beta, curveType) {
-    this.alpha = alpha;
-    this.beta = beta;
-    this.curveType = curveType;
+    this.a = alpha; this.b = beta; this.curveType = curveType;
   }
-  iterate(point) {
-    let { xpos, ypos } = point;
-    // Complex number representation: z = xpos + i*ypos
-    const a = this.alpha;
-    const b = this.beta;
+  iterate(p) {
+    const x = p[0], y = p[1], a = this.a, b = this.b;
     const choice = Math.random() < 0.5 ? 0 : 1;
 
     if (this.curveType === "cesaro") {
-      // Cesaro curves (orientation preserving)
       if (choice === 0) {
-        // d0(z) = a*z where a = alpha + i*beta
-        return { xpos: a * xpos - b * ypos, ypos: a * ypos + b * xpos };
+        p[0] = a * x - b * y; p[1] = a * y + b * x;
       } else {
-        // d1(z) = a + (1-a)*z
         const ra = 1 - a, rb = -b;
-        return { xpos: a + ra * xpos - rb * ypos, ypos: b + ra * ypos + rb * xpos };
+        p[0] = a + ra * x - rb * y; p[1] = b + ra * y + rb * x;
       }
     } else if (this.curveType === "koch") {
-      // Koch-Peano curves (orientation reversing)
       if (choice === 0) {
-        // d0(z) = a*conj(z)
-        return { xpos: a * xpos + b * ypos, ypos: -a * ypos + b * xpos };
+        p[0] = a * x + b * y; p[1] = -a * y + b * x;
       } else {
-        // d1(z) = a + (1-a)*conj(z)
         const ra = 1 - a, rb = -b;
-        return { xpos: a + ra * xpos + rb * ypos, ypos: b - ra * ypos + rb * xpos };
+        p[0] = a + ra * x + rb * y; p[1] = b - ra * y + rb * x;
       }
     } else {
-      // General case
       if (choice === 0) {
-        return { xpos: a * xpos - b * ypos, ypos: b * xpos + a * ypos };
+        p[0] = a * x - b * y; p[1] = b * x + a * y;
       } else {
-        return { xpos: a + (1-a) * xpos + b * ypos, ypos: b + -b * xpos + (1-a) * ypos };
+        p[0] = a + (1-a) * x + b * y; p[1] = b + -b * x + (1-a) * y;
       }
     }
   }
@@ -1521,133 +1081,80 @@ class DeRhamIterator {
 
 class ConradiIterator {
   constructor(r1, theta1, r2, theta2, a, n, variant) {
-    this.r1 = r1; this.theta1 = theta1;
-    this.r2 = r2; this.theta2 = theta2;
     this.a = a; this.n = n; this.variant = variant;
-    this.angles = [];
-    for (let i = 0; i < n; i++) {
-      this.angles.push(2 * Math.PI * i / n);
-    }
+    this.c1r = r1 * Math.cos(theta1 * Math.PI);
+    this.c1i = r1 * Math.sin(theta1 * Math.PI);
+    this.c2r = r2 * Math.cos(theta2 * Math.PI);
+    this.c2i = r2 * Math.sin(theta2 * Math.PI);
+    this.angles = new Float64Array(n);
+    for (let i = 0; i < n; i++) this.angles[i] = 2 * Math.PI * i / n;
   }
-  iterate(point) {
-    let { xpos, ypos } = point;
-    // Complex multiplication helpers
-    const c1r = this.r1 * Math.cos(this.theta1 * Math.PI);
-    const c1i = this.r1 * Math.sin(this.theta1 * Math.PI);
-    const c2r = this.r2 * Math.cos(this.theta2 * Math.PI);
-    const c2i = this.r2 * Math.sin(this.theta2 * Math.PI);
-
+  iterate(p) {
+    const x = p[0], y = p[1];
     let zr, zi;
     if (this.variant === 1) {
-      // 1/z
-      const denom = xpos*xpos + ypos*ypos + 0.0001;
-      const invr = xpos / denom, invi = -ypos / denom;
-      // c1 * (1/z)
-      const t1r = c1r * invr - c1i * invi;
-      const t1i = c1r * invi + c1i * invr;
-      // c2 * conj(z)
-      const t2r = c2r * xpos + c2i * ypos;
-      const t2i = c2r * ypos - c2i * xpos;
-      zr = t1r + t2r + this.a;
-      zi = t1i + t2i;
+      const denom = x*x + y*y + 0.0001;
+      const invr = x / denom, invi = -y / denom;
+      zr = (this.c1r * invr - this.c1i * invi) + (this.c2r * x + this.c2i * y) + this.a;
+      zi = (this.c1r * invi + this.c1i * invr) + (this.c2r * y - this.c2i * x);
     } else {
-      // 1 / (c1*z + c2*(1/conj(z)) + a)
-      const denom = xpos*xpos + ypos*ypos + 0.0001;
-      const t1r = c1r * xpos - c1i * ypos;
-      const t1i = c1r * ypos + c1i * xpos;
-      const t2r = c2r * xpos / denom + c2i * ypos / denom;
-      const t2i = c2r * ypos / denom - c2i * xpos / denom;
-      const dr = t1r + t2r + this.a;
-      const di = t1i + t2i;
+      const denom = x*x + y*y + 0.0001;
+      const dr = (this.c1r * x - this.c1i * y) + (this.c2r * x + this.c2i * y) / denom + this.a;
+      const di = (this.c1r * y + this.c1i * x) + (this.c2r * y - this.c2i * x) / denom;
       const d2 = dr*dr + di*di + 0.0001;
-      zr = dr / d2;
-      zi = -di / d2;
+      zr = dr / d2; zi = -di / d2;
     }
-
-    // Apply random rotation
     const angle = this.angles[Math.floor(Math.random() * this.n)];
     const cos = Math.cos(angle), sin = Math.sin(angle);
-    return { xpos: zr * cos - zi * sin, ypos: zr * sin + zi * cos };
+    p[0] = zr * cos - zi * sin; p[1] = zr * sin + zi * cos;
   }
 }
 
 class MobiusIterator {
   constructor(aRe, aIm, bRe, bIm, cRe, cIm, dRe, dIm, n) {
-    this.ar = aRe; this.ai = aIm;
-    this.br = bRe; this.bi = bIm;
-    this.cr = cRe; this.ci = cIm;
-    this.dr = dRe; this.di = dIm;
+    this.ar = aRe; this.ai = aIm; this.br = bRe; this.bi = bIm;
+    this.cr = cRe; this.ci = cIm; this.dr = dRe; this.di = dIm;
     this.n = n;
-    this.angles = [];
-    for (let i = 0; i < n; i++) {
-      this.angles.push(2 * Math.PI * i / n);
-    }
+    this.angles = new Float64Array(n);
+    for (let i = 0; i < n; i++) this.angles[i] = 2 * Math.PI * i / n;
   }
-  iterate(point) {
-    let { xpos, ypos } = point;
-    // f(z) = (az + b) / (cz + d)
-    // Numerator: (ar + i*ai)(x + i*y) + (br + i*bi)
-    const numr = this.ar * xpos - this.ai * ypos + this.br;
-    const numi = this.ar * ypos + this.ai * xpos + this.bi;
-    // Denominator: (cr + i*ci)(x + i*y) + (dr + i*di)
-    const denr = this.cr * xpos - this.ci * ypos + this.dr;
-    const deni = this.cr * ypos + this.ci * xpos + this.di;
-    // Division
+  iterate(p) {
+    const x = p[0], y = p[1];
+    const numr = this.ar * x - this.ai * y + this.br;
+    const numi = this.ar * y + this.ai * x + this.bi;
+    const denr = this.cr * x - this.ci * y + this.dr;
+    const deni = this.cr * y + this.ci * x + this.di;
     const d2 = denr*denr + deni*deni + 0.0001;
     const zr = (numr * denr + numi * deni) / d2;
     const zi = (numi * denr - numr * deni) / d2;
-    // Apply random rotation
     const angle = this.angles[Math.floor(Math.random() * this.n)];
     const cos = Math.cos(angle), sin = Math.sin(angle);
-    return { xpos: zr * cos - zi * sin, ypos: zr * sin + zi * cos };
+    p[0] = zr * cos - zi * sin; p[1] = zr * sin + zi * cos;
   }
 }
 
 class SymmetricQuiltIterator {
   constructor(lambda, alpha, beta, gamma, omega, m, shift) {
-    this.lambda = lambda;
-    this.alpha = alpha;
-    this.beta = beta;
-    this.gamma = gamma;
-    this.omega = omega;
-    this.m = m;
-    this.shift = shift;
-    this.PI2 = Math.PI * 2;
-    this.PI4 = Math.PI * 4;
-    this.PI6 = Math.PI * 6;
+    this.lambda = lambda; this.alpha = alpha; this.beta = beta;
+    this.gamma = gamma; this.omega = omega; this.m = m; this.shift = shift;
+    this.PI2 = Math.PI * 2; this.PI4 = Math.PI * 4; this.PI6 = Math.PI * 6;
   }
-  iterate(point) {
-    // Convert from centered coords [-0.5, 0.5] to unit square [0, 1]
-    let xpos = point.xpos + 0.5;
-    let ypos = point.ypos + 0.5;
+  iterate(p) {
+    let x = p[0] + 0.5, y = p[1] + 0.5;
+    x = x - Math.floor(x); y = y - Math.floor(y);
+    const sin2pix = Math.sin(this.PI2 * x), sin2piy = Math.sin(this.PI2 * y);
+    const cos2pix = Math.cos(this.PI2 * x), cos2piy = Math.cos(this.PI2 * y);
+    
+    let nx = this.m * x + this.shift + this.lambda * sin2pix - this.omega * sin2piy + 
+             this.alpha * sin2pix * cos2piy + this.beta * Math.sin(this.PI4 * x) + 
+             this.gamma * Math.sin(this.PI6 * x) * Math.cos(this.PI4 * y);
+             
+    let ny = this.m * y + this.shift + this.lambda * sin2piy - this.omega * sin2pix + 
+             this.alpha * sin2piy * cos2pix + this.beta * Math.sin(this.PI4 * y) + 
+             this.gamma * Math.sin(this.PI6 * y) * Math.cos(this.PI4 * x);
 
-    // Wrap to ensure we're in [0, 1] (in case of initial values outside range)
-    xpos = xpos - Math.floor(xpos);
-    ypos = ypos - Math.floor(ypos);
-
-    const sin2pix = Math.sin(this.PI2 * xpos);
-    const sin2piy = Math.sin(this.PI2 * ypos);
-    const cos2pix = Math.cos(this.PI2 * xpos);
-    const cos2piy = Math.cos(this.PI2 * ypos);
-
-    let nxpos = this.m * xpos + this.shift
-      + this.lambda * sin2pix - this.omega * sin2piy
-      + this.alpha * sin2pix * cos2piy
-      + this.beta * Math.sin(this.PI4 * xpos)
-      + this.gamma * Math.sin(this.PI6 * xpos) * Math.cos(this.PI4 * ypos);
-
-    let nypos = this.m * ypos + this.shift
-      + this.lambda * sin2piy - this.omega * sin2pix
-      + this.alpha * sin2piy * cos2pix
-      + this.beta * Math.sin(this.PI4 * ypos)
-      + this.gamma * Math.sin(this.PI6 * ypos) * Math.cos(this.PI4 * xpos);
-
-    // Wrap to [0, 1]
-    nxpos = nxpos - Math.floor(nxpos);
-    nypos = nypos - Math.floor(nypos);
-
-    // Convert back to centered coords [-0.5, 0.5] for canvas mapping
-    return { xpos: nxpos - 0.5, ypos: nypos - 0.5 };
+    nx = nx - Math.floor(nx); ny = ny - Math.floor(ny);
+    p[0] = nx - 0.5; p[1] = ny - 0.5;
   }
 }
 
@@ -1656,68 +1163,63 @@ class SymmetricQuiltIterator {
 // ============================================
 
 class IterationCanvas {
-  constructor(initial_position, canvas_size, alias, scale, iterator) {
+  constructor(initial_position, canvas_size, alias, scale, iterator, useSharedBuffer) {
     this.iterator_size = canvas_size * alias;
     this.maxHits = 0;
     this.totalIterations = 0;
-    this.iterating = true;
-    this.currentPosition = { xpos: 0, ypos: 0 };
-    this.iterationPerRun = 2000000;
-
-    this.currentPosition.xpos = initial_position.xpos;
-    this.currentPosition.ypos = initial_position.ypos;
-
+    
+    // Use highly optimized Float64Array for coordinates to avoid GC pressure
+    this.p = new Float64Array([initial_position.xpos, initial_position.ypos]);
+    this.iterationPerRun = 4000000; // Increased chunk size since it's faster now
     this.scale = scale;
 
     const totalSize = this.iterator_size * this.iterator_size;
-    this.hits = new Uint32Array(totalSize);
-
+    
+    // Use SharedArrayBuffer if supported and requested, otherwise standard buffer
+    if (useSharedBuffer && typeof SharedArrayBuffer !== 'undefined') {
+        sharedHitsBuffer = new SharedArrayBuffer(totalSize * 4); // Uint32 requires 4 bytes per element
+        this.hits = new Uint32Array(sharedHitsBuffer);
+        sharedHitsArray = this.hits;
+        this.isShared = true;
+    } else {
+        this.hits = new Uint32Array(totalSize);
+        this.isShared = false;
+    }
+    
     this.iterator = iterator;
   }
 
   iterate() {
     let it = this.iterationPerRun;
+    const iterFn = this.iterator;
+    const p = this.p;
+    const scale = this.scale;
+    const iSize = this.iterator_size;
+    const offset = iSize / 2;
+    const hits = this.hits;
+    let max = this.maxHits;
+
+    // The ultra-hot loop
     while (it > 0) {
-      this.iterate1();
+      iterFn.iterate(p);
+      const xp = Math.round(p[0] * scale * iSize + offset);
+      const yp = Math.round(p[1] * scale * iSize + offset);
+
+      if (xp >= 0 && xp < iSize && yp >= 0 && yp < iSize) {
+        const idx = xp * iSize + yp;
+        const hi = ++hits[idx];
+        if (hi > max) max = hi;
+      }
       it--;
     }
+    
+    this.maxHits = max;
+    this.totalIterations += this.iterationPerRun;
   }
 
-  getHits() {
-    return this.hits;
-  }
-
-  getMaxHits() {
-    return this.maxHits;
-  }
-
-  getTotalIterations() {
-    return this.totalIterations;
-  }
-
-  iterate1() {
-    this.totalIterations++;
-    this.currentPosition = this.iterator.iterate(this.currentPosition);
-    const yp = Math.round(
-      this.currentPosition.ypos * this.scale * this.iterator_size +
-        this.iterator_size / 2
-    );
-    const xp = Math.round(
-      this.currentPosition.xpos * this.scale * this.iterator_size +
-        this.iterator_size / 2
-    );
-
-    if (
-      xp >= 0 &&
-      xp < this.iterator_size &&
-      yp >= 0 &&
-      yp < this.iterator_size
-    ) {
-      const idx = xp * this.iterator_size + yp;
-      const hi = ++this.hits[idx];
-      if (hi > this.maxHits) this.maxHits = hi;
-    }
-  }
+  getHits() { return this.hits; }
+  getMaxHits() { return this.maxHits; }
+  getTotalIterations() { return this.totalIterations; }
 }
 
 // ============================================
@@ -1728,17 +1230,9 @@ function iteratorBuilder(iterator) {
   const { name, parameters } = iterator;
   switch (name) {
     case "symmetric_icon":
-      const { alpha, betha, gamma, delta, omega, lambda, degree, npdegree } =
-        parameters;
       return new SymmetricIconIterator(
-        alpha,
-        betha,
-        gamma,
-        delta,
-        omega,
-        lambda,
-        degree,
-        npdegree
+        parameters.alpha, parameters.betha, parameters.gamma, parameters.delta,
+        parameters.omega, parameters.lambda, parameters.degree, parameters.npdegree
       );
     case "clifford_iterator":
       return new CliffordIterator(parameters.alpha, parameters.beta, parameters.gamma, parameters.delta);
@@ -1789,13 +1283,8 @@ function iteratorBuilder(iterator) {
       );
     case "symmetric_quilt":
       return new SymmetricQuiltIterator(
-        parameters.lambda,
-        parameters.alpha,
-        parameters.beta,
-        parameters.gamma,
-        parameters.omega,
-        parameters.m,
-        parameters.shift
+        parameters.lambda, parameters.alpha, parameters.beta, parameters.gamma,
+        parameters.omega, parameters.m, parameters.shift
       );
   }
 }

@@ -41,12 +41,13 @@ export interface UseCanvasWorkerReturn {
   canvasRef: React.RefObject<HTMLCanvasElement>;
   containerRef: React.RefObject<HTMLDivElement>;
 
+  // Fast-updating stats isolated from React renders
+  statsRef: React.MutableRefObject<{ maxHits: number; totalIterations: number }>;
+
   // Read-only state
   canvasSize: number;
   zoom: number;
   containerSize: { width: number; height: number };
-  maxHits: number;
-  totalIterations: number;
   iterating: boolean;
   canvasKey: number;
   isEditing: boolean;
@@ -73,6 +74,7 @@ export function useCanvasWorker(options: UseCanvasWorkerOptions): UseCanvasWorke
   // DOM refs
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const statsRef = useRef({ maxHits: 0, totalIterations: 0 });
 
   // Internal refs
   const workerRef = useRef<Worker | null>(null);
@@ -88,8 +90,6 @@ export function useCanvasWorker(options: UseCanvasWorkerOptions): UseCanvasWorke
   const [canvasSize, setCanvasSizeState] = useState(CONFIG.DEFAULT_CANVAS_SIZE);
   const [zoom, setZoomState] = useState(1);
   const [containerSize, setContainerSize] = useState({ width: 0, height: 0 });
-  const [maxHits, setMaxHits] = useState(0);
-  const [totalIterations, setTotalIterations] = useState(0);
   const [iterating, setIterating] = useState(false);
   const [canvasKey, setCanvasKey] = useState(0);
   const [isEditing, setIsEditing] = useState(false);
@@ -183,7 +183,7 @@ export function useCanvasWorker(options: UseCanvasWorkerOptions): UseCanvasWorke
     if (!ctx) return;
 
     const effectiveMax = pal.palScale ? maxHitsVal : pal.palMax;
-    setMaxHits(maxHitsVal);
+    statsRef.current.maxHits = maxHitsVal;
 
     let poolEntry = imageDataPoolRef.current;
     if (!poolEntry || poolEntry.size !== size) {
@@ -292,6 +292,7 @@ export function useCanvasWorker(options: UseCanvasWorkerOptions): UseCanvasWorke
           palScale: currentPalette.palScale,
           palMax: currentPalette.palMax,
           bgColor: currentPalette.bgColor,
+          useSharedBuffer: typeof SharedArrayBuffer !== 'undefined'
         };
 
         if (latestProps.current.isFractalType) setRendering(true);
@@ -300,8 +301,8 @@ export function useCanvasWorker(options: UseCanvasWorkerOptions): UseCanvasWorke
         worker.onmessage = (event: MessageEvent<any>) => {
           const { type, payload } = event.data;
           if (type === "stats") {
-            setMaxHits(payload.maxHits);
-            setTotalIterations(payload.totalIterations || 0);
+            statsRef.current.maxHits = payload.maxHits;
+            statsRef.current.totalIterations = payload.totalIterations || 0;
             if (payload.fractalComplete) setRendering(false);
           } else if (type === "imageExport") {
             const blob = payload.blob;
@@ -333,25 +334,40 @@ export function useCanvasWorker(options: UseCanvasWorkerOptions): UseCanvasWorke
         palette: currentPaletteData,
         iterator: iteratorPayload,
         bgColor: currentPalette.bgColor,
+        useSharedBuffer: typeof SharedArrayBuffer !== 'undefined'
       };
 
       worker.postMessage({ type: "initialize", payload });
 
       worker.onmessage = (event: MessageEvent<any>) => {
-        const { hits, maxHits: hitMax, iteratorSize } = event.data.payload;
-        pendingRenderRef.current = { hits, maxHits: hitMax, iteratorSize };
+        const { type, payload } = event.data;
+        
+        if (type === "init_shared") {
+           return;
+        }
 
-        if (rafIdRef.current === null) {
-          rafIdRef.current = requestAnimationFrame(() => {
-            const pending = pendingRenderRef.current;
-            if (pending) {
-              draw(
-                pending.hits, pending.maxHits, currentSize, pending.iteratorSize,
-                currentOversampling, latestProps.current.palette,
-              );
-            }
-            rafIdRef.current = null;
-          });
+        if (type === "result" || type === "result_shared") {
+           const hits = payload.hits; 
+           const hitMax = payload.maxHits;
+           const iteratorSize = payload.iteratorSize;
+           statsRef.current.maxHits = hitMax;
+           
+           if (hits) {
+             pendingRenderRef.current = { hits, maxHits: hitMax, iteratorSize };
+           }
+
+           if (rafIdRef.current === null) {
+             rafIdRef.current = requestAnimationFrame(() => {
+               const pending = pendingRenderRef.current;
+               if (pending) {
+                 draw(
+                   pending.hits, pending.maxHits, currentSize, pending.iteratorSize,
+                   currentOversampling, latestProps.current.palette,
+                 );
+               }
+               rafIdRef.current = null;
+             });
+           }
         }
       };
     }
@@ -369,8 +385,8 @@ export function useCanvasWorker(options: UseCanvasWorkerOptions): UseCanvasWorke
       }
     }, 100);
 
-    setMaxHits(0);
-    setTotalIterations(0);
+    statsRef.current.maxHits = 0;
+    statsRef.current.totalIterations = 0;
   }, [clearCanvas, draw]);
 
   // --- Effects ---
@@ -511,8 +527,7 @@ export function useCanvasWorker(options: UseCanvasWorkerOptions): UseCanvasWorke
     canvasSize,
     zoom,
     containerSize,
-    maxHits,
-    totalIterations,
+    statsRef,
     iterating,
     canvasKey,
     isEditing,
