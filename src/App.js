@@ -1,6 +1,7 @@
 import "./App.css";
 import { Routes, Route } from "react-router-dom";
 import { ThemeProvider } from "./theme/ThemeContext";
+import { Analytics } from '@vercel/analytics/react';
 
 import NoPage from "./view/pages/NoPage";
 import Home from "./view/pages/Home";
@@ -14,6 +15,7 @@ export default function App(props) {
         <Route element={<Info />} path="/info" />
         <Route element={<NoPage />} path="*" />
       </Routes>
+      <Analytics />
     </ThemeProvider>
   );
 }
