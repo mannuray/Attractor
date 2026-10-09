@@ -129,27 +129,27 @@ export const StopPicker: React.FC<Props> = ({ color, position, canDelete, horizo
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [color.red, color.green, color.blue]);
 
+  // Current hsv lives in a ref too, so pointer handlers compute the next color outside of a
+  // state updater (no side effects during render, and the committed color is never stale).
+  const hsvRef = useRef(hsv);
+  hsvRef.current = hsv;
+  const apply = (next: { h: number; s: number; v: number }) => {
+    hsvRef.current = next;
+    setHsv(next);
+    draftColor.current = hsvToRgb(next.h, next.s, next.v);
+    onDraft(draftColor.current);
+  };
+
   const fromPointer = (e: React.PointerEvent) => {
     if (drag.current === "sv" && svRef.current) {
       const r = svRef.current.getBoundingClientRect();
       const s = Math.min(1, Math.max(0, (e.clientX - r.left) / r.width));
       const v = 1 - Math.min(1, Math.max(0, (e.clientY - r.top) / r.height));
-      setHsv(prev => {
-        const next = { ...prev, s, v };
-        draftColor.current = hsvToRgb(next.h, next.s, next.v);
-        onDraft(draftColor.current);
-        return next;
-      });
+      apply({ ...hsvRef.current, s, v });
     } else if (drag.current === "hue" && hueRef.current) {
       const r = hueRef.current.getBoundingClientRect();
       const t = horizontalHue ? (e.clientX - r.left) / r.width : (e.clientY - r.top) / r.height;
-      const h = Math.min(359.9, Math.max(0, t * 360));
-      setHsv(prev => {
-        const next = { ...prev, h };
-        draftColor.current = hsvToRgb(next.h, next.s, next.v);
-        onDraft(draftColor.current);
-        return next;
-      });
+      apply({ ...hsvRef.current, h: Math.min(359.9, Math.max(0, t * 360)) });
     }
   };
   const start = (kind: "sv" | "hue") => (e: React.PointerEvent) => {
