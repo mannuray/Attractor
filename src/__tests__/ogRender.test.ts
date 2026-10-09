@@ -40,6 +40,17 @@ describe("parseShareParams", () => {
     expect(parseShareParams(q("type=lyapunov&sequence=<script>"))!.params.sequence).toBe(fallback);
   });
 
+  it("bounds fractal values that have no declared range (cost and precision)", () => {
+    const p = (qs: string) => parseShareParams(q(qs))!.params;
+    expect(p("type=multibrot&power=1e9").power).toBe(12);
+    expect(p("type=mandelbrot&zoom=1e-300").zoom).toBe(0.01);
+    expect(p("type=mandelbrot&zoom=1e300").zoom).toBe(1e13);
+    expect(p("type=julia&centerX=1e9&cReal=-50").centerX).toBe(4);
+    expect(p("type=julia&cReal=-50").cReal).toBe(-4);
+    expect(p("type=lyapunov&maxIter=100000").maxIter).toBe(500);
+    expect(p("type=lyapunov&aMin=-9&aMax=99").aMin).toBe(0);
+  });
+
   it("rejects unknown or missing types", () => {
     expect(parseShareParams(q("type=nope"))).toBeNull();
     expect(parseShareParams(q("alpha=1"))).toBeNull();
@@ -87,6 +98,15 @@ describe("renderShareImage", () => {
     ]);
     expect(a1.equals(a2)).toBe(true);
     expect(a1.equals(b1)).toBe(false);
+  });
+
+  it("keeps the heaviest fractal links well inside the function's time limit", async () => {
+    for (const qs of ["type=lyapunov&maxIter=100000&sequence=AABAB", "type=multibrot&power=1e9&maxIter=100000"]) {
+      const share = parseShareParams(q(qs))!;
+      const t0 = Date.now();
+      await renderShareImage(share.meta, share.params);
+      expect(Date.now() - t0).toBeLessThan(12000);
+    }
   });
 
   it("stops at the time budget and still returns an image", async () => {

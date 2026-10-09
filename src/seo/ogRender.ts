@@ -13,6 +13,8 @@ export const CARD_WIDTH = 1200;
 export const CARD_HEIGHT = 630;
 const RENDER_SIZE = 630;
 const BACKGROUND = { r: 11, g: 13, b: 20 };
+/** Iterations used for a fractal card: past this, extra detail is invisible at 630 px. */
+const CARD_MAX_ITER = 1000;
 
 export interface RenderOptions {
   /** Attractors: stop iterating after this long (at least one pass always runs). */
@@ -107,7 +109,7 @@ class StubContext {
 
 /** Runs the studio worker for one system and returns the square render as RGBA. */
 export function renderSystemPixels(meta: SystemMeta, params: Record<string, number | string>, opts: RenderOptions = {}) {
-  const { budgetMs = 1500, passes = 40, fractalBudgetMs = 20000 } = opts;
+  const { budgetMs = 1500, passes = 40, fractalBudgetMs = 8000 } = opts;
   const timers: (() => void)[] = [];
   const sandboxMath = Object.create(Math) as Math;
   sandboxMath.random = seededRandom(0x5eed);
@@ -134,7 +136,9 @@ export function renderSystemPixels(meta: SystemMeta, params: Record<string, numb
   const startup = symmetricIconData[CONFIG.INITIAL_ICON_INDEX];
   const iterator: Record<string, unknown> = {
     name: meta.workerIteratorName || meta.id,
-    parameters: { ...params },
+    parameters: meta.category === "Fractals" && typeof params.maxIter === "number"
+      ? { ...params, maxIter: Math.min(CARD_MAX_ITER, params.maxIter) }
+      : { ...params },
     math: meta.math,
   };
   if (meta.id === "lyapunov" && params.sequence) iterator.sequence = params.sequence;

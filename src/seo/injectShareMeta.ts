@@ -1,7 +1,7 @@
 // Turns the static home page into a link preview for one shared studio render: the card
 // image becomes /api/og for that render and the title names the system. The canonical URL
 // is left alone so parameter variants never compete with the home page in search.
-import { parseShareParams } from "./ogParams";
+import { parseShareParams, shareQuery } from "./ogParams";
 import { SITE_NAME, absolute } from "./site";
 
 const escapeAttr = (s: string) =>
@@ -17,10 +17,7 @@ function setMeta(html: string, key: "property" | "name", name: string, value: st
 /** The share-card URL for a render, with a normalised query (one cache entry per render). */
 export function shareImageUrl(search: URLSearchParams): string | null {
   const share = parseShareParams(search);
-  if (!share) return null;
-  const q = new URLSearchParams({ type: share.meta.id });
-  for (const [key, value] of Object.entries(share.params)) q.set(key, String(value));
-  return absolute(`/api/og?${q}`);
+  return share ? absolute(`/api/og?${shareQuery(share)}`) : null;
 }
 
 /** The page with share meta for `url`, or null when `url` is not a studio share link. */

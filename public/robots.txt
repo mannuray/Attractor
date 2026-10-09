@@ -1,5 +1,7 @@
 # https://www.robotstxt.org/robotstxt.html
 User-agent: *
+# Share-card images must stay fetchable for link previews (X, LinkedIn obey this file).
+Allow: /api/og
 Disallow: /api/
 
 Sitemap: https://chaos-iterator.vercel.app/sitemap.xml
