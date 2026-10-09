@@ -1,5 +1,5 @@
 import React from "react";
-import { screen, fireEvent } from "@testing-library/react";
+import { screen, fireEvent, act } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { renderWithTheme } from "./renderWithTheme";
 import { ThemeProvider as AppThemeProvider } from "../theme/ThemeContext";
@@ -29,4 +29,34 @@ describe("TopBar", () => {
     expect(screen.queryByRole("combobox", { name: "Theme" })).toBeNull();
     expect(screen.getByRole("button", { name: "Share" })).toBeInTheDocument();
   });
+
+  it("shows the system count badge", () => {
+    wrap(<TopBar systemLabel="Clifford" systemCount={27} onSystemClick={() => {}} onOpenExport={() => {}} />);
+    expect(screen.getByText("27 systems")).toBeInTheDocument();
+  });
+
+  it("opens a system picker popover when one is provided, and closes it on Escape or pick", () => {
+    wrap(
+      <TopBar systemLabel="Clifford" systemCount={27} onOpenExport={() => {}}
+        renderSystemPicker={(close) => <button onClick={close}>Pick De Jong</button>} />
+    );
+    expect(screen.queryByRole("dialog", { name: "Choose system" })).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: /Clifford/ }));
+    expect(screen.getByRole("dialog", { name: "Choose system" })).toBeInTheDocument();
+    fireEvent.keyDown(document, { key: "Escape" });
+    expect(screen.queryByRole("dialog", { name: "Choose system" })).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: /Clifford/ }));
+    fireEvent.click(screen.getByRole("button", { name: "Pick De Jong" }));
+    expect(screen.queryByRole("dialog", { name: "Choose system" })).toBeNull();
+  });
+
+  it("compact Share shows a visible failure state when the clipboard is unavailable", async () => {
+    const original = navigator.clipboard;
+    Object.assign(navigator, { clipboard: undefined });
+    wrap(<TopBar compact systemLabel="Clifford" onSystemClick={() => {}} onOpenExport={() => {}} />);
+    await act(async () => { fireEvent.click(screen.getByRole("button", { name: "Share" })); });
+    expect(screen.getByText("Couldn't copy", { selector: "[data-visible-status]" })).toBeInTheDocument();
+    Object.assign(navigator, { clipboard: original });
+  });
 });
+

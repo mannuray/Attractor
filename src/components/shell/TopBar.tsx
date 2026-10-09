@@ -1,74 +1,205 @@
-import React from "react";
-import styled from "styled-components";
+import React, { useCallback, useEffect, useRef, useState } from "react";
+import styled, { keyframes } from "styled-components";
 import { useNavigate } from "react-router-dom";
 import { useTheme } from "../../theme/ThemeContext";
 import { useShare } from "../../hooks/useShare";
-import { IconButton } from "../ui/IconButton";
 import { Icon } from "../ui/Icon";
 import { tokens } from "../../theme/tokens";
 
+const pulse = keyframes`50% { opacity: 0.45; }`;
+
 const Bar = styled.header<{ $compact: boolean }>`
-  display: flex; align-items: center; gap: 12px;
-  height: ${p => (p.$compact ? "auto" : "52px")};
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  height: ${p => (p.$compact ? "auto" : "48px")};
   padding: ${p => (p.$compact ? "calc(env(safe-area-inset-top) + 10px) 12px 0" : "0 16px")};
-  background: ${p => (p.$compact ? "transparent" : p.theme.glass1)};
-  backdrop-filter: ${p => (p.$compact ? "none" : "blur(16px) saturate(160%)")};
-  -webkit-backdrop-filter: ${p => (p.$compact ? "none" : "blur(16px) saturate(160%)")};
+  background: ${p => (p.$compact ? "transparent" : p.theme.glassBar)};
+  backdrop-filter: ${p => (p.$compact ? "none" : "blur(12px)")};
+  -webkit-backdrop-filter: ${p => (p.$compact ? "none" : "blur(12px)")};
   border-bottom: ${p => (p.$compact ? "none" : `1px solid ${p.theme.hairline}`)};
-  z-index: ${tokens.z.toolbar};
+  box-shadow: ${p => (p.$compact ? "none" : "0 1px 2px rgba(0, 0, 0, 0.25)")};
+  z-index: ${tokens.z.toolbar + 30};
 `;
+const Side = styled.div`display: flex; align-items: center; gap: 12px; flex: 1 1 0; min-width: 0;`;
+const RightSide = styled(Side)`justify-content: flex-end; gap: 8px;`;
 const Brand = styled.div`
-  display: flex; align-items: center; gap: 8px;
-  font: 600 15px ${tokens.font.ui}; color: ${p => p.theme.textHigh}; white-space: nowrap;
+  display: flex; align-items: center; gap: 8px; white-space: nowrap;
+  font: 700 18px/1.5rem ${tokens.font.ui}; letter-spacing: -0.015em; color: ${p => p.theme.textHigh};
 `;
-const Mark = styled.span`
-  width: 28px; height: 28px; border-radius: 8px; display: grid; place-items: center;
-  border: 1px solid ${p => p.theme.primaryBorder}; color: ${p => p.theme.primary}; box-shadow: ${p => p.theme.glowPrimary};
-  font: 700 14px ${tokens.font.mono};
+const Mark = styled.span<{ $size: number }>`
+  width: ${p => p.$size}px; height: ${p => p.$size}px; border-radius: 8px;
+  display: grid; place-items: center; flex-shrink: 0;
+  background: ${p => p.theme.primarySoft};
+  border: 1px solid ${p => p.theme.primaryBorder};
+  color: ${p => p.theme.primary};
+  box-shadow: ${p => p.theme.glowPrimary};
 `;
-const Pill = styled.button`
-  display: inline-flex; align-items: center; gap: 8px; min-height: 36px; max-width: 100%;
-  padding: 0 14px; border-radius: ${tokens.radius.full}; cursor: pointer;
-  background: ${p => p.theme.glass1}; border: 1px solid ${p => p.theme.hairlineStrong};
-  color: ${p => p.theme.textHigh}; font: 500 13px ${tokens.font.ui};
-  span.label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  &::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: ${p => p.theme.primary}; box-shadow: ${p => p.theme.glowPrimary}; flex-shrink: 0; }
-  @media (max-width: ${tokens.breakpoint.mobileMax}px) { min-height: 44px; }
+const PillWrap = styled.div`position: relative; display: flex; justify-content: center; min-width: 0;`;
+const Pill = styled.button<{ $compact: boolean }>`
+  display: inline-flex; align-items: center; gap: 10px; max-width: 100%;
+  min-height: ${p => (p.$compact ? "44px" : "30px")};
+  padding: 0 12px; border-radius: ${tokens.radius.full}; cursor: pointer;
+  background: ${p => (p.$compact ? p.theme.glass2 : "rgba(24, 27, 37, 0.9)")};
+  border: 1px solid ${p => p.theme.hairlineStrong};
+  color: ${p => p.theme.textHigh};
+  font: 500 13px/1.25rem ${tokens.font.ui};
+  transition: background 0.15s ease;
+  &:hover { background: ${p => p.theme.surfaceHigh}; }
+  .label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .dot {
+    width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0;
+    background: ${p => p.theme.primary}; box-shadow: ${p => p.theme.glowPrimary};
+    animation: ${pulse} 2s ease-in-out infinite;
+  }
+  .count {
+    padding: 1px 6px; border-radius: 4px; flex-shrink: 0;
+    background: ${p => p.theme.surfaceHighest}; color: ${p => p.theme.secondary};
+    font: 400 10px/1rem ${tokens.font.mono}; text-transform: uppercase; letter-spacing: 0.02em;
+  }
+  .chev { color: ${p => p.theme.textMid}; }
 `;
-const Center = styled.div`flex: 1; min-width: 0; display: flex; justify-content: center;`;
+const Popover = styled.div`
+  position: absolute; left: 50%; top: calc(100% + 6px); transform: translateX(-50%);
+  width: 300px; max-height: min(70vh, 560px); overflow-y: auto; padding: 10px;
+  background: ${p => p.theme.glass2};
+  backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px);
+  border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 12px;
+  box-shadow: 0 24px 48px rgba(0, 0, 0, 0.5);
+  z-index: ${tokens.z.modal - 1};
+`;
+const GhostIcon = styled.button`
+  display: grid; place-items: center; width: 32px; height: 32px; border-radius: 8px; cursor: pointer;
+  background: transparent; border: none; color: ${p => p.theme.textMid};
+  &:hover { color: ${p => p.theme.primary}; background: rgba(39, 42, 51, 0.5); }
+`;
+const ShareButton = styled.button<{ $compact: boolean; $state: string }>`
+  display: inline-flex; align-items: center; gap: 6px; cursor: pointer; white-space: nowrap;
+  height: ${p => (p.$compact ? "44px" : "30px")};
+  min-width: ${p => (p.$compact ? "44px" : "auto")};
+  justify-content: center;
+  padding: 0 10px; border-radius: ${p => (p.$compact ? tokens.radius.full : "8px")};
+  background: ${p => (p.$compact ? p.theme.glass2 : "rgba(39, 42, 51, 0.3)")};
+  border: 1px solid ${p =>
+    p.$state === "failed" ? p.theme.danger : p.$state === "copied" ? p.theme.primaryBorder : p.theme.hairline};
+  color: ${p => (p.$state === "failed" ? p.theme.danger : p.$state === "copied" ? p.theme.primary : p.theme.textMid)};
+  font: 400 13px/1.25rem ${tokens.font.ui};
+  &:hover { color: ${p => p.theme.textHigh}; background: ${p => p.theme.surfaceHigh}; }
+`;
+const ExportButton = styled.button`
+  display: inline-flex; align-items: center; gap: 6px; height: 30px; padding: 0 14px; border-radius: 8px;
+  cursor: pointer; border: none; white-space: nowrap;
+  background: ${p => p.theme.primaryContainer}; color: ${p => p.theme.onPrimary};
+  font: 600 13px/1.25rem ${tokens.font.ui};
+  box-shadow: ${p => p.theme.glowPrimary};
+  transition: background 0.15s ease, transform 0.1s ease;
+  &:hover { background: ${p => p.theme.primary}; }
+  &:active { transform: scale(0.95); }
+`;
 const ThemeSelect = styled.select`
-  min-height: 32px; border-radius: 8px; padding: 0 8px;
+  height: 30px; border-radius: 8px; padding: 0 8px; cursor: pointer;
   background: transparent; color: ${p => p.theme.textMid}; border: 1px solid ${p => p.theme.hairline};
-  font: 500 12px ${tokens.font.ui};
+  font: 400 11px ${tokens.font.mono};
+  option { background: ${p => p.theme.surface}; color: ${p => p.theme.textHigh}; }
 `;
+// Visible status for compact mode (mobile), where the Share button is icon-only.
+const Toast = styled.span<{ $failed: boolean }>`
+  position: absolute; right: 12px; top: calc(100% + 6px);
+  padding: 4px 10px; border-radius: ${tokens.radius.full}; white-space: nowrap;
+  background: ${p => p.theme.glass2}; border: 1px solid ${p => (p.$failed ? p.theme.danger : p.theme.primaryBorder)};
+  color: ${p => (p.$failed ? p.theme.danger : p.theme.primary)};
+  font: 400 11px ${tokens.font.mono};
+`;
+const SrOnly = styled.span`position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0);`;
 
-interface Props { systemLabel: string; onSystemClick: () => void; onOpenExport: () => void; compact?: boolean }
+interface Props {
+  systemLabel: string;
+  systemCount?: number;
+  onSystemClick?: () => void;
+  /** When provided, the pill opens a popover rendering this picker; `close` dismisses it. */
+  renderSystemPicker?: (close: () => void) => React.ReactNode;
+  onOpenExport: () => void;
+  compact?: boolean;
+}
 
-export const TopBar: React.FC<Props> = ({ systemLabel, onSystemClick, onOpenExport, compact = false }) => {
+export const TopBar: React.FC<Props> = ({
+  systemLabel, systemCount, onSystemClick, renderSystemPicker, onOpenExport, compact = false,
+}) => {
   const navigate = useNavigate();
   const { currentTheme, setTheme, availableThemes } = useTheme();
   const { status, share } = useShare();
+  const [pickerOpen, setPickerOpen] = useState(false);
+  const pillRef = useRef<HTMLDivElement>(null);
   const shareText = status === "copied" ? "Copied" : status === "failed" ? "Couldn't copy" : "Share";
+  const close = useCallback(() => setPickerOpen(false), []);
+
+  useEffect(() => {
+    if (!pickerOpen) return;
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") close(); };
+    const onDown = (e: PointerEvent) => {
+      if (pillRef.current && !pillRef.current.contains(e.target as Node)) close();
+    };
+    document.addEventListener("keydown", onKey);
+    document.addEventListener("pointerdown", onDown);
+    return () => {
+      document.removeEventListener("keydown", onKey);
+      document.removeEventListener("pointerdown", onDown);
+    };
+  }, [pickerOpen, close]);
+
+  const onPill = () => {
+    if (renderSystemPicker) setPickerOpen(o => !o);
+    else onSystemClick?.();
+  };
 
   return (
     <Bar $compact={compact}>
-      <Brand><Mark>∞</Mark>{!compact && "Chaos Iterator"}</Brand>
-      <Center>
-        <Pill type="button" onClick={onSystemClick} aria-label={`${systemLabel} — change system`}>
-          <span className="label">{systemLabel}</span><Icon name="chevronDown" size={14} />
+      <Side>
+        <Brand>
+          <Mark $size={compact ? 36 : 24}><Icon name="all_inclusive" size={compact ? 20 : 16} /></Mark>
+          {!compact && "Chaos Iterator"}
+        </Brand>
+      </Side>
+
+      <PillWrap ref={pillRef}>
+        <Pill type="button" $compact={compact} onClick={onPill} aria-haspopup={renderSystemPicker ? "dialog" : undefined}
+          aria-expanded={renderSystemPicker ? pickerOpen : undefined} aria-label={`${systemLabel} — change system`}>
+          <span className="dot" />
+          <span className="label">{systemLabel}</span>
+          {!compact && systemCount !== undefined && <span className="count">{systemCount} systems</span>}
+          <span className="chev"><Icon name="chevronDown" size={16} /></span>
         </Pill>
-      </Center>
-      {!compact && (
-        <ThemeSelect aria-label="Theme" value={currentTheme} onChange={e => setTheme(e.target.value)}>
-          {availableThemes.map(t => <option key={t.id} value={t.id}>{t.label}</option>)}
-        </ThemeSelect>
-      )}
-      {!compact && <IconButton label="Docs" onClick={() => navigate("/info")}><Icon name="info" size={16} /></IconButton>}
-      <IconButton label="Share" variant={compact ? "soft" : "ghost"} active={status === "copied"} onClick={share}>
-        <Icon name="share" size={16} />{!compact && ` ${shareText}`}
-      </IconButton>
-      <span role="status" aria-live="polite" style={{ position: "absolute", left: -9999 }}>{status !== "idle" ? shareText : ""}</span>
-      {!compact && <IconButton label="Export" variant="primary" onClick={onOpenExport}><Icon name="download" size={16} /> Export</IconButton>}
+        {pickerOpen && renderSystemPicker && (
+          <Popover role="dialog" aria-label="Choose system">{renderSystemPicker(close)}</Popover>
+        )}
+      </PillWrap>
+
+      <RightSide>
+        {!compact && (
+          <ThemeSelect aria-label="Theme" value={currentTheme} onChange={e => setTheme(e.target.value)}>
+            {availableThemes.map(t => <option key={t.id} value={t.id}>{t.label}</option>)}
+          </ThemeSelect>
+        )}
+        {!compact && (
+          <GhostIcon type="button" aria-label="Help" title="Help & About" onClick={() => navigate("/info")}>
+            <Icon name="help" size={20} />
+          </GhostIcon>
+        )}
+        <ShareButton type="button" aria-label="Share" title="Copy link to this render" $compact={compact} $state={status} onClick={share}>
+          <Icon name={status === "copied" ? "check" : status === "failed" ? "error" : "share"} size={16} />
+          {!compact && <span>{shareText}</span>}
+        </ShareButton>
+        {!compact && (
+          <ExportButton type="button" aria-label="Export" onClick={onOpenExport}>
+            <Icon name="download" size={16} /> Export
+          </ExportButton>
+        )}
+      </RightSide>
+
+      {compact && status !== "idle" && <Toast data-visible-status $failed={status === "failed"}>{shareText}</Toast>}
+      <SrOnly role="status" aria-live="polite">{status !== "idle" ? shareText : ""}</SrOnly>
     </Bar>
   );
 };

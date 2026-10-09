@@ -12,10 +12,9 @@ const CanvasContainer = styled.div<{ $scrollable: boolean }>`
   overflow: ${props => props.$scrollable ? "auto" : "hidden"};
   position: relative;
   background-color: ${props => props.theme.canvasBg};
-  background-image: 
-    linear-gradient(${props => props.theme.hairline} 1px, transparent 1px),
-    linear-gradient(90deg, ${props => props.theme.hairline} 1px, transparent 1px);
-  background-size: 48px 48px;
+  /* Stitch: faint dotted coordinate field behind the render */
+  background-image: radial-gradient(rgba(76, 215, 246, 0.2) 1px, transparent 1px);
+  background-size: 32px 32px;
   background-position: center center;
   transition: background-color 0.5s ease;
   touch-action: none;
@@ -38,10 +37,8 @@ const CanvasWrapper = styled.div<{
   height: ${props => props.$height}px;
   flex-shrink: 0;
   cursor: ${props => props.$isFractal ? "crosshair" : "default"};
-  border-radius: 10px;
   overflow: hidden;
-  box-shadow: 0 12px 48px rgba(0, 0, 0, 0.8);
-  border: 1px solid ${props => props.theme.hairline};
+  box-shadow: 0 0 120px rgba(0, 0, 0, 0.6);
   
   --pulse-color-1: ${props => props.theme.danger}99;
   --pulse-color-2: ${props => props.theme.danger}44;
