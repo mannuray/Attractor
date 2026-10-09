@@ -5,5 +5,5 @@ export * from "./types";
 export * from "./styles";
 
 // Components
-export { ParameterInput, ParameterInputCompact } from "./ParameterInput";
+export { ParameterInputCompact } from "./ParameterInput";
 export { PresetSelector } from "./PresetSelector";

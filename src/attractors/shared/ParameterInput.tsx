@@ -118,64 +118,7 @@ interface ParameterInputProps {
   decimals?: number;
 }
 
-export const ParameterInput: React.FC<ParameterInputProps> = ({
-  label,
-  value,
-  onChange,
-  disabled = false,
-  step = 0.01,
-  min,
-  max,
-  decimals = 2,
-}) => {
-  const showSlider = !disabled && min !== undefined && max !== undefined;
-  const safeValue = value ?? 0;
-
-  if (showSlider) {
-    const percent = Math.max(0, Math.min(100, ((safeValue - min!) / (max! - min!)) * 100));
-    return (
-      <ParameterRowWithSlider>
-        <ParameterRow>
-          <InlineLabel>{label}</InlineLabel>
-          <EditableValue
-            value={safeValue}
-            onChange={onChange}
-            disabled={disabled}
-            step={step}
-            min={min}
-            max={max}
-            decimals={decimals}
-          />
-        </ParameterRow>
-        <SliderInput
-          min={min}
-          max={max}
-          step={step}
-          value={safeValue}
-          onChange={(e) => onChange(parseFloat(e.target.value))}
-          style={{ '--val': `${percent}%` } as React.CSSProperties}
-        />
-      </ParameterRowWithSlider>
-    );
-  }
-
-  return (
-    <ParameterRow>
-      <InlineLabel>{label}</InlineLabel>
-      <EditableValue
-        value={safeValue}
-        onChange={onChange}
-        disabled={disabled}
-        step={step}
-        min={min}
-        max={max}
-        decimals={decimals}
-      />
-    </ParameterRow>
-  );
-};
-
-// Compact version - same as ParameterInput now (single column layout)
+// Labelled numeric parameter: editable value plus a slider when min/max are given.
 export const ParameterInputCompact: React.FC<ParameterInputProps> = ({
   label,
   value,
@@ -233,4 +176,4 @@ export const ParameterInputCompact: React.FC<ParameterInputProps> = ({
   );
 };
 
-export default ParameterInput;
+export default ParameterInputCompact;

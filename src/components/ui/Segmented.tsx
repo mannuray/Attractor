@@ -51,8 +51,6 @@ interface SegmentedProps<T extends string | number> {
   ariaLabel: string;
   variant?: Variant;
   columns?: number;
-  /** @deprecated kept for older call sites */
-  size?: "sm" | "md";
 }
 
 export function Segmented<T extends string | number>({ value, options, onChange, ariaLabel, variant = "chips", columns }: SegmentedProps<T>) {
