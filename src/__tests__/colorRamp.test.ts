@@ -66,3 +66,20 @@ describe("ramp operations", () => {
     expect(ramp[1].red).toBe(30);
   });
 });
+
+describe("ramps with duplicate positions (real preset data)", () => {
+  const dup: Stop[] = [
+    { position: 0, red: 0, green: 0, blue: 0 },
+    { position: 0, red: 10, green: 10, blue: 10 },
+    { position: 0.0189474, red: 20, green: 20, blue: 20 },
+    { position: 1, red: 255, green: 255, blue: 255 },
+  ];
+
+  it("a stop boxed in by equal neighbours does not move", () => {
+    expect(moveStop(dup, 1, 0.5)).toBe(dup);
+  });
+
+  it("moving to the current position is a no-op", () => {
+    expect(moveStop(ramp, 1, 0.5)).toBe(ramp);
+  });
+});

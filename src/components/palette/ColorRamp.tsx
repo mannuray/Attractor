@@ -14,7 +14,7 @@ const Track = styled.div`position: relative; height: 26px; margin-top: -2px; tou
 const Handle = styled.button<{ $selected: boolean; $color: string }>`
   position: absolute; top: 0; transform: translateX(-50%);
   display: flex; flex-direction: column; align-items: center; padding: 0 4px;
-  background: none; border: none; cursor: grab; touch-action: none; z-index: ${p => (p.$selected ? 2 : 1)};
+  background: none; border: none; cursor: grab; touch-action: none;
   .tip {
     width: 0; height: 0;
     border-left: ${p => (p.$selected ? 6 : 5)}px solid transparent;
@@ -78,6 +78,7 @@ export const ColorRamp: React.FC<Props> = ({ stops, selected, onSelect, onDraft,
   const onHandleMove = (i: number) => (e: React.PointerEvent) => {
     if (dragging !== i) return;
     const next = moveStop(stops, i, positionFrom(e.clientX, trackRef.current));
+    if (next === stops) return; // no actual movement: nothing to draft or commit
     draftRef.current = next;
     onDraft(next);
   };
@@ -102,7 +103,8 @@ export const ColorRamp: React.FC<Props> = ({ stops, selected, onSelect, onDraft,
         {stops.map((s, i) => (
           <Handle key={i} type="button" aria-label={`Stop ${i + 1} at ${Math.round(s.position * 100)}%`}
             aria-pressed={i === selected} $selected={i === selected} $color={toHex(s)}
-            style={{ left: `${s.position * 100}%` }}
+            // Selected on top; end stops above middle stops so overlapping ends stay clickable.
+            style={{ left: `${s.position * 100}%`, zIndex: i === selected ? 4 : i === 0 || i === stops.length - 1 ? 3 : 1 }}
             onPointerDown={onHandleDown(i)} onPointerMove={onHandleMove(i)}
             onPointerUp={endDrag} onPointerCancel={endDrag} onLostPointerCapture={endDrag}
             onClick={() => onSelect(i)}>

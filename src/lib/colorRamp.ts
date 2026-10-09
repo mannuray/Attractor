@@ -70,10 +70,23 @@ export function moveStop(stops: Stop[], index: number, position: number): Stop[]
   if (isEndStop(stops, index)) return stops;
   const lo = stops[index - 1].position + 0.01;
   const hi = stops[index + 1].position - 0.01;
-  const pos = lo > hi ? (lo + hi) / 2 : clamp(position, lo, hi);
+  // Neighbours too close (real presets have duplicate stops at 0): the stop can't move.
+  if (lo > hi) return stops;
+  const pos = clamp(position, lo, hi);
+  if (pos === stops[index].position) return stops;
   return stops.map((s, i) => (i === index ? { ...s, position: pos } : s));
 }
 
 export function setStopColor(stops: Stop[], index: number, color: RGB): Stop[] {
   return stops.map((s, i) => (i === index ? { ...s, ...color } : s));
+}
+
+/** Index of the middle stop closest to the centre of the ramp (end stops if there are none). */
+export function defaultStopIndex(stops: Stop[]): number {
+  if (stops.length <= 2) return 0;
+  let best = 1;
+  for (let i = 1; i < stops.length - 1; i++) {
+    if (Math.abs(stops[i].position - 0.5) < Math.abs(stops[best].position - 0.5)) best = i;
+  }
+  return best;
 }

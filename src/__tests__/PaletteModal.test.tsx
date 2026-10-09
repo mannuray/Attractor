@@ -1,4 +1,4 @@
-import { screen, fireEvent, within } from "@testing-library/react";
+import { screen, fireEvent, within, act } from "@testing-library/react";
 import { renderWithTheme } from "./renderWithTheme";
 import { PaletteModal } from "../components/PaletteModal";
 
@@ -81,4 +81,36 @@ describe("PaletteModal", () => {
     fireEvent.keyDown(document, { key: "Escape" });
     expect(p.onClose).toHaveBeenCalledTimes(3);
   });
+
+  describe("palettes whose first stops share position 0", () => {
+    const dupStops = [
+      { position: 0, red: 0, green: 0, blue: 0 },
+      { position: 0, red: 10, green: 10, blue: 10 },
+      { position: 0.0189474, red: 20, green: 20, blue: 20 },
+      { position: 0.6, red: 30, green: 90, blue: 156 },
+      { position: 1, red: 255, green: 255, blue: 255 },
+    ];
+
+    it("tapping a stop (down, tiny move, up) does not change the palette", () => {
+      const p = { ...props(), paletteData: dupStops as any };
+      renderWithTheme(<PaletteModal {...p} />);
+      const handle = screen.getByRole("button", { name: "Stop 2 at 0%" });
+      const fire = (type: string) => act(() => { handle.dispatchEvent(new MouseEvent(type, { bubbles: true, clientX: 1 })); });
+      fire("pointerdown"); fire("pointermove"); fire("pointerup");
+      expect(p.onPaletteChange).not.toHaveBeenCalled();
+    });
+
+    it("selects the stop nearest the middle by default", () => {
+      renderWithTheme(<PaletteModal {...props()} paletteData={dupStops as any} />);
+      expect(screen.getByRole("button", { name: "Stop 4 at 60%" })).toHaveAttribute("aria-pressed", "true");
+    });
+
+    it("end stops stack above overlapping middle stops so they stay clickable", () => {
+      renderWithTheme(<PaletteModal {...props()} paletteData={dupStops as any} />);
+      const end = Number(screen.getByRole("button", { name: "Stop 1 at 0%" }).style.zIndex);
+      const mid = Number(screen.getByRole("button", { name: "Stop 2 at 0%" }).style.zIndex);
+      expect(end).toBeGreaterThan(mid);
+    });
+  });
 });
+

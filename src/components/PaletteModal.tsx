@@ -8,7 +8,7 @@ import { StopPicker } from "./palette/StopPicker";
 import { Segmented } from "./ui/Segmented";
 import { Icon } from "./ui/Icon";
 import { useIsMobile } from "../hooks/useIsMobile";
-import { Stop, isEndStop, removeStop, setStopColor, toHex, fromHex } from "../lib/colorRamp";
+import { Stop, isEndStop, removeStop, setStopColor, toHex, fromHex, defaultStopIndex } from "../lib/colorRamp";
 import { BgMode, bgColorFor, bgModeOf } from "../lib/bgMode";
 import { tokens } from "../theme/tokens";
 
@@ -139,7 +139,7 @@ export const PaletteModal: React.FC<PaletteModalProps> = ({
 }) => {
   const isMobile = useIsMobile();
   const theme = useTheme();
-  const [selected, setSelected] = useState(1);
+  const [selected, setSelected] = useState<number | null>(null);
   const [draft, setDraft] = useState<Stop[] | null>(null);
   const initial = useRef<Snapshot | null>(null);
 
@@ -150,7 +150,7 @@ export const PaletteModal: React.FC<PaletteModalProps> = ({
   if (!isOpen && initial.current) initial.current = null;
 
   useEffect(() => {
-    if (!isOpen) { setDraft(null); setSelected(1); }
+    if (!isOpen) { setDraft(null); setSelected(null); }
   }, [isOpen]);
 
   useEffect(() => {
@@ -163,7 +163,7 @@ export const PaletteModal: React.FC<PaletteModalProps> = ({
   if (!isOpen) return null;
 
   const stops: Stop[] = draft ?? (paletteData as Stop[]);
-  const sel = Math.max(0, Math.min(selected, stops.length - 1));
+  const sel = selected === null ? defaultStopIndex(stops) : Math.max(0, Math.min(selected, stops.length - 1));
   const commit = (next: Stop[], nextSelected?: number) => {
     setDraft(null);
     onPaletteChange(next as Color[]);
