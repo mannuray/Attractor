@@ -8,6 +8,8 @@ import { Icon } from "../../components/ui/Icon";
 import { mobileQ } from "../../content/docPrimitives";
 import { tokens } from "../../theme/tokens";
 import NoPage from "./NoPage";
+import { useDocumentMeta } from "../../seo/useDocumentMeta";
+import { pageMetaFor } from "../../seo/meta";
 
 const Page = styled.div`
   min-height: 100vh;
@@ -62,6 +64,7 @@ function related(page: SystemPageData) {
 const SystemPage: React.FC = () => {
   const { slug = "" } = useParams();
   const page = getSystemPage(slug);
+  useDocumentMeta(pageMetaFor(`/systems/${slug}`));
   if (!page) return <NoPage />;
 
   return (

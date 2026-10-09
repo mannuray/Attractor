@@ -20,6 +20,8 @@ import {
 } from "../../content/docPrimitives";
 import { Icon } from "../../components/ui/Icon";
 import { DocsHeader } from "../components/DocsHeader";
+import { useDocumentMeta } from "../../seo/useDocumentMeta";
+import { pageMetaFor } from "../../seo/meta";
 
 // ============= STYLED COMPONENTS =============
 
@@ -533,6 +535,7 @@ const linkForTitle = (title: string) => {
 };
 
 const Info: React.FC = () => {
+  useDocumentMeta(pageMetaFor("/info"));
   const [active, setActive] = useState<GroupId>("getting-started");
   const [activeSystem, setActiveSystem] = useState<string | null>(null);
   const [systems, setSystems] = useState<Partial<Record<GroupId, string[]>>>({});

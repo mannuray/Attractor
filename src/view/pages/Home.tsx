@@ -29,6 +29,8 @@ import symmetricIconData, {
 // Types
 import { CONFIG, AttractorType } from "../../attractors/shared/types";
 import { DragPoint } from "../../hooks/useFractalZoom";
+import { useDocumentMeta } from "../../seo/useDocumentMeta";
+import { pageMetaFor } from "../../seo/meta";
 
 const slugify = (text: string): string => {
   return text
@@ -38,6 +40,7 @@ const slugify = (text: string): string => {
 };
 
 function Home() {
+  useDocumentMeta(pageMetaFor("/"));
   // UI state
   const [hunting, setHunting] = useState(false);
 
