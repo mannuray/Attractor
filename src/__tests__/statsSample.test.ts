@@ -35,4 +35,16 @@ describe("nextStatsSample", () => {
     const b = nextStatsSample(a, 100, 1000, true);
     expect(Number.isFinite(b.rate)).toBe(true);
   });
+
+  it("keeps the last rate between bursty worker updates instead of dropping to 0", () => {
+    const a = nextStatsSample(initialStats, 0, 1000, true);
+    const b = nextStatsSample(a, 1000, 1250, true);
+    expect(b.rate).toBe(4000);
+    const c = nextStatsSample(b, 1000, 1500, true);
+    expect(c.rate).toBe(4000);
+    expect(c.elapsedMs).toBe(500);
+    const d = nextStatsSample(c, 2000, 1750, true);
+    expect(d.rate).toBe(2000);
+  });
 });
+

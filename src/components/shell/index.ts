@@ -5,3 +5,4 @@ export * from "./CanvasToolbar";
 export * from "./DesktopShell";
 export * from "./MobileShell";
 export * from "./ResponsiveShell";
+export * from "./BottomSheet";

@@ -2,7 +2,7 @@ export interface StatsSample {
   iterations: number;
   rate: number;
   elapsedMs: number;
-  t: number;
+  t: number; // time of the last iteration-count change
   startT: number | null;
 }
 
@@ -15,6 +15,11 @@ export function nextStatsSample(prev: StatsSample, iterations: number, now: numb
   }
   if (prev.startT === null || reset) {
     return { iterations, rate: 0, elapsedMs: 0, t: now, startT: now };
+  }
+  // The worker reports in bursts; measure rate between actual changes so samples
+  // that land between bursts keep the last rate instead of reading 0.
+  if (iterations === prev.iterations) {
+    return { ...prev, elapsedMs: now - prev.startT };
   }
   const dt = now - prev.t;
   const rate = dt > 0 ? ((iterations - prev.iterations) / dt) * 1000 : prev.rate;

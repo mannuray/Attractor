@@ -31,4 +31,17 @@ describe("ResponsiveShell", () => {
     expect(screen.getByRole("button", { name: /Clifford/ })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Pause" })).toBeInTheDocument();
   });
+
+  it("does not remount the canvas when crossing the breakpoint (the worker owns the canvas element)", () => {
+    const set = mockMatchMedia(false);
+    let mounts = 0;
+    const Probe = () => { React.useEffect(() => { mounts += 1; }, []); return <canvas data-testid="probe" />; };
+    const props = makeShellProps({ canvas: <Probe /> });
+    renderWithTheme(<MemoryRouter><AppThemeProvider><ResponsiveShell {...props} /></AppThemeProvider></MemoryRouter>);
+    const before = screen.getByTestId("probe");
+    act(() => set(true));
+    act(() => set(false));
+    expect(mounts).toBe(1);
+    expect(screen.getByTestId("probe")).toBe(before);
+  });
 });
