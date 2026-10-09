@@ -25,7 +25,7 @@ const Handle = styled.button<{ $selected: boolean; $color: string }>`
     margin-top: 2px; border-radius: 50%; background: ${p => p.$color};
     width: ${p => (p.$selected ? 16 : 14)}px; height: ${p => (p.$selected ? 16 : 14)}px;
     border: ${p => (p.$selected ? `2px solid ${p.theme.primary}` : "1px solid #94a3b8")};
-    box-shadow: ${p => (p.$selected ? `0 0 0 2px rgba(76, 215, 246, 0.4), ${p.theme.glowPrimary}` : "0 2px 4px rgba(0,0,0,0.4)")};
+    box-shadow: ${p => (p.$selected ? `0 0 0 2px rgba(${p.theme.primaryRgb}, 0.4), ${p.theme.glowPrimary}` : "0 2px 4px rgba(0,0,0,0.4)")};
     transition: transform 0.1s ease;
   }
   &:hover .dot { transform: scale(1.1); }

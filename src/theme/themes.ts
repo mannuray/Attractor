@@ -20,6 +20,9 @@ export interface ThemeColors {
   bgPage: string;
   primary: string;
   primaryContainer: string;
+  /** "r, g, b" channels for building theme-aware tints: rgba(${primaryRgb}, a) */
+  primaryRgb: string;
+  primaryContainerRgb: string;
   primarySoft: string;
   primaryBorder: string;
   focusBorder: string;
@@ -55,6 +58,8 @@ function designColors(primary: RGB, primaryContainer: RGB, secondary: RGB) {
   return {
     primary: rgba(primary, 1),
     primaryContainer: rgba(primaryContainer, 1),
+    primaryRgb: primary.join(", "),
+    primaryContainerRgb: primaryContainer.join(", "),
     primarySoft: rgba(primary, 0.12),
     primaryBorder: rgba(primary, 0.45),
     focusBorder: rgba(primary, 0.6),

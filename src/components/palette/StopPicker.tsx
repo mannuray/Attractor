@@ -4,7 +4,8 @@ import { RGB, fromHex, hsvToRgb, rgbToHsv, toHex } from "../../lib/colorRamp";
 import { Icon } from "../ui/Icon";
 import { tokens } from "../../theme/tokens";
 
-const SWATCHES = ["#000000", "#0D2B5C", "#1E5A9C", "#68B5F6", "#4CD7F6", "#D0BCFF", "#FFB4AB", "#FFFFFF"];
+// theme-leak-ok: quick swatches are palette color data, not theme accents
+const SWATCHES = ["#000000", "#0D2B5C", "#1E5A9C", "#68B5F6", "#4CD7F6", "#D0BCFF", "#FFB4AB", "#FFFFFF"]; // theme-leak-ok
 
 const Card = styled.div`
   padding: 14px; border-radius: 12px; display: flex; flex-direction: column; gap: 12px;
@@ -59,7 +60,7 @@ const Fields = styled.div`flex: 1; display: flex; flex-direction: column; justif
 const SwatchRow = styled.div`display: flex; align-items: center; gap: 10px;`;
 const Current = styled.div`
   width: 40px; height: 40px; border-radius: 12px; flex-shrink: 0;
-  border: 1px solid rgba(255, 255, 255, 0.15); box-shadow: 0 0 12px -2px rgba(6, 182, 212, 0.25);
+  border: 1px solid rgba(255, 255, 255, 0.15); box-shadow: 0 0 12px -2px rgba(${p => p.theme.primaryContainerRgb}, 0.25);
 `;
 const FieldLabel = styled.label`
   display: block; margin-bottom: 2px; font: 400 10px/0.875rem ${tokens.font.mono};
@@ -90,7 +91,7 @@ const Swatches = styled.div`display: grid; grid-template-columns: repeat(8, 1fr)
 const Swatch = styled.button<{ $active: boolean }>`
   height: 20px; border-radius: 6px; cursor: pointer; transition: transform 0.1s ease;
   border: 1px solid ${p => (p.$active ? p.theme.primary : "rgba(255, 255, 255, 0.1)")};
-  box-shadow: ${p => (p.$active ? "0 0 0 1px rgba(76, 215, 246, 0.5)" : "none")};
+  box-shadow: ${p => (p.$active ? `0 0 0 1px rgba(${p.theme.primaryRgb}, 0.5)` : "none")};
   &:hover { transform: scale(1.1); }
   @media (max-width: ${tokens.breakpoint.mobileMax}px) { height: 32px; }
 `;

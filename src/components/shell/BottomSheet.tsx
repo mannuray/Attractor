@@ -29,7 +29,7 @@ const Sheet = styled.section<{ $expanded: boolean }>`
     : css`
       height: ${SHEET_PEEK_PX}px;
       background: rgba(24, 27, 37, 0.9);
-      border-top: 1px solid rgba(76, 215, 246, 0.25);
+      border-top: 1px solid rgba(${p => p.theme.primaryRgb}, 0.25);
       border-radius: 16px 16px 0 0;
     `}
 `;
@@ -69,10 +69,10 @@ const PillTab = styled.button<{ $active: boolean }>`
   flex: 1; min-height: 44px; display: inline-flex; align-items: center; justify-content: center; gap: 6px;
   border-radius: 8px; cursor: pointer;
   font: ${p => (p.$active ? 600 : 500)} 11px/0.875rem ${tokens.font.mono}; letter-spacing: 0.02em;
-  background: ${p => (p.$active ? "rgba(76, 215, 246, 0.1)" : "transparent")};
+  background: ${p => (p.$active ? `rgba(${p.theme.primaryRgb}, 0.1)` : "transparent")};
   border: 1px solid ${p => (p.$active ? p.theme.primaryBorder : "transparent")};
   color: ${p => (p.$active ? p.theme.primary : p.theme.textMid)};
-  box-shadow: ${p => (p.$active ? "0 0 12px -2px rgba(6, 182, 212, 0.35)" : "none")};
+  box-shadow: ${p => (p.$active ? `0 0 12px -2px rgba(${p.theme.primaryContainerRgb}, 0.35)` : "none")};
   &::before {
     content: ""; width: 6px; height: 6px; border-radius: 50%;
     display: ${p => (p.$active ? "block" : "none")}; background: ${p => p.theme.primary};

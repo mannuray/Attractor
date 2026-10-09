@@ -2,7 +2,7 @@ import { themes } from "../theme/themes";
 import { tokens } from "../theme/tokens";
 
 const NEW_KEYS = [
-  "primary", "primaryContainer", "primarySoft", "primaryBorder", "focusBorder", "onPrimary",
+  "primary", "primaryContainer", "primaryRgb", "primaryContainerRgb", "primarySoft", "primaryBorder", "focusBorder", "onPrimary",
   "secondary", "secondarySoft", "glowPrimary", "glowSecondary",
   "canvasBg", "pageBg", "surfaceLowest", "surface", "surfaceLow", "surfaceHigh", "surfaceHighest",
   "glass1", "glass2", "glassBar",

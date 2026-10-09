@@ -13,7 +13,7 @@ const CanvasContainer = styled.div<{ $scrollable: boolean }>`
   position: relative;
   background-color: ${props => props.theme.canvasBg};
   /* Stitch: faint dotted coordinate field behind the render */
-  background-image: radial-gradient(rgba(76, 215, 246, 0.2) 1px, transparent 1px);
+  background-image: radial-gradient(rgba(${p => p.theme.primaryRgb}, 0.2) 1px, transparent 1px);
   background-size: 32px 32px;
   background-position: center center;
   transition: background-color 0.5s ease;

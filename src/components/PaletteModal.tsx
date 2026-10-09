@@ -41,7 +41,7 @@ const Scrim = styled.div`
 const Dialog = styled.div`
   width: 100%; max-width: 620px; max-height: 92vh; display: flex; flex-direction: column; overflow: hidden;
   background: rgba(20, 23, 34, 0.95); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 16px;
-  box-shadow: 0 24px 50px rgba(0, 0, 0, 0.8), 0 0 30px rgba(6, 182, 212, 0.15);
+  box-shadow: 0 24px 50px rgba(0, 0, 0, 0.8), 0 0 30px rgba(${p => p.theme.primaryContainerRgb}, 0.15);
   backdrop-filter: blur(40px); -webkit-backdrop-filter: blur(40px);
   color: ${p => p.theme.textHigh}; font-family: ${tokens.font.ui};
   ${mobile} { max-width: none; max-height: 90vh; border-radius: 28px 28px 0 0; border-bottom: none; }
@@ -59,7 +59,7 @@ const Header = styled.div`
     background: ${p => p.theme.primarySoft}; border: 1px solid ${p => p.theme.primaryBorder};
   }
   h2 { margin: 0; font: 600 16px/1 ${tokens.font.ui}; letter-spacing: -0.01em; }
-  p { margin: 4px 0 0; font: 400 11px/0.875rem ${tokens.font.mono}; color: rgba(76, 215, 246, 0.8); }
+  p { margin: 4px 0 0; font: 400 11px/0.875rem ${tokens.font.mono}; color: rgba(${p => p.theme.primaryRgb}, 0.8); }
   ${mobile} { padding: 12px 20px 14px; background: transparent; }
 `;
 const Close = styled.button`
@@ -127,7 +127,7 @@ const DoneButton = styled.button`
   border-radius: 8px; cursor: pointer; border: none;
   background: ${p => p.theme.primary}; color: ${p => p.theme.onPrimary};
   font: 600 13px/1.25rem ${tokens.font.ui}; box-shadow: ${p => p.theme.glowPrimary};
-  &:hover { background: #2fd9f4; }
+  &:hover { filter: brightness(1.1); }
   ${mobile} { flex: 2; height: 52px; border-radius: 12px; font-size: 15px; background: ${p => p.theme.primaryContainer}; }
 `;
 

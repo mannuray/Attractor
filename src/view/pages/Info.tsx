@@ -80,7 +80,7 @@ const AttractorCard = styled.article`
   border: 1px solid ${p => p.theme.hairline};
   scroll-margin-top: 72px;
   transition: border-color 0.2s ease;
-  &:hover { border-color: rgba(76, 215, 246, 0.25); }
+  &:hover { border-color: rgba(${p => p.theme.primaryRgb}, 0.25); }
   ${mobileQ} { padding: 16px; border-radius: 12px; }
 `;
 
@@ -121,7 +121,7 @@ const GridImage = styled.img.attrs(lazyImg)`
   border: 1px solid ${p => p.theme.hairline};
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
   transition: transform 0.2s ease, border-color 0.2s ease;
-  &:hover { transform: translateY(-2px); border-color: rgba(76, 215, 246, 0.4); }
+  &:hover { transform: translateY(-2px); border-color: rgba(${p => p.theme.primaryRgb}, 0.4); }
 `;
 
 const ImageLabel = styled.span`
@@ -1905,12 +1905,12 @@ const Rail = styled.nav`
 const RailItem = styled.button<{ $active: boolean }>`
   display: flex; align-items: center; justify-content: space-between; gap: 8px; width: 100%;
   padding: 9px 12px; border-radius: 10px; cursor: pointer; text-align: left;
-  background: ${p => (p.$active ? "rgba(76, 215, 246, 0.08)" : "transparent")};
+  background: ${p => (p.$active ? `rgba(${p.theme.primaryRgb}, 0.08)` : "transparent")};
   border: 1px solid ${p => (p.$active ? p.theme.primaryBorder : "transparent")};
   color: ${p => (p.$active ? p.theme.primary : p.theme.textHigh)};
   font: 400 15px/1.25rem ${tokens.font.ui};
   box-shadow: ${p => (p.$active ? p.theme.glowPrimary : "none")};
-  &:hover { background: ${p => (p.$active ? "rgba(76, 215, 246, 0.08)" : p.theme.surface)}; }
+  &:hover { background: ${p => (p.$active ? `rgba(${p.theme.primaryRgb}, 0.08)` : p.theme.surface)}; }
   .l { display: flex; align-items: center; gap: 10px; }
   .pip { width: 6px; height: 6px; border-radius: 50%; background: ${p => p.theme.primary}; }
 `;
@@ -1936,7 +1936,7 @@ const Hero = styled.header`
   margin-bottom: 40px; padding-bottom: 28px; border-bottom: 1px solid ${p => p.theme.hairline};
   .chip {
     display: inline-flex; align-items: center; gap: 8px; padding: 4px 10px; border-radius: 6px;
-    background: rgba(76, 215, 246, 0.08); border: 1px solid ${p => p.theme.hairline};
+    background: rgba(${p => p.theme.primaryRgb}, 0.08); border: 1px solid ${p => p.theme.hairline};
     font: 400 12px ${tokens.font.mono}; color: ${p => p.theme.primary};
   }
   .chip::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: ${p => p.theme.primary}; }
@@ -1959,7 +1959,7 @@ const Chips = styled.div`
 const Chip = styled.button<{ $active: boolean }>`
   flex-shrink: 0; display: inline-flex; align-items: center; gap: 6px; min-height: 40px; padding: 0 14px;
   border-radius: ${tokens.radius.full}; cursor: pointer; white-space: nowrap;
-  background: ${p => (p.$active ? "rgba(76, 215, 246, 0.12)" : p.theme.surface)};
+  background: ${p => (p.$active ? `rgba(${p.theme.primaryRgb}, 0.12)` : p.theme.surface)};
   border: 1px solid ${p => (p.$active ? p.theme.primaryBorder : p.theme.hairline)};
   color: ${p => (p.$active ? p.theme.primary : p.theme.textHigh)};
   font: 500 13px ${tokens.font.ui};

@@ -19,7 +19,7 @@ const Bar = styled.header<{ $compact: boolean }>`
   background: ${p => (p.$compact ? "rgba(11, 14, 23, 0.7)" : p.theme.glassBar)};
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
-  border-bottom: 1px solid ${p => (p.$compact ? "rgba(76, 215, 246, 0.2)" : p.theme.hairline)};
+  border-bottom: 1px solid ${p => (p.$compact ? `rgba(${p.theme.primaryRgb}, 0.2)` : p.theme.hairline)};
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.25);
   z-index: ${tokens.z.toolbar + 30};
 `;
@@ -51,7 +51,7 @@ const Pill = styled.button<{ $compact: boolean }>`
   min-height: ${p => (p.$compact ? "44px" : "30px")};
   padding: 0 12px; border-radius: ${tokens.radius.full}; cursor: pointer;
   background: rgba(24, 27, 37, 0.85);
-  border: 1px solid ${p => (p.$compact ? "rgba(76, 215, 246, 0.3)" : p.theme.hairlineStrong)};
+  border: 1px solid ${p => (p.$compact ? `rgba(${p.theme.primaryRgb}, 0.3)` : p.theme.hairlineStrong)};
   color: ${p => p.theme.textHigh};
   font: 500 ${p => (p.$compact ? "12px/1rem " + tokens.font.mono : "13px/1.25rem " + tokens.font.ui)};
   transition: background 0.15s ease;

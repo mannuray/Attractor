@@ -15,10 +15,10 @@ const CatButton = styled.button<{ $active: boolean }>`
   flex: 1; display: inline-flex; align-items: center; justify-content: center; gap: 6px;
   min-height: 28px; padding: 4px 8px; border-radius: 6px; cursor: pointer;
   font: 500 13px/1.25rem ${tokens.font.ui};
-  background: ${p => (p.$active ? "rgba(76, 215, 246, 0.15)" : p.theme.surface)};
+  background: ${p => (p.$active ? `rgba(${p.theme.primaryRgb}, 0.15)` : p.theme.surface)};
   border: 1px solid ${p => (p.$active ? p.theme.primaryBorder : p.theme.hairline)};
   color: ${p => (p.$active ? p.theme.primary : p.theme.textMid)};
-  &:hover { background: ${p => (p.$active ? "rgba(76, 215, 246, 0.15)" : p.theme.surfaceHigh)}; }
+  &:hover { background: ${p => (p.$active ? `rgba(${p.theme.primaryRgb}, 0.15)` : p.theme.surfaceHigh)}; }
   &::before {
     content: ""; width: 6px; height: 6px; border-radius: 50%;
     display: ${p => (p.$active ? "block" : "none")};
@@ -46,7 +46,7 @@ const Item = styled.button<{ $active: boolean }>`
   min-height: 30px; padding: 6px 10px; border-radius: 8px; cursor: pointer; text-align: left;
   font: 400 13px/1.25rem ${tokens.font.ui};
   background: ${p => (p.$active ? p.theme.primarySoft : "transparent")};
-  border: 1px solid ${p => (p.$active ? "rgba(76, 215, 246, 0.3)" : "transparent")};
+  border: 1px solid ${p => (p.$active ? `rgba(${p.theme.primaryRgb}, 0.3)` : "transparent")};
   color: ${p => (p.$active ? p.theme.primary : p.theme.textHigh)};
   &:hover { background: ${p => (p.$active ? p.theme.primarySoft : p.theme.surface)}; }
   &:focus-visible { outline: 2px solid ${p => p.theme.focusBorder}; outline-offset: 1px; }

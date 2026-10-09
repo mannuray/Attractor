@@ -21,10 +21,10 @@ const Overlay = styled.div`
 const StatsChip = styled.div`
   margin: 8px auto 0; width: fit-content; padding: 4px 14px; border-radius: ${tokens.radius.full};
   display: flex; align-items: center; gap: 8px; pointer-events: none !important;
-  background: rgba(11, 14, 23, 0.8); border: 1px solid rgba(76, 215, 246, 0.25);
+  background: rgba(11, 14, 23, 0.8); border: 1px solid rgba(${p => p.theme.primaryRgb}, 0.25);
   backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
   box-shadow: 0 10px 15px -3px rgba(11, 14, 23, 0.8);
-  .dot { width: 6px; height: 6px; border-radius: 50%; background: #2fd9f4; box-shadow: ${p => p.theme.glowPrimary}; }
+  .dot { width: 6px; height: 6px; border-radius: 50%; background: ${p => p.theme.primary}; box-shadow: ${p => p.theme.glowPrimary}; }
   dd { color: ${p => p.theme.primary} !important; }
 `;
 const SheetHeader = styled.div`

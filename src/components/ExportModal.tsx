@@ -88,7 +88,7 @@ const Pipeline = styled.div`
   display: flex; flex-direction: column; gap: 8px; padding-top: 8px;
   .track { height: 6px; border-radius: ${tokens.radius.full}; overflow: hidden; background: ${p => p.theme.surfaceHigh}; }
   .bar { height: 100%; width: 40%; background: ${p => p.theme.primary}; animation: ${slide} 1.2s ease-in-out infinite; }
-  .idle { height: 100%; width: 100%; background: linear-gradient(90deg, rgba(76, 215, 246, 0.15), rgba(208, 188, 255, 0.15)); }
+  .idle { height: 100%; width: 100%; background: linear-gradient(90deg, rgba(${p => p.theme.primaryRgb}, 0.15), rgba(208, 188, 255, 0.15)); }
 `;
 const Footer = styled.div`
   display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 16px 24px;
@@ -109,7 +109,7 @@ const Primary = styled.button`
   display: inline-flex; align-items: center; justify-content: center; gap: 8px; height: 34px; padding: 0 16px;
   border-radius: 12px; cursor: pointer; border: none;
   background: ${p => p.theme.primary}; color: ${p => p.theme.onPrimary}; font: 600 12px/1rem ${tokens.font.ui};
-  box-shadow: 0 10px 15px -3px rgba(76, 215, 246, 0.25);
+  box-shadow: 0 10px 15px -3px rgba(${p => p.theme.primaryRgb}, 0.25);
   &:hover:not(:disabled) { filter: brightness(1.1); }
   &:active { transform: scale(0.95); }
   &:disabled { opacity: 0.5; cursor: not-allowed; }

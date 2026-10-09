@@ -14,15 +14,16 @@ interface PresetSelectorProps {
 
 // Decorative thumbnail tiles (Stitch preset ribbon); cycles by index.
 const TILES = [
-  { bg: "linear-gradient(135deg, #164e63, rgba(76, 215, 246, 0.3), #4c1d95)", glyph: "stream", color: "#4cd7f6" },
+  { bg: "linear-gradient(135deg, #164e63, rgba(var(--accent-rgb), 0.3), #4c1d95)", glyph: "stream", color: "rgb(var(--accent-rgb))" },
   { bg: "linear-gradient(45deg, #3b0764, rgba(208, 188, 255, 0.3), #701a75)", glyph: "grain", color: "#d0bcff" },
   { bg: "linear-gradient(225deg, #451a03, rgba(202, 138, 4, 0.3), #4c0519)", glyph: "flare", color: "#fcd34d" },
-  { bg: "linear-gradient(315deg, #020617, rgba(76, 215, 246, 0.2), #042f2e)", glyph: "cyclone", color: "#4cd7f6" },
+  { bg: "linear-gradient(315deg, #020617, rgba(var(--accent-rgb), 0.2), #042f2e)", glyph: "cyclone", color: "rgb(var(--accent-rgb))" },
 ];
 
 const Head = styled.div`display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px;`;
 const Count = styled.span`font: 400 11px/0.875rem ${tokens.font.mono}; color: ${p => p.theme.primary};`;
 const Row = styled.div`
+  --accent-rgb: ${p => p.theme.primaryRgb};
   display: flex; gap: 8px; overflow-x: auto; padding: 2px 0 6px;
   scroll-snap-type: x proximity; scrollbar-width: none;
   &::-webkit-scrollbar { display: none; }

@@ -65,7 +65,7 @@ const OutlineButton = styled.button<{ $active?: boolean }>`
 `;
 const MobileRun = styled(RunButton)`
   background: ${p => p.theme.primary};
-  &:hover { background: #2fd9f4; }
+  &:hover { filter: brightness(1.1); }
 `;
 const Divider = styled.span`width: 1px; height: 24px; background: rgba(255, 255, 255, 0.2);`;
 const Group = styled.div`display: flex; align-items: center; gap: 4px;`;
