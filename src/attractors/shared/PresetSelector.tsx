@@ -44,14 +44,15 @@ const Card = styled.button<{ $active: boolean }>`
   &:hover { background: ${p => p.theme.surfaceHigh}; }
   &:disabled { opacity: 0.4; cursor: not-allowed; }
   &:focus-visible { outline: 2px solid ${p => p.theme.focusBorder}; }
-  .thumb { position: relative; height: 40px; border-radius: 4px; display: grid; place-items: center; overflow: hidden; }
-  .thumb img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+  /* Same 2:1 shape as the thumbnails, so a preview is never trimmed. */
+  .thumb { position: relative; aspect-ratio: 2 / 1; border-radius: 4px; display: grid; place-items: center; overflow: hidden; }
+  .thumb img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; background: #000; }
   .name {
     font: ${p => (p.$active ? 500 : 400)} 10px/0.875rem ${tokens.font.mono};
     color: ${p => (p.$active ? p.theme.primary : p.theme.textMid)};
     white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
   }
-  @media (max-width: ${tokens.breakpoint.mobileMax}px) { width: 104px; .thumb { height: 48px; } .name { font-size: 12px; } }
+  @media (max-width: ${tokens.breakpoint.mobileMax}px) { width: 104px; .name { font-size: 12px; } }
 `;
 
 /** The preset's rendered image over the decorative tile; the tile shows if the image is missing. */

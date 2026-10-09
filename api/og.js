@@ -3281,7 +3281,7 @@ var StubContext = class {
   }
 };
 function renderSystemPixels(meta, params, opts = {}) {
-  const { budgetMs = 1500, passes = 40, fractalBudgetMs = 8e3 } = opts;
+  const { budgetMs = 1500, passes = 40, fractalBudgetMs = 8e3, size = RENDER_SIZE } = opts;
   const timers = [];
   const sandboxMath = Object.create(Math);
   sandboxMath.random = seededRandom(24301);
@@ -3314,7 +3314,7 @@ function renderSystemPixels(meta, params, opts = {}) {
   import_vm.default.createContext(sandbox);
   getWorkerScript().runInContext(sandbox);
   const send = (type, payload) => sandbox.onmessage({ data: { type, payload } });
-  const canvas = new StubCanvas(RENDER_SIZE, RENDER_SIZE);
+  const canvas = new StubCanvas(size, size);
   const isFractal = meta.category === "Fractals";
   const startup = Parametersets_default[CONFIG.INITIAL_ICON_INDEX];
   const iterator = {
@@ -3328,12 +3328,12 @@ function renderSystemPixels(meta, params, opts = {}) {
     // Fractals skip supersampling: at card size it is invisible and costs 4× the time.
     mode: "offscreen",
     canvas,
-    size: RENDER_SIZE,
+    size,
     alias: isFractal ? 1 : CONFIG.ALIAS,
     scale: isFractal ? 1 : Number(params.scale ?? 1),
-    palette: startup.paletteData,
+    palette: opts.palette ?? startup.paletteData,
     colorLUTSize: CONFIG.COLOR_LUT_SIZE,
-    palGamma: startup.palGamma ?? 0.5,
+    palGamma: opts.palGamma ?? startup.palGamma ?? 0.5,
     palScale: true,
     palMax: 1e4,
     bgColor: { r: 0, g: 0, b: 0 },

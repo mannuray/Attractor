@@ -27,16 +27,35 @@ describe("renderPresetThumb", () => {
   });
 
   it("frames small or off-centre attractors to what they draw", async () => {
-    const litFraction = async (buf: Buffer) => {
+    // The drawing should fill the tile: its lit rows span most of the thumbnail's height.
+    const litHeight = async (buf: Buffer) => {
       const { data, info } = await sharp(buf).raw().toBuffer({ resolveWithObject: true });
-      let lit = 0;
-      for (let i = 0; i < data.length; i += info.channels) if (data[i] + data[i + 1] + data[i + 2] > 30) lit++;
-      return lit / (info.width * info.height);
+      let top = -1, bottom = -1;
+      for (let y = 0; y < info.height; y++) for (let x = 0; x < info.width; x++) {
+        const k = (y * info.width + x) * info.channels;
+        if (data[k] + data[k + 1] + data[k + 2] > 30) { if (top < 0) top = y; bottom = y; }
+      }
+      return top < 0 ? 0 : (bottom - top + 1) / info.height;
     };
     // hopalong/0 is a ~20px blob in the middle; bedhead/4 hangs off the bottom edge.
     for (const [id, i] of [["hopalong", 0], ["bedhead", 4]] as const) {
       const buf = await renderPresetThumb(getSystemMeta(id)!, presetFor(id, i)!);
-      expect(await litFraction(buf)).toBeGreaterThan(0.15);
+      expect(await litHeight(buf)).toBeGreaterThan(0.6);
+    }
+  });
+
+  it("shows the whole drawing: nothing is cut at the edges", async () => {
+    // Round symmetric icons used to lose their top and bottom to the 2:1 crop.
+    for (const [id, i] of [["symmetric_icon", 0], ["symmetric_icon", 1], ["clifford", 0]] as const) {
+      const buf = await renderPresetThumb(getSystemMeta(id)!, presetFor(id, i)!);
+      const { data, info } = await sharp(buf).raw().toBuffer({ resolveWithObject: true });
+      const litInRow = (y: number) => {
+        let n = 0;
+        for (let x = 0; x < info.width; x++) { const k = (y * info.width + x) * info.channels; if (data[k] + data[k + 1] + data[k + 2] > 60) n++; }
+        return n;
+      };
+      expect(litInRow(0)).toBeLessThan(info.width * 0.1);
+      expect(litInRow(info.height - 1)).toBeLessThan(info.width * 0.1);
     }
   });
 
