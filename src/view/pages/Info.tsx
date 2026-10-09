@@ -2029,9 +2029,21 @@ const Info: React.FC = () => {
     setSystems(next);
   }, []);
 
+  // After a rail click, keep that item highlighted until the user scrolls themselves; otherwise a
+  // short last section (which can't reach the top) would snap the highlight back to its neighbour.
+  const navLock = React.useRef(false);
+
   // Track which group / system is in view.
   React.useEffect(() => {
+    const release = () => { navLock.current = false; };
+    const releaseOnKeys = (e: KeyboardEvent) => {
+      if (["ArrowUp", "ArrowDown", "PageUp", "PageDown", "Home", "End", " "].includes(e.key)) release();
+    };
+    window.addEventListener("wheel", release, { passive: true });
+    window.addEventListener("touchmove", release, { passive: true });
+    window.addEventListener("keydown", releaseOnKeys);
     const onScroll = () => {
+      if (navLock.current) return;
       const y = 140;
       let current: GroupId = GROUPS[0].id;
       for (const g of GROUPS) {
@@ -2046,14 +2058,21 @@ const Info: React.FC = () => {
       setActiveSystem(sys);
     };
     window.addEventListener("scroll", onScroll, { passive: true });
-    return () => window.removeEventListener("scroll", onScroll);
+    return () => {
+      window.removeEventListener("scroll", onScroll);
+      window.removeEventListener("wheel", release);
+      window.removeEventListener("touchmove", release);
+      window.removeEventListener("keydown", releaseOnKeys);
+    };
   }, []);
 
   const goGroup = (id: GroupId) => {
+    navLock.current = true;
     setActive(id);
     groupRefs.current[id]?.scrollIntoView({ behavior: "smooth", block: "start" });
   };
   const goSystem = (group: GroupId, name: string) => {
+    navLock.current = true;
     setActive(group);
     setActiveSystem(name);
     document.getElementById(`system-${slug(name)}`)?.scrollIntoView({ behavior: "smooth", block: "start" });
