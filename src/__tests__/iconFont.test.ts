@@ -25,9 +25,6 @@ function usedGlyphs(): Set<string> {
     for (const m of src.matchAll(/\b(?:icon|glyph):\s*"([a-z_]+)"/g)) found.add(m[1]);
     // Icon names chosen through a variable, e.g. const runIcon = a ? "pause" : "play";
     for (const m of src.matchAll(/const \w*Icon\s*=\s*([^;\n]+);/g)) words(m[1]).forEach(w => found.add(w));
-    for (const m of src.matchAll(/className="material-symbols-outlined"[^>]*>\s*\{?([a-z_.]+)/g)) {
-      if (!m[1].includes(".")) found.add(m[1]);
-    }
   }
   // Resolve aliases to the Material glyph they render.
   return new Set(Array.from(found).map(n => (ICON_ALIASES as Record<string, string>)[n] ?? n));

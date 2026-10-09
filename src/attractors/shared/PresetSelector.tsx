@@ -2,6 +2,7 @@ import React from "react";
 import styled from "styled-components";
 import { SectionLabel } from "./styles";
 import { tokens } from "../../theme/tokens";
+import { Icon } from "../../components/ui/Icon";
 
 interface PresetOption { value: string | number; label: string }
 interface PresetSelectorProps {
@@ -64,7 +65,7 @@ export const PresetSelector: React.FC<PresetSelectorProps> = ({ label, value, op
             <Card key={o.value} type="button" role="radio" aria-checked={active} aria-label={o.label} title={o.label}
               $active={active} disabled={disabled} onClick={() => !disabled && onChange(String(o.value))}>
               <span className="thumb" style={{ background: tile.bg }} aria-hidden="true">
-                <span className="material-symbols-outlined" style={{ fontSize: 14, color: tile.color }}>{tile.glyph}</span>
+                <span style={{ color: tile.color, display: "inline-flex" }}><Icon name={tile.glyph} size={14} /></span>
               </span>
               <span className="name">{o.label}</span>
             </Card>

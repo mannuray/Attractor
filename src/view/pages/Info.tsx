@@ -517,7 +517,8 @@ const Footer = styled.footer`
 // Mount the comments iframe only when the Community section is close to the viewport.
 const LazyComments: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const ref = React.useRef<HTMLDivElement>(null);
-  const [show, setShow] = useState(typeof window === "undefined" || !("IntersectionObserver" in window));
+  // Server: never render the comments iframe. Browser without IntersectionObserver: show at once.
+  const [show, setShow] = useState(typeof window !== "undefined" && !("IntersectionObserver" in window));
   React.useEffect(() => {
     if (show || !ref.current) return;
     const io = new IntersectionObserver(entries => {

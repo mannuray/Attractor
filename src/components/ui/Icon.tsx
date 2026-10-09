@@ -33,14 +33,15 @@ export const Icon: React.FC<{ name: IconName; size?: number; filled?: boolean; c
   filled = false,
   className,
 }) => (
+  // The glyph name lives in data-icon and is drawn by a CSS ::before, so words like
+  // "play_arrow" never appear in the page text that search engines index.
   <span
     className={`material-symbols-outlined${className ? ` ${className}` : ""}`}
+    data-icon={(ICON_ALIASES as Record<string, string>)[name] ?? name}
     aria-hidden="true"
     style={{
       fontSize: `${size}px`,
       fontVariationSettings: filled ? "'FILL' 1" : undefined,
     }}
-  >
-    {(ICON_ALIASES as Record<string, string>)[name] ?? name}
-  </span>
+  />
 );

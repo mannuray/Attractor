@@ -121,6 +121,8 @@ html, body, #root {
   user-select: none;
 }
 
+.material-symbols-outlined[data-icon]::before { content: attr(data-icon); }
+
 ::-webkit-scrollbar { width: 4px; height: 4px; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.12); border-radius: 4px; }

@@ -22,13 +22,18 @@ export const useTheme = () => {
 
 export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [themeName, setThemeName] = useState(() => {
-    return localStorage.getItem('app-theme') || 'cyber_cyan';
+    // Server rendering (prerender) and blocked storage both fall back to the default theme.
+    try {
+      return (typeof window !== 'undefined' && window.localStorage.getItem('app-theme')) || 'cyber_cyan';
+    } catch {
+      return 'cyber_cyan';
+    }
   });
 
   const setTheme = (name: string) => {
     if (themes[name]) {
       setThemeName(name);
-      localStorage.setItem('app-theme', name);
+      try { localStorage.setItem('app-theme', name); } catch { /* storage unavailable */ }
     }
   };
 
