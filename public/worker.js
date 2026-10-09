@@ -271,128 +271,10 @@ function sendHits() {
 }
 
 // ============================================
-// MESSAGE HANDLER
-// ============================================
-
-self.onmessage = (event) => {
-  const { type, payload } = event.data;
-
-  if (type === "initialize") {
-    const { point, size, alias, scale, iterator, palette, colorLUTSize: lutSize, useSharedBuffer } = payload;
-    if (payload.palGamma !== undefined) palGamma = payload.palGamma;
-    if (payload.palScale !== undefined) palScale = payload.palScale;
-    if (payload.palMax !== undefined) palMax = payload.palMax;
-    if (payload.bgColor !== undefined) bgColor = payload.bgColor;
-
-    const fractalTypes = ["mandelbrot", "julia", "burningship", "tricorn", "multibrot", "newton", "phoenix", "lyapunov"];
-    fractalMode = fractalTypes.includes(iterator.name);
-
-    if (payload.mode === "offscreen" && payload.canvas) {
-      mode = "offscreen";
-      offscreenCanvas = payload.canvas;
-      ctx = offscreenCanvas.getContext("2d", { alpha: false });
-      canvasSize = size;
-      configAlias = alias;
-      if (palette && lutSize) {
-        currentPalette = palette;
-        buildColorLUT(palette, lutSize);
-      }
-    } else {
-      mode = "legacy";
-      if (palette) currentPalette = palette;
-    }
-
-    if (fractalMode) {
-      fractalParams = { type: iterator.name, ...iterator.parameters };
-      if (iterator.sequence) fractalParams.sequence = iterator.sequence;
-      iterCanvas = null;
-      if (mode === "offscreen") renderFractalProgressive();
-    } else {
-      if (iterator.math) {
-        it = new DynamicIterator(iterator.math, iterator.parameters);
-      }
-      
-      const jitterPoint = point || { 
-        xpos: Math.random() * 0.2 - 0.1, 
-        ypos: Math.random() * 0.2 - 0.1 
-      };
-      
-      iterCanvas = new IterationCanvas(jitterPoint, size, alias, scale, it, useSharedBuffer);
-      if (mode === "offscreen") {
-        render();
-        self.postMessage({ type: "stats", payload: { maxHits: iterCanvas.getMaxHits(), totalIterations: iterCanvas.getTotalIterations() } });
-      } else {
-        if (iterCanvas.isShared) {
-           self.postMessage({ type: "init_shared", payload: { buffer: iterCanvas.getHits().buffer } });
-        }
-        sendHits();
-      }
-    }
-  } else if (type === "iterate") {
-    if (fractalMode) {
-      if (mode === "offscreen") {
-        renderFractal();
-        self.postMessage({ type: "stats", payload: { maxHits: 0, totalIterations: 0, fractalComplete: true } });
-      }
-      return;
-    }
-    if (!iterCanvas) return;
-    iterCanvas.iterate();
-    if (mode === "offscreen") {
-      render();
-      self.postMessage({ type: "stats", payload: { maxHits: iterCanvas.getMaxHits(), totalIterations: iterCanvas.getTotalIterations() } });
-    } else {
-      sendHits();
-    }
-  } else if (type === "updatePalette") {
-    const { palette, colorLUTSize: lutSize } = payload;
-    if (palette && lutSize) {
-      currentPalette = palette;
-      buildColorLUT(palette, lutSize);
-      if (mode === "offscreen" && progressiveTimeoutId === null) {
-        if (fractalMode) {
-          renderFractal();
-          self.postMessage({ type: "stats", payload: { maxHits: 0, totalIterations: 0, fractalComplete: true } });
-        } else {
-          render();
-          self.postMessage({ type: "stats", payload: { maxHits: iterCanvas ? iterCanvas.getMaxHits() : 0, totalIterations: iterCanvas ? iterCanvas.getTotalIterations() : 0 } });
-        }
-      }
-    }
-  } else if (type === "updatePaletteSettings") {
-    if (payload.palGamma !== undefined) palGamma = payload.palGamma;
-    if (payload.palScale !== undefined) palScale = payload.palScale;
-    if (payload.palMax !== undefined) palMax = payload.palMax;
-    if (payload.bgColor !== undefined) bgColor = payload.bgColor;
-    buildGammaLUT();
-    if (mode === "offscreen" && progressiveTimeoutId === null) {
-      if (fractalMode) {
-        renderFractal();
-        self.postMessage({ type: "stats", payload: { maxHits: 0, totalIterations: 0, fractalComplete: true } });
-      } else {
-        render();
-        self.postMessage({ type: "stats", payload: { maxHits: iterCanvas ? iterCanvas.getMaxHits() : 0, totalIterations: iterCanvas ? iterCanvas.getTotalIterations() : 0 } });
-      }
-    }
-  } else if (type === "exportImage") {
-    if (mode === "offscreen" && offscreenCanvas) {
-      offscreenCanvas.convertToBlob({ type: "image/png" }).then((blob) => {
-        self.postMessage({ type: "imageExport", payload: { blob } });
-      });
-    }
-  } else if (type === "hunt") {
-    const result = performHunt(payload);
-    if (result) self.postMessage({ type: "huntResult", payload: result });
-  } else if (type === "stopHunt") {
-    isHunting = false;
-  }
-};
-
-// ============================================
 // FRACTAL RENDERING (Escape-Time Algorithm)
 // ============================================
 
-function renderMandelbrot() {
+function renderMandelbrot(rowStart = 0, rowEnd = canvasSize) {
   if (!ctx || !colorLUT) return;
   const size = canvasSize;
   const { centerX, centerY, zoom, maxIter } = fractalParams;
@@ -405,7 +287,7 @@ function renderMandelbrot() {
   const lutSize = colorLUT.length;
   const aliasSq = alias * alias;
 
-  for (let py = 0; py < size; py++) {
+  for (let py = rowStart; py < rowEnd; py++) {
     for (let px = 0; px < size; px++) {
       let totalR = 0, totalG = 0, totalB = 0;
       for (let sy = 0; sy < alias; sy++) {
@@ -444,10 +326,10 @@ function renderMandelbrot() {
       data32[py * size + px] = (255 << 24) | (avgB << 16) | (avgG << 8) | avgR;
     }
   }
-  ctx.putImageData(imageData, 0, 0);
+  ctx.putImageData(imageData, 0, 0, 0, rowStart, size, rowEnd - rowStart);
 }
 
-function renderJulia() {
+function renderJulia(rowStart = 0, rowEnd = canvasSize) {
   if (!ctx || !colorLUT) return;
   const size = canvasSize;
   const { cReal, cImag, centerX, centerY, zoom, maxIter } = fractalParams;
@@ -460,7 +342,7 @@ function renderJulia() {
   const lutSize = colorLUT.length;
   const aliasSq = alias * alias;
 
-  for (let py = 0; py < size; py++) {
+  for (let py = rowStart; py < rowEnd; py++) {
     for (let px = 0; px < size; px++) {
       let totalR = 0, totalG = 0, totalB = 0;
       for (let sy = 0; sy < alias; sy++) {
@@ -492,10 +374,10 @@ function renderJulia() {
       data32[py * size + px] = (255 << 24) | (avgB << 16) | (avgG << 8) | avgR;
     }
   }
-  ctx.putImageData(imageData, 0, 0);
+  ctx.putImageData(imageData, 0, 0, 0, rowStart, size, rowEnd - rowStart);
 }
 
-function renderBurningShip() {
+function renderBurningShip(rowStart = 0, rowEnd = canvasSize) {
   if (!ctx || !colorLUT) return;
   const size = canvasSize;
   const { centerX, centerY, zoom, maxIter } = fractalParams;
@@ -508,7 +390,7 @@ function renderBurningShip() {
   const lutSize = colorLUT.length;
   const aliasSq = alias * alias;
 
-  for (let py = 0; py < size; py++) {
+  for (let py = rowStart; py < rowEnd; py++) {
     for (let px = 0; px < size; px++) {
       let totalR = 0, totalG = 0, totalB = 0;
       for (let sy = 0; sy < alias; sy++) {
@@ -541,10 +423,10 @@ function renderBurningShip() {
       data32[py * size + px] = (255 << 24) | (avgB << 16) | (avgG << 8) | avgR;
     }
   }
-  ctx.putImageData(imageData, 0, 0);
+  ctx.putImageData(imageData, 0, 0, 0, rowStart, size, rowEnd - rowStart);
 }
 
-function renderTricorn() {
+function renderTricorn(rowStart = 0, rowEnd = canvasSize) {
   if (!ctx || !colorLUT) return;
   const size = canvasSize;
   const { centerX, centerY, zoom, maxIter } = fractalParams;
@@ -557,7 +439,7 @@ function renderTricorn() {
   const lutSize = colorLUT.length;
   const aliasSq = alias * alias;
 
-  for (let py = 0; py < size; py++) {
+  for (let py = rowStart; py < rowEnd; py++) {
     for (let px = 0; px < size; px++) {
       let totalR = 0, totalG = 0, totalB = 0;
       for (let sy = 0; sy < alias; sy++) {
@@ -591,10 +473,10 @@ function renderTricorn() {
       data32[py * size + px] = (255 << 24) | (avgB << 16) | (avgG << 8) | avgR;
     }
   }
-  ctx.putImageData(imageData, 0, 0);
+  ctx.putImageData(imageData, 0, 0, 0, rowStart, size, rowEnd - rowStart);
 }
 
-function renderMultibrot() {
+function renderMultibrot(rowStart = 0, rowEnd = canvasSize) {
   if (!ctx || !colorLUT) return;
   const size = canvasSize;
   const { centerX, centerY, zoom, maxIter, power } = fractalParams;
@@ -607,7 +489,7 @@ function renderMultibrot() {
   const lutSize = colorLUT.length;
   const aliasSq = alias * alias;
 
-  for (let py = 0; py < size; py++) {
+  for (let py = rowStart; py < rowEnd; py++) {
     for (let px = 0; px < size; px++) {
       let totalR = 0, totalG = 0, totalB = 0;
       for (let sy = 0; sy < alias; sy++) {
@@ -642,10 +524,10 @@ function renderMultibrot() {
       data32[py * size + px] = (255 << 24) | (avgB << 16) | (avgG << 8) | avgR;
     }
   }
-  ctx.putImageData(imageData, 0, 0);
+  ctx.putImageData(imageData, 0, 0, 0, rowStart, size, rowEnd - rowStart);
 }
 
-function renderNewton() {
+function renderNewton(rowStart = 0, rowEnd = canvasSize) {
   if (!ctx || !colorLUT) return;
   const size = canvasSize;
   const { centerX, centerY, zoom, maxIter } = fractalParams;
@@ -660,7 +542,7 @@ function renderNewton() {
   const roots = [{ x: 1, y: 0 }, { x: -0.5, y: 0.8660254 }, { x: -0.5, y: -0.8660254 }];
   const tolerance = 1e-6;
 
-  for (let py = 0; py < size; py++) {
+  for (let py = rowStart; py < rowEnd; py++) {
     for (let px = 0; px < size; px++) {
       let totalR = 0, totalG = 0, totalB = 0;
       for (let sy = 0; sy < alias; sy++) {
@@ -701,10 +583,10 @@ function renderNewton() {
       data32[py * size + px] = (255 << 24) | (avgB << 16) | (avgG << 8) | avgR;
     }
   }
-  ctx.putImageData(imageData, 0, 0);
+  ctx.putImageData(imageData, 0, 0, 0, rowStart, size, rowEnd - rowStart);
 }
 
-function renderPhoenix() {
+function renderPhoenix(rowStart = 0, rowEnd = canvasSize) {
   if (!ctx || !colorLUT) return;
   const size = canvasSize;
   const { centerX, centerY, zoom, maxIter, cReal, cImag, p } = fractalParams;
@@ -717,7 +599,7 @@ function renderPhoenix() {
   const lutSize = colorLUT.length;
   const aliasSq = alias * alias;
 
-  for (let py = 0; py < size; py++) {
+  for (let py = rowStart; py < rowEnd; py++) {
     for (let px = 0; px < size; px++) {
       let totalR = 0, totalG = 0, totalB = 0;
       for (let sy = 0; sy < alias; sy++) {
@@ -752,10 +634,10 @@ function renderPhoenix() {
       data32[py * size + px] = (255 << 24) | (avgB << 16) | (avgG << 8) | avgR;
     }
   }
-  ctx.putImageData(imageData, 0, 0);
+  ctx.putImageData(imageData, 0, 0, 0, rowStart, size, rowEnd - rowStart);
 }
 
-function renderLyapunov() {
+function renderLyapunov(rowStart = 0, rowEnd = canvasSize) {
   if (!ctx || !colorLUT) return;
   const size = canvasSize;
   const { aMin, aMax, bMin, bMax, maxIter, sequence } = fractalParams;
@@ -767,7 +649,7 @@ function renderLyapunov() {
   const aRange = aMax - aMin;
   const bRange = bMax - bMin;
 
-  for (let py = 0; py < size; py++) {
+  for (let py = rowStart; py < rowEnd; py++) {
     for (let px = 0; px < size; px++) {
       let totalR = 0, totalG = 0, totalB = 0;
       for (let sy = 0; sy < alias; sy++) {
@@ -797,11 +679,51 @@ function renderLyapunov() {
       data32[py * size + px] = (255 << 24) | (avgB << 16) | (avgG << 8) | avgR;
     }
   }
-  ctx.putImageData(imageData, 0, 0);
+  ctx.putImageData(imageData, 0, 0, 0, rowStart, size, rowEnd - rowStart);
+}
+
+// Every fractal render gets a generation number; starting a new one cancels the old sweep.
+let fractalGeneration = 0;
+const SWEEP_ROWS = 8;          // rows per strip
+const SWEEP_BUDGET_MS = 24;    // work per tick before yielding (keeps the worker responsive)
+
+function cancelFractalSweep() {
+  fractalGeneration++;
+  if (progressiveTimeoutId !== null) {
+    clearTimeout(progressiveTimeoutId);
+    progressiveTimeoutId = null;
+  }
+}
+
+// Paint the full-resolution image top to bottom in strips over whatever is on the canvas
+// (the quick preview, or the previous image), reporting progress as it goes.
+function startFractalSweep(delayMs) {
+  cancelFractalSweep();
+  const gen = fractalGeneration;
+  const size = canvasSize;
+  let row = 0;
+  const step = () => {
+    if (gen !== fractalGeneration) return;
+    const t0 = performance.now();
+    while (row < size && performance.now() - t0 < SWEEP_BUDGET_MS) {
+      const end = Math.min(size, row + SWEEP_ROWS);
+      renderFractal(row, end);
+      row = end;
+    }
+    if (row < size) {
+      self.postMessage({ type: "fractalProgress", payload: { progress: row / size } });
+      progressiveTimeoutId = setTimeout(step, 0);
+    } else {
+      progressiveTimeoutId = null;
+      self.postMessage({ type: "stats", payload: { maxHits: 0, totalIterations: 0, fractalComplete: true } });
+    }
+  };
+  progressiveTimeoutId = setTimeout(step, delayMs);
 }
 
 function renderFractalProgressive() {
   if (!fractalParams || !ctx) return;
+  cancelFractalSweep();
   const fullSize = canvasSize;
   const fullAlias = configAlias;
   const previewSize = Math.max(1, Math.floor(fullSize / 4));
@@ -820,24 +742,20 @@ function renderFractalProgressive() {
   ctx.drawImage(previewCanvas, 0, 0, fullSize, fullSize);
   ctx.imageSmoothingEnabled = false;
   self.postMessage({ type: "stats", payload: { maxHits: 0, totalIterations: 0, fractalPreview: true } });
-  progressiveTimeoutId = setTimeout(() => {
-    progressiveTimeoutId = null;
-    renderFractal();
-    self.postMessage({ type: "stats", payload: { maxHits: 0, totalIterations: 0, fractalComplete: true } });
-  }, 50);
+  startFractalSweep(50);
 }
 
-function renderFractal() {
+function renderFractal(rowStart = 0, rowEnd = canvasSize) {
   if (!fractalParams) return;
   switch (fractalParams.type) {
-    case "mandelbrot": renderMandelbrot(); break;
-    case "julia": renderJulia(); break;
-    case "burningship": renderBurningShip(); break;
-    case "tricorn": renderTricorn(); break;
-    case "multibrot": renderMultibrot(); break;
-    case "newton": renderNewton(); break;
-    case "phoenix": renderPhoenix(); break;
-    case "lyapunov": renderLyapunov(); break;
+    case "mandelbrot": renderMandelbrot(rowStart, rowEnd); break;
+    case "julia": renderJulia(rowStart, rowEnd); break;
+    case "burningship": renderBurningShip(rowStart, rowEnd); break;
+    case "tricorn": renderTricorn(rowStart, rowEnd); break;
+    case "multibrot": renderMultibrot(rowStart, rowEnd); break;
+    case "newton": renderNewton(rowStart, rowEnd); break;
+    case "phoenix": renderPhoenix(rowStart, rowEnd); break;
+    case "lyapunov": renderLyapunov(rowStart, rowEnd); break;
   }
 }
 
@@ -954,10 +872,7 @@ self.onmessage = (event) => {
     }
   } else if (type === "iterate") {
     if (fractalMode) {
-      if (mode === "offscreen") {
-        renderFractal();
-        self.postMessage({ type: "stats", payload: { maxHits: 0, totalIterations: 0, fractalComplete: true } });
-      }
+      if (mode === "offscreen") startFractalSweep(0);
       return;
     }
     if (!iterCanvas) return;
@@ -973,11 +888,10 @@ self.onmessage = (event) => {
     if (palette && lutSize) {
       currentPalette = palette;
       buildColorLUT(palette, lutSize);
-      if (mode === "offscreen" && progressiveTimeoutId === null) {
-        if (fractalMode) {
-          renderFractal();
-          self.postMessage({ type: "stats", payload: { maxHits: 0, totalIterations: 0, fractalComplete: true } });
-        } else {
+      if (mode === "offscreen" && fractalMode) {
+        startFractalSweep(0);
+      } else if (mode === "offscreen" && progressiveTimeoutId === null) {
+        {
           render();
           self.postMessage({ type: "stats", payload: { maxHits: iterCanvas ? iterCanvas.getMaxHits() : 0, totalIterations: iterCanvas ? iterCanvas.getTotalIterations() : 0 } });
         }
@@ -989,11 +903,10 @@ self.onmessage = (event) => {
     if (payload.palMax !== undefined) palMax = payload.palMax;
     if (payload.bgColor !== undefined) bgColor = payload.bgColor;
     buildGammaLUT();
-    if (mode === "offscreen" && progressiveTimeoutId === null) {
-      if (fractalMode) {
-        renderFractal();
-        self.postMessage({ type: "stats", payload: { maxHits: 0, totalIterations: 0, fractalComplete: true } });
-      } else {
+    if (mode === "offscreen" && fractalMode) {
+      startFractalSweep(0);
+    } else if (mode === "offscreen" && progressiveTimeoutId === null) {
+      {
         render();
         self.postMessage({ type: "stats", payload: { maxHits: iterCanvas ? iterCanvas.getMaxHits() : 0, totalIterations: iterCanvas ? iterCanvas.getTotalIterations() : 0 } });
       }
@@ -1002,6 +915,13 @@ self.onmessage = (event) => {
     if (mode === "offscreen" && offscreenCanvas) {
       offscreenCanvas.convertToBlob({ type: "image/png" }).then((blob) => {
         self.postMessage({ type: "imageExport", payload: { blob } });
+      });
+    }
+  } else if (type === "snapshot") {
+    // Current canvas as PNG, e.g. for the export dialog's preview.
+    if (mode === "offscreen" && offscreenCanvas) {
+      offscreenCanvas.convertToBlob({ type: "image/png" }).then((blob) => {
+        self.postMessage({ type: "snapshot", payload: { id: payload.id, blob } });
       });
     }
   } else if (type === "hunt") {
