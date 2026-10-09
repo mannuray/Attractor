@@ -1,264 +1,135 @@
 
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import styled, { css } from "styled-components";
+import styled from "styled-components";
 import 'katex/dist/katex.min.css';
 import { InlineMath, BlockMath } from 'react-katex';
 import { GiscusComments } from "../../components/GiscusComments";
 import { tokens } from "../../theme/tokens";
+import { useTheme } from "../../theme/ThemeContext";
+import { Icon } from "../../components/ui/Icon";
 
 // ============= STYLED COMPONENTS =============
 
-const PageContainer = styled.div`
-  min-height: 100vh;
-  background: ${props => props.theme.canvasBg};
-  color: ${props => props.theme.white};
-  font-family: ${tokens.font.ui};
-  transition: background 0.5s ease;
-`;
+const mobileQ = `@media (max-width: ${tokens.breakpoint.mobileMax}px)`;
 
-const Header = styled.header`
-  position: sticky;
-  top: 0;
-  background: ${props => props.theme.darkestBg};
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border-bottom: 1px solid ${props => props.theme.hairline};
-  z-index: 100;
-`;
-
-const HeaderTop = styled.div`
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 16px 24px;
-`;
-
-const BackButton = styled.button`
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 8px 16px;
-  font-size: 11px;
-  font-weight: 800;
-  text-transform: uppercase;
-  letter-spacing: 1px;
-  font-family: ${tokens.font.mono};
-  background: transparent;
-  border: 1px solid ${props => props.theme.hairline};
-  border-radius: 4px;
-  color: ${props => props.theme.accent};
-  cursor: pointer;
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-
-  &:hover {
-    background: ${props => props.theme.accentSubtle};
-    border-color: ${props => props.theme.accent};
-    color: white;
-    transform: translateX(-4px);
-  }
-`;
-
-const Title = styled.h1`
-  margin: 0;
-  font-size: 18px;
-  font-weight: 900;
-  letter-spacing: 2px;
-  text-transform: uppercase;
-  font-family: ${tokens.font.mono};
-  color: ${props => props.theme.accent};
-  text-shadow: 0 0 10px ${props => props.theme.accentMuted};
-`;
-
-const TabNav = styled.nav`
-  display: flex;
-  gap: 2px;
-  padding: 0 24px;
-  background: rgba(0, 0, 0, 0.2);
-  border-bottom: 1px solid ${props => props.theme.hairline};
-  overflow-x: auto;
-
-  &::-webkit-scrollbar {
-    height: 2px;
-  }
-`;
-
-const Tab = styled.button<{ $active: boolean }>`
-  padding: 12px 24px;
-  font-size: 11px;
-  font-weight: 800;
-  text-transform: uppercase;
-  letter-spacing: 2px;
-  font-family: ${tokens.font.mono};
-  background: transparent;
-  border: none;
-  border-bottom: 2px solid ${props => props.$active ? props.theme.accent : "transparent"};
-  color: ${props => props.$active ? props.theme.accent : props.theme.accentDim};
-  cursor: pointer;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  white-space: nowrap;
-  position: relative;
-
-  &:hover {
-    color: ${props => props.theme.accent};
-    background: ${props => props.theme.accentSubtle};
-  }
-
-  ${props => props.$active && css`
-    text-shadow: 0 0 10px ${props.theme.accentSoft};
-    background: linear-gradient(to top, ${props.theme.accentSubtle} 0%, transparent 100%);
-  `}
-
-  &::before {
-    content: '[';
-    margin-right: 4px;
-    opacity: ${props => props.$active ? 1 : 0};
-    transition: opacity 0.3s ease;
-  }
-
-  &::after {
-    content: ']';
-    margin-left: 4px;
-    opacity: ${props => props.$active ? 1 : 0};
-    transition: opacity 0.3s ease;
-  }
-`;
-
-const Content = styled.main`
-  max-width: 95%;
-  margin: 0 auto;
-  padding: 40px 24px 80px;
-`;
+// ---- Content primitives (restyled to the Stitch "Help & About" design; content unchanged) ----
 
 const Section = styled.section`
-  background: ${props => props.theme.darkerBg};
-  backdrop-filter: blur(12px);
-  border: 1px solid ${props => props.theme.hairline};
-  border-radius: 8px;
-  padding: 40px;
-  margin-bottom: 32px;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+  margin: 0 0 40px;
+  scroll-margin-top: 72px;
 `;
 
 const SectionTitle = styled.h2`
-  margin: 0 0 32px 0;
-  font-size: 16px;
-  font-weight: 900;
-  text-transform: uppercase;
-  letter-spacing: 3px;
-  color: ${props => props.theme.accentLight};
-  font-family: ${tokens.font.mono};
-  border-left: 4px solid ${props => props.theme.accent};
-  padding-left: 20px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 0 0 20px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid ${p => p.theme.hairline};
+  font: 600 24px/2rem ${tokens.font.ui};
+  letter-spacing: -0.02em;
+  color: ${p => p.theme.textHigh};
+  &::before {
+    content: "";
+    width: 4px;
+    height: 20px;
+    border-radius: 2px;
+    background: ${p => p.theme.primary};
+    box-shadow: ${p => p.theme.glowPrimary};
+  }
+  ${mobileQ} { font-size: 20px; }
 `;
 
 const SubTitle = styled.h3`
-  margin: 48px 0 20px 0;
-  font-size: 13px;
-  font-weight: 800;
+  margin: 28px 0 12px;
+  font: 600 11px/0.875rem ${tokens.font.mono};
+  letter-spacing: 0.08em;
   text-transform: uppercase;
-  letter-spacing: 1.5px;
-  color: ${props => props.theme.accentDim};
-  font-family: ${tokens.font.mono};
+  color: ${p => p.theme.primary};
 `;
 
 const Paragraph = styled.p`
-  margin: 0 0 24px 0;
-  font-size: 16px;
-  line-height: 1.8;
-  color: ${props => props.theme.white};
-  opacity: 0.8;
+  margin: 0 0 16px;
+  font: 400 15px/1.7 ${tokens.font.ui};
+  color: ${p => p.theme.textMid};
+  strong { color: ${p => p.theme.textHigh}; font-weight: 600; }
+  .katex { color: ${p => p.theme.textHigh}; }
 `;
 
 const MathBlock = styled.div`
-  background: ${props => props.theme.darkestBg};
-  padding: 24px;
-  border-radius: 4px;
-  border: 1px solid ${props => props.theme.hairline};
-  margin: 32px 0;
+  margin: 16px 0 20px;
+  padding: 16px;
+  border-radius: 12px;
   overflow-x: auto;
+  background: ${p => p.theme.surfaceLowest};
+  border: 1px solid ${p => p.theme.hairline};
+  box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.35);
 
   .katex {
-    font-size: 1.2em;
-    color: ${props => props.theme.white};
+    font-size: 1.1em;
+    color: ${p => p.theme.textHigh};
   }
 `;
 
-const AttractorCard = styled.div`
-  background: ${props => props.theme.darkBg};
-  border: 1px solid ${props => props.theme.hairline};
-  border-radius: 8px;
-  padding: 32px;
-  margin-bottom: 40px;
-  transition: all 0.2s ease;
-
-  &:hover {
-    border-color: ${props => props.theme.accentBorderLight};
-    background: ${props => props.theme.darkerBg};
-  }
+const AttractorCard = styled.article`
+  margin: 0 0 24px;
+  padding: 24px;
+  border-radius: 16px;
+  background: rgba(24, 27, 37, 0.6);
+  border: 1px solid ${p => p.theme.hairline};
+  scroll-margin-top: 72px;
+  transition: border-color 0.2s ease;
+  &:hover { border-color: rgba(76, 215, 246, 0.25); }
+  ${mobileQ} { padding: 16px; border-radius: 12px; }
 `;
 
 const AttractorHeader = styled.div`
   display: flex;
   flex-direction: column;
-  align-items: center;
-  text-align: center;
-  margin-bottom: 32px;
+  gap: 8px;
+  margin-bottom: 16px;
 `;
 
-const GalleryImage = styled.img`
-  width: 100%;
-  max-width: 600px;
-  height: auto;
-  border-radius: 4px;
-  border: 1px solid ${props => props.theme.hairline};
-  box-shadow: 0 0 30px rgba(0, 0, 0, 0.6);
-  margin: 24px 0;
-  cursor: pointer;
-  transition: all 0.3s ease;
+const lazyImg = { loading: "lazy" as const, decoding: "async" as const };
 
-  &:hover {
-    border-color: ${props => props.theme.accent};
-    box-shadow: 0 0 40px ${props => props.theme.accentMuted};
-    transform: scale(1.01);
-  }
+const GalleryImage = styled.img.attrs(lazyImg)`
+  display: block;
+  width: 100%;
+  max-width: 560px;
+  height: auto;
+  margin: 16px 0;
+  border-radius: 12px;
+  border: 1px solid ${p => p.theme.hairline};
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.5);
 `;
 
 const ImageGrid = styled.div`
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
-  gap: 32px;
-  margin: 40px 0;
-  width: 100%;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 16px;
+  margin: 16px 0 24px;
+  ${mobileQ} { grid-template-columns: repeat(2, 1fr); gap: 12px; }
 `;
 
-const GridImage = styled.img`
+const GridImage = styled.img.attrs(lazyImg)`
+  display: block;
   width: 100%;
   aspect-ratio: 1;
   object-fit: cover;
-  border-radius: 4px;
-  border: 1px solid ${props => props.theme.hairline};
-  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.6);
-  cursor: pointer;
-  transition: all 0.3s ease;
-
-  &:hover {
-    border-color: ${props => props.theme.accent};
-    transform: translateY(-4px);
-    box-shadow: 0 0 30px ${props => props.theme.accentMuted};
-  }
+  border-radius: 10px;
+  border: 1px solid ${p => p.theme.hairline};
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
+  transition: transform 0.2s ease, border-color 0.2s ease;
+  &:hover { transform: translateY(-2px); border-color: rgba(76, 215, 246, 0.4); }
 `;
 
 const ImageLabel = styled.span`
   display: block;
+  margin-top: 8px;
   text-align: center;
-  font-size: 10px;
-  font-weight: 800;
-  color: ${props => props.theme.accentDim};
-  margin-top: 12px;
-  text-transform: uppercase;
-  letter-spacing: 1.5px;
-  font-family: ${tokens.font.mono};
+  font: 400 11px/0.875rem ${tokens.font.mono};
+  color: ${p => p.theme.textMid};
 `;
 
 const AttractorContent = styled.div`
@@ -266,83 +137,90 @@ const AttractorContent = styled.div`
   text-align: left;
 `;
 
-const AttractorName = styled.h4`
-  margin: 0 0 12px 0;
-  font-size: 18px;
-  font-weight: 700;
-  color: ${props => props.theme.white};
-  letter-spacing: -0.5px;
+const slug = (text: string) => text.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
+
+const AttractorNameHeading = styled.h4`
+  margin: 0 0 12px;
+  font: 600 20px/1.75rem ${tokens.font.ui};
+  letter-spacing: -0.015em;
+  color: ${p => p.theme.textHigh};
+  scroll-margin-top: 80px;
 `;
 
-const UsageList = styled.ul`
+// System headings carry an anchor id + marker so the navigation rail can list and link them.
+const AttractorName: React.FC<{ children?: React.ReactNode }> = ({ children }) => {
+  const text = typeof children === "string" ? children : "";
+  return (
+    <AttractorNameHeading id={text ? `system-${slug(text)}` : undefined} data-system={text || undefined}>
+      {children}
+    </AttractorNameHeading>
+  );
+};
+
+const UsageList = styled.ol`
   margin: 0;
   padding: 0;
   list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
 `;
 
 const UsageItem = styled.li`
-  padding: 16px 0;
-  border-bottom: 1px solid ${props => props.theme.hairline};
   display: flex;
   gap: 16px;
-  line-height: 1.7;
-
-  &:last-child {
-    border-bottom: none;
-  }
+  padding: 16px 20px;
+  border-radius: 12px;
+  background: rgba(24, 27, 37, 0.6);
+  border: 1px solid ${p => p.theme.hairline};
+  font: 400 14px/1.6 ${tokens.font.ui};
+  color: ${p => p.theme.textMid};
+  strong { display: block; margin-bottom: 2px; font: 600 15px/1.4 ${tokens.font.ui}; color: ${p => p.theme.textHigh}; }
 `;
 
 const StepNumber = styled.span`
   flex-shrink: 0;
-  width: 28px;
-  height: 28px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: ${props => props.theme.accent};
-  border-radius: 4px;
-  font-size: 13px;
-  font-weight: 900;
-  color: ${props => props.theme.bgPage};
-  font-family: ${tokens.font.mono};
+  width: 32px;
+  height: 32px;
+  display: grid;
+  place-items: center;
+  border-radius: 8px;
+  background: ${p => p.theme.primarySoft};
+  border: 1px solid ${p => p.theme.primaryBorder};
+  font: 600 13px/1 ${tokens.font.mono};
+  color: ${p => p.theme.primary};
 `;
 
 const ParamList = styled.div`
   display: flex;
   flex-wrap: wrap;
-  gap: 10px;
-  margin-top: 16px;
+  gap: 8px;
+  margin-top: 12px;
 `;
 
 const ParamBadge = styled.span`
-  padding: 4px 10px;
-  background: ${props => props.theme.accentSubtle};
-  border: 1px solid ${props => props.theme.hairline};
-  border-radius: 4px;
-  font-size: 10px;
-  font-weight: 800;
-  font-family: ${tokens.font.mono};
-  color: ${props => props.theme.accentLight};
+  padding: 3px 8px;
+  border-radius: 6px;
+  background: ${p => p.theme.surface};
+  border: 1px solid ${p => p.theme.hairline};
+  font: 400 11px/1rem ${tokens.font.mono};
+  color: ${p => p.theme.primary};
 `;
 
 const CreditSection = styled.div`
+  margin-top: 24px;
+  padding: 20px;
+  border-radius: 12px;
   text-align: center;
-  padding: 32px;
-  margin-top: 40px;
-  border-top: 1px solid ${props => props.theme.hairline};
+  background: rgba(24, 27, 37, 0.6);
+  border: 1px solid ${p => p.theme.hairline};
 `;
 
 const CreditLink = styled.a`
-  color: ${props => props.theme.accent};
-  font-weight: 700;
+  color: ${p => p.theme.primary};
+  font: 500 13px ${tokens.font.mono};
   text-decoration: none;
-  font-family: ${tokens.font.mono};
-  font-size: 12px;
-  
-  &:hover {
-    text-decoration: underline;
-    text-shadow: 0 0 10px ${props => props.theme.accentMuted};
-  }
+  &:hover { text-decoration: underline; }
 `;
 
 // ============= TAB CONTENT COMPONENTS =============
@@ -1950,67 +1828,315 @@ const DiscussTab: React.FC = () => (
 
 // ============= MAIN COMPONENT =============
 
-type TabType = "usage" | "attractors" | "ifs" | "fractals" | "about" | "discuss";
+type GroupId = "getting-started" | "attractors" | "ifs" | "fractals" | "about" | "community";
+
+const GROUPS: { id: GroupId; label: string; chip: string; icon: string; nested: boolean; Body: React.FC }[] = [
+  { id: "getting-started", label: "Getting started", chip: "Getting started", icon: "rocket_launch", nested: false, Body: () => <HowToUseTab /> },
+  { id: "attractors", label: "Attractors", chip: "Attractors", icon: "grain", nested: true, Body: () => <AttractorsTab /> },
+  { id: "ifs", label: "IFS systems", chip: "IFS", icon: "account_tree", nested: true, Body: () => <IFSTab /> },
+  { id: "fractals", label: "Fractals", chip: "Fractals", icon: "blur_on", nested: true, Body: () => <FractalsTab /> },
+  { id: "about", label: "About & credits", chip: "About", icon: "info", nested: false, Body: () => <AboutTab /> },
+  { id: "community", label: "Community", chip: "Community", icon: "forum", nested: false, Body: () => <DiscussTab /> },
+];
+
+const Page = styled.div`
+  min-height: 100vh;
+  background: ${p => p.theme.pageBg};
+  color: ${p => p.theme.textHigh};
+  font-family: ${tokens.font.ui};
+`;
+
+const TopBar = styled.header`
+  position: sticky; top: 0; z-index: 30;
+  height: 56px; padding: 0 24px;
+  display: flex; align-items: center; justify-content: space-between; gap: 16px;
+  background: ${p => p.theme.glassBar};
+  backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+  border-bottom: 1px solid ${p => p.theme.hairline};
+  .left { display: flex; align-items: center; gap: 16px; min-width: 0; }
+  .brand { display: flex; align-items: center; gap: 10px; font: 600 16px ${tokens.font.ui}; white-space: nowrap; }
+  .mark {
+    width: 28px; height: 28px; border-radius: 8px; display: grid; place-items: center; color: ${p => p.theme.primary};
+    background: ${p => p.theme.primarySoft}; border: 1px solid ${p => p.theme.primaryBorder}; box-shadow: ${p => p.theme.glowPrimary};
+  }
+  .sep { width: 1px; height: 18px; background: ${p => p.theme.hairline}; }
+  ${mobileQ} {
+    height: 52px; padding: 0 12px;
+    .brand .name, .sep { display: none; }
+  }
+`;
+
+const BackButton = styled.button`
+  display: inline-flex; align-items: center; gap: 6px; height: 32px; padding: 0 12px; border-radius: 8px; cursor: pointer;
+  background: rgba(39, 42, 51, 0.4); border: 1px solid ${p => p.theme.hairlineStrong};
+  color: ${p => p.theme.textHigh}; font: 500 13px ${tokens.font.ui};
+  &:hover { background: ${p => p.theme.surfaceHigh}; }
+  ${mobileQ} { height: 40px; }
+`;
+
+const ThemeSelect = styled.select`
+  height: 32px; border-radius: 8px; padding: 0 8px; cursor: pointer;
+  background: transparent; color: ${p => p.theme.textMid}; border: 1px solid ${p => p.theme.hairline};
+  font: 400 11px ${tokens.font.mono};
+  option { background: ${p => p.theme.surface}; color: ${p => p.theme.textHigh}; }
+`;
+
+const Layout = styled.div`
+  display: grid;
+  grid-template-columns: 260px minmax(0, 760px) 200px;
+  justify-content: center;
+  gap: 40px;
+  padding: 32px 24px 80px;
+  ${`@media (max-width: 1280px)`} { grid-template-columns: 240px minmax(0, 760px); gap: 32px; }
+  ${mobileQ} { display: block; padding: 0 16px 64px; }
+`;
+
+const Rail = styled.nav`
+  position: sticky; top: 88px; align-self: start; max-height: calc(100vh - 112px); overflow-y: auto;
+  display: flex; flex-direction: column; gap: 4px; padding-right: 4px;
+  .group-label {
+    margin: 16px 0 6px 12px; font: 500 11px/0.875rem ${tokens.font.mono}; letter-spacing: 0.08em;
+    text-transform: uppercase; color: ${p => p.theme.textLow};
+  }
+  .group-label:first-child { margin-top: 0; }
+  ${mobileQ} { display: none; }
+`;
+
+const RailItem = styled.button<{ $active: boolean }>`
+  display: flex; align-items: center; justify-content: space-between; gap: 8px; width: 100%;
+  padding: 9px 12px; border-radius: 10px; cursor: pointer; text-align: left;
+  background: ${p => (p.$active ? "rgba(76, 215, 246, 0.08)" : "transparent")};
+  border: 1px solid ${p => (p.$active ? p.theme.primaryBorder : "transparent")};
+  color: ${p => (p.$active ? p.theme.primary : p.theme.textHigh)};
+  font: 400 15px/1.25rem ${tokens.font.ui};
+  box-shadow: ${p => (p.$active ? p.theme.glowPrimary : "none")};
+  &:hover { background: ${p => (p.$active ? "rgba(76, 215, 246, 0.08)" : p.theme.surface)}; }
+  .l { display: flex; align-items: center; gap: 10px; }
+  .pip { width: 6px; height: 6px; border-radius: 50%; background: ${p => p.theme.primary}; }
+`;
+
+const Nested = styled.div`
+  margin: 2px 0 6px 18px; padding-left: 10px; border-left: 1px solid ${p => p.theme.hairline};
+  display: flex; flex-direction: column; gap: 1px;
+`;
+
+const NestedItem = styled.button<{ $active: boolean }>`
+  padding: 6px 8px; border-radius: 6px; cursor: pointer; text-align: left;
+  background: transparent; border: none;
+  color: ${p => (p.$active ? p.theme.primary : p.theme.textMid)};
+  font: 400 13px/1.1rem ${tokens.font.ui};
+  &:hover { color: ${p => p.theme.textHigh}; background: ${p => p.theme.surface}; }
+`;
+
+const Main = styled.main`
+  min-width: 0;
+`;
+
+const Hero = styled.header`
+  margin-bottom: 40px; padding-bottom: 28px; border-bottom: 1px solid ${p => p.theme.hairline};
+  .chip {
+    display: inline-flex; align-items: center; gap: 8px; padding: 4px 10px; border-radius: 6px;
+    background: rgba(76, 215, 246, 0.08); border: 1px solid ${p => p.theme.hairline};
+    font: 400 12px ${tokens.font.mono}; color: ${p => p.theme.primary};
+  }
+  .chip::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: ${p => p.theme.primary}; }
+  h1 { margin: 14px 0 10px; font: 700 40px/1.1 ${tokens.font.ui}; letter-spacing: -0.03em; color: ${p => p.theme.textHigh}; }
+  p { margin: 0; font: 400 17px/1.6 ${tokens.font.ui}; color: ${p => p.theme.textMid}; }
+  ${mobileQ} { margin: 20px 0 28px; h1 { font-size: 30px; } p { font-size: 15px; } }
+`;
+
+const Chips = styled.div`
+  display: none;
+  ${mobileQ} {
+    display: flex; gap: 8px; overflow-x: auto; position: sticky; top: 52px; z-index: 20;
+    margin: 0 -16px; padding: 10px 16px; scrollbar-width: none;
+    background: ${p => p.theme.glassBar}; backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+    border-bottom: 1px solid ${p => p.theme.hairline};
+    &::-webkit-scrollbar { display: none; }
+  }
+`;
+
+const Chip = styled.button<{ $active: boolean }>`
+  flex-shrink: 0; display: inline-flex; align-items: center; gap: 6px; min-height: 40px; padding: 0 14px;
+  border-radius: ${tokens.radius.full}; cursor: pointer; white-space: nowrap;
+  background: ${p => (p.$active ? "rgba(76, 215, 246, 0.12)" : p.theme.surface)};
+  border: 1px solid ${p => (p.$active ? p.theme.primaryBorder : p.theme.hairline)};
+  color: ${p => (p.$active ? p.theme.primary : p.theme.textHigh)};
+  font: 500 13px ${tokens.font.ui};
+  &::before { content: ""; width: 6px; height: 6px; border-radius: 50%; display: ${p => (p.$active ? "block" : "none")}; background: ${p => p.theme.primary}; }
+`;
+
+const Group = styled.div`
+  scroll-margin-top: 72px;
+  ${mobileQ} { scroll-margin-top: 120px; }
+`;
+
+const Outline = styled.aside`
+  position: sticky; top: 88px; align-self: start;
+  .t { margin: 0 0 10px; font: 500 11px/0.875rem ${tokens.font.mono}; letter-spacing: 0.08em; text-transform: uppercase; color: ${p => p.theme.textLow}; }
+  ul { list-style: none; margin: 0; padding: 0 0 0 12px; border-left: 1px solid ${p => p.theme.hairline}; display: flex; flex-direction: column; gap: 8px; }
+  .top {
+    margin-top: 20px; background: none; border: none; padding: 0; cursor: pointer;
+    font: 400 12px ${tokens.font.mono}; color: ${p => p.theme.primary};
+  }
+  ${`@media (max-width: 1280px)`} { display: none; }
+`;
+
+const OutlineLink = styled.button<{ $active: boolean }>`
+  background: none; border: none; padding: 0; cursor: pointer; text-align: left;
+  font: 400 13px/1.25rem ${tokens.font.ui};
+  color: ${p => (p.$active ? p.theme.primary : p.theme.textMid)};
+  &:hover { color: ${p => p.theme.textHigh}; }
+`;
+
+const Footer = styled.footer`
+  margin-top: 48px; padding-top: 20px; border-top: 1px solid ${p => p.theme.hairline};
+  font: 400 12px ${tokens.font.mono}; color: ${p => p.theme.textLow};
+`;
+
+// Mount the comments iframe only when the Community section is close to the viewport.
+const LazyComments: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const ref = React.useRef<HTMLDivElement>(null);
+  const [show, setShow] = useState(typeof window === "undefined" || !("IntersectionObserver" in window));
+  React.useEffect(() => {
+    if (show || !ref.current) return;
+    const io = new IntersectionObserver(entries => {
+      if (entries.some(e => e.isIntersecting)) { setShow(true); io.disconnect(); }
+    }, { rootMargin: "600px" });
+    io.observe(ref.current);
+    return () => io.disconnect();
+  }, [show]);
+  return <div ref={ref}>{show ? children : <div style={{ minHeight: 400 }} />}</div>;
+};
 
 const Info: React.FC = () => {
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState<TabType>("usage");
+  const { currentTheme, setTheme, availableThemes } = useTheme();
+  const [active, setActive] = useState<GroupId>("getting-started");
+  const [activeSystem, setActiveSystem] = useState<string | null>(null);
+  const [systems, setSystems] = useState<Partial<Record<GroupId, string[]>>>({});
+  const groupRefs = React.useRef<Partial<Record<GroupId, HTMLDivElement | null>>>({});
 
-  const tabs: { id: TabType; label: string }[] = [
-    { id: "usage", label: "01.OPERATIONS" },
-    { id: "attractors", label: "02.ATTRACTORS" },
-    { id: "ifs", label: "03.IFS_SYSTEMS" },
-    { id: "fractals", label: "04.FRACTALS" },
-    { id: "about", label: "05.REFERENCE" },
-    { id: "discuss", label: "06.DISCUSS" },
-  ];
-
-  const renderTabContent = () => {
-    switch (activeTab) {
-      case "usage":
-        return <HowToUseTab />;
-      case "attractors":
-        return <AttractorsTab />;
-      case "ifs":
-        return <IFSTab />;
-      case "fractals":
-        return <FractalsTab />;
-      case "about":
-        return <AboutTab />;
-      case "discuss":
-        return <DiscussTab />;
-      default:
-        return <HowToUseTab />;
+  // Build the nested system links from the rendered system headings, so content stays the source of truth.
+  React.useEffect(() => {
+    const next: Partial<Record<GroupId, string[]>> = {};
+    for (const g of GROUPS) {
+      const el = groupRefs.current[g.id];
+      if (g.nested && el) {
+        next[g.id] = Array.from(el.querySelectorAll<HTMLElement>("[data-system]")).map(h => h.dataset.system!);
+      }
     }
+    setSystems(next);
+  }, []);
+
+  // Track which group / system is in view.
+  React.useEffect(() => {
+    const onScroll = () => {
+      const y = 140;
+      let current: GroupId = GROUPS[0].id;
+      for (const g of GROUPS) {
+        const el = groupRefs.current[g.id];
+        if (el && el.getBoundingClientRect().top <= y) current = g.id;
+      }
+      setActive(current);
+      let sys: string | null = null;
+      document.querySelectorAll<HTMLElement>("[data-system]").forEach(h => {
+        if (h.getBoundingClientRect().top <= y) sys = h.dataset.system!;
+      });
+      setActiveSystem(sys);
+    };
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+
+  const goGroup = (id: GroupId) => {
+    setActive(id);
+    groupRefs.current[id]?.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
+  const goSystem = (group: GroupId, name: string) => {
+    setActive(group);
+    setActiveSystem(name);
+    document.getElementById(`system-${slug(name)}`)?.scrollIntoView({ behavior: "smooth", block: "start" });
   };
 
-  return (
-    <PageContainer>
-      <Header>
-        <HeaderTop>
-          <BackButton onClick={() => navigate("/")}>
-            <span>&lsaquo;</span> RETURN_TO_ENGINE
-          </BackButton>
-          <Title>Documentation.v1</Title>
-          <div style={{ width: 140 }} /> {/* Spacer */}
-        </HeaderTop>
-        <TabNav>
-          {tabs.map(tab => (
-            <Tab
-              key={tab.id}
-              $active={activeTab === tab.id}
-              onClick={() => setActiveTab(tab.id)}
-            >
-              {tab.label}
-            </Tab>
-          ))}
-        </TabNav>
-      </Header>
+  const docGroups = GROUPS.slice(0, 4);
+  const projectGroups = GROUPS.slice(4);
 
-      <Content>
-        {renderTabContent()}
-      </Content>
-    </PageContainer>
+  const railItem = (g: (typeof GROUPS)[number]) => (
+    <React.Fragment key={g.id}>
+      <RailItem type="button" $active={active === g.id} aria-current={active === g.id ? "true" : undefined} onClick={() => goGroup(g.id)}>
+        <span className="l">{active === g.id && <span className="pip" />}{g.label}</span>
+        {active === g.id && <Icon name="chevronRight" size={16} />}
+      </RailItem>
+      {g.nested && active === g.id && (systems[g.id]?.length ?? 0) > 0 && (
+        <Nested aria-label={`${g.label} systems`}>
+          {systems[g.id]!.map(name => (
+            <NestedItem key={name} type="button" $active={activeSystem === name} onClick={() => goSystem(g.id, name)}>{name}</NestedItem>
+          ))}
+        </Nested>
+      )}
+    </React.Fragment>
+  );
+
+  return (
+    <Page>
+      <TopBar>
+        <div className="left">
+          <div className="brand">
+            <span className="mark"><Icon name="all_inclusive" size={16} /></span>
+            <span className="name">Chaos Iterator</span>
+          </div>
+          <span className="sep" />
+          <BackButton type="button" onClick={() => navigate("/")}>
+            <Icon name="arrow_back" size={16} /> Back to studio
+          </BackButton>
+        </div>
+        <ThemeSelect aria-label="Theme" value={currentTheme} onChange={e => setTheme(e.target.value)}>
+          {availableThemes.map(t => <option key={t.id} value={t.id}>{t.label}</option>)}
+        </ThemeSelect>
+      </TopBar>
+
+      <Layout>
+        <Rail aria-label="Documentation">
+          <div className="group-label">Documentation</div>
+          {docGroups.map(railItem)}
+          <div className="group-label">Project &amp; community</div>
+          {projectGroups.map(railItem)}
+        </Rail>
+
+        <Main>
+          <Chips role="navigation" aria-label="Sections">
+            {GROUPS.map(g => (
+              <Chip key={g.id} type="button" $active={active === g.id} onClick={() => goGroup(g.id)}>{g.chip}</Chip>
+            ))}
+          </Chips>
+
+          <Hero>
+            <span className="chip">Chaos Iterator documentation</span>
+            <h1>Help &amp; About</h1>
+            <p>How to use the studio, the mathematics behind every system, a gallery of renders, and the people and ideas behind the project.</p>
+          </Hero>
+
+          {GROUPS.map(g => (
+            <Group key={g.id} id={g.id} ref={el => { groupRefs.current[g.id] = el; }}>
+              {g.id === "community" ? <LazyComments><g.Body /></LazyComments> : <g.Body />}
+            </Group>
+          ))}
+
+          <Footer>Chaos Iterator — strange attractors, IFS and fractals in the browser.</Footer>
+        </Main>
+
+        <Outline aria-label="On this page">
+          <p className="t">On this page</p>
+          <ul>
+            {GROUPS.map(g => (
+              <li key={g.id}><OutlineLink type="button" $active={active === g.id} onClick={() => goGroup(g.id)}>{g.label}</OutlineLink></li>
+            ))}
+          </ul>
+          <button type="button" className="top" onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}>Scroll to top ↑</button>
+        </Outline>
+      </Layout>
+    </Page>
   );
 };
 

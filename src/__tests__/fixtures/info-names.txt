@@ -1,0 +1,25 @@
+Symmetric Icons
+Symmetric Quilts
+Clifford Attractors
+De Jong Attractors
+Svensson Attractors
+Bedhead Attractors
+Fractal Dream Attractors
+Hopalong Attractors
+Gumowski-Mira Attractors
+Sprott Attractors
+Tinkerbell Map
+Hénon Attractor
+Jason Rampe Attractors (1, 2, 3)
+Symmetric Fractals
+De Rham Curves
+Conradi Attractors
+Mobius Attractors
+Mandelbrot Set
+Julia Sets
+Burning Ship
+Tricorn (Mandelbar)
+Multibrot
+Newton Fractal
+Phoenix Fractal
+Lyapunov Fractal

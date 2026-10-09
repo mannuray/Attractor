@@ -1,0 +1,12 @@
+Strange Attractors
+Iterated Function Systems (IFS)
+Escape-Time Fractals
+About Chaos Iterator
+Inspiration
+Credits & References
+Technology
+Getting Started
+Discovery AI (Smart HUNT)
+Studio.FX (Post-Processing)
+Understanding the Parameters
+Community Feedback
