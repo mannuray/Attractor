@@ -23,6 +23,11 @@ export interface RenderOptions {
   passes?: number;
   /** Fractals: stop the full-resolution sweep after this long; the preview fills the rest. */
   fractalBudgetMs?: number;
+  /** Square render size in pixels (default: the card's 630). */
+  size?: number;
+  /** Palette and gamma (default: the studio's start-up palette). */
+  palette?: unknown[];
+  palGamma?: number;
 }
 
 const root = () => process.cwd();
@@ -109,7 +114,7 @@ class StubContext {
 
 /** Runs the studio worker for one system and returns the square render as RGBA. */
 export function renderSystemPixels(meta: SystemMeta, params: Record<string, number | string>, opts: RenderOptions = {}) {
-  const { budgetMs = 1500, passes = 40, fractalBudgetMs = 8000 } = opts;
+  const { budgetMs = 1500, passes = 40, fractalBudgetMs = 8000, size = RENDER_SIZE } = opts;
   const timers: (() => void)[] = [];
   const sandboxMath = Object.create(Math) as Math;
   sandboxMath.random = seededRandom(0x5eed);
@@ -130,7 +135,7 @@ export function renderSystemPixels(meta: SystemMeta, params: Record<string, numb
   const send = (type: string, payload: unknown) =>
     (sandbox.onmessage as (e: unknown) => void)({ data: { type, payload } });
 
-  const canvas = new StubCanvas(RENDER_SIZE, RENDER_SIZE);
+  const canvas = new StubCanvas(size, size);
   const isFractal = meta.category === "Fractals";
   // The studio opens a shared link with its start-up palette, so the card uses it too.
   const startup = symmetricIconData[CONFIG.INITIAL_ICON_INDEX];
@@ -146,10 +151,10 @@ export function renderSystemPixels(meta: SystemMeta, params: Record<string, numb
   const started = performance.now();
   send("initialize", {
     // Fractals skip supersampling: at card size it is invisible and costs 4× the time.
-    mode: "offscreen", canvas, size: RENDER_SIZE, alias: isFractal ? 1 : CONFIG.ALIAS,
+    mode: "offscreen", canvas, size, alias: isFractal ? 1 : CONFIG.ALIAS,
     scale: isFractal ? 1 : Number(params.scale ?? 1),
-    palette: startup.paletteData, colorLUTSize: CONFIG.COLOR_LUT_SIZE,
-    palGamma: startup.palGamma ?? 0.5, palScale: true, palMax: 10000, bgColor: { r: 0, g: 0, b: 0 },
+    palette: opts.palette ?? startup.paletteData, colorLUTSize: CONFIG.COLOR_LUT_SIZE,
+    palGamma: opts.palGamma ?? startup.palGamma ?? 0.5, palScale: true, palMax: 10000, bgColor: { r: 0, g: 0, b: 0 },
     iterator,
   });
 

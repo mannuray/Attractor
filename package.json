@@ -32,7 +32,8 @@
     "add-locale": "lingui add-locale",
     "extract": "lingui extract",
     "compile": "lingui compile",
-    "build:server": "node scripts/build-server.mjs"
+    "build:server": "node scripts/build-server.mjs",
+    "build:thumbs": "node scripts/build-preset-thumbs.mjs"
   },
   "eslintConfig": {
     "extends": [

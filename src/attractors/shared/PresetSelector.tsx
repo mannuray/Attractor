@@ -1,8 +1,12 @@
-import React from "react";
+import React, { createContext, useContext, useState } from "react";
 import styled from "styled-components";
 import { SectionLabel } from "./styles";
 import { tokens } from "../../theme/tokens";
 import { Icon } from "../../components/ui/Icon";
+import { presetThumbPath } from "../presets";
+
+/** The system whose presets are listed, so tiles can show each preset's rendered thumbnail. */
+export const PresetSystemContext = createContext<string | null>(null);
 
 interface PresetOption { value: string | number; label: string }
 interface PresetSelectorProps {
@@ -40,7 +44,8 @@ const Card = styled.button<{ $active: boolean }>`
   &:hover { background: ${p => p.theme.surfaceHigh}; }
   &:disabled { opacity: 0.4; cursor: not-allowed; }
   &:focus-visible { outline: 2px solid ${p => p.theme.focusBorder}; }
-  .thumb { height: 40px; border-radius: 4px; display: grid; place-items: center; }
+  .thumb { position: relative; height: 40px; border-radius: 4px; display: grid; place-items: center; overflow: hidden; }
+  .thumb img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
   .name {
     font: ${p => (p.$active ? 500 : 400)} 10px/0.875rem ${tokens.font.mono};
     color: ${p => (p.$active ? p.theme.primary : p.theme.textMid)};
@@ -49,8 +54,16 @@ const Card = styled.button<{ $active: boolean }>`
   @media (max-width: ${tokens.breakpoint.mobileMax}px) { width: 104px; .thumb { height: 48px; } .name { font-size: 12px; } }
 `;
 
+/** The preset's rendered image over the decorative tile; the tile shows if the image is missing. */
+const Thumb: React.FC<{ src: string }> = ({ src }) => {
+  const [failed, setFailed] = useState(false);
+  if (failed) return null;
+  return <img src={src} alt="" loading="lazy" decoding="async" draggable={false} onError={() => setFailed(true)} />;
+};
+
 export const PresetSelector: React.FC<PresetSelectorProps> = ({ label, value, options, onChange, disabled = false }) => {
   const groupLabel = label === "Preset" ? "Presets" : label;
+  const system = useContext(PresetSystemContext);
   return (
     <div style={{ marginBottom: 14 }}>
       <Head>
@@ -66,6 +79,7 @@ export const PresetSelector: React.FC<PresetSelectorProps> = ({ label, value, op
               $active={active} disabled={disabled} onClick={() => !disabled && onChange(String(o.value))}>
               <span className="thumb" style={{ background: tile.bg }} aria-hidden="true">
                 <span style={{ color: tile.color, display: "inline-flex" }}><Icon name={tile.glyph} size={14} /></span>
+                {system && <Thumb src={presetThumbPath(system, Number(o.value))} />}
               </span>
               <span className="name">{o.label}</span>
             </Card>

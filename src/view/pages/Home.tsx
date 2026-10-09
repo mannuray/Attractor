@@ -19,15 +19,13 @@ import { ResponsiveShell } from "../../components/shell";
 import { bgColorFor, BgMode } from "../../lib/bgMode";
 import { useTheme } from "../../theme/ThemeContext";
 import { useViewport } from "../../hooks/useViewport";
+import { presetFor } from "../../attractors/presets";
+import { PresetSystemContext } from "../../attractors/shared/PresetSelector";
 import { CanvasMap, remapComplexView, remapLyapunovView, fractalDepth } from "../../lib/viewport";
 import { formatCompact } from "../../attractors/shared/types";
 
 // Data
-import symmetricIconData, {
-  cliffordData, deJongData, tinkerbellData, henonData,
-  bedheadData, svenssonData, fractalDreamData, hopalongData,
-  symmetricQuiltData, mandelbrotData, juliaData, jasonRampe1Data, jasonRampe2Data, jasonRampe3Data
-} from "../../Parametersets";
+import symmetricIconData from "../../Parametersets";
 
 // Types
 import { CONFIG, AttractorType } from "../../attractors/shared/types";
@@ -290,6 +288,7 @@ function Home() {
     if (!currentParams) return null;
 
     return (
+      <PresetSystemContext.Provider value={attractor.attractorType}>
       <ActiveControls
         params={currentParams}
         onChange={(p) => attractor.setParams(attractor.attractorType, p)}
@@ -298,37 +297,18 @@ function Home() {
         onPresetChange={(i) => {
           attractor.setPreset(attractor.attractorType, i);
           
-          // Logic to update parameters based on preset
-          let newParams = null;
+          const preset = presetFor(attractor.attractorType, i);
           const type = attractor.attractorType;
-          
-          switch (type) {
-            case "clifford": newParams = cliffordData[i]; break;
-            case "dejong": newParams = deJongData[i]; break;
-            case "tinkerbell": newParams = tinkerbellData[i]; break;
-            case "henon": newParams = henonData[i]; break;
-            case "bedhead": newParams = bedheadData[i]; break;
-            case "svensson": newParams = svenssonData[i]; break;
-            case "fractal_dream": newParams = fractalDreamData[i]; break;
-            case "hopalong": newParams = hopalongData[i]; break;
-            case "symmetric_icon": newParams = symmetricIconData[i]; break;
-            case "symmetric_quilt": newParams = symmetricQuiltData[i]; break;
-            case "mandelbrot": newParams = mandelbrotData[i]; break;
-            case "julia": newParams = juliaData[i]; break;
-            case "jason_rampe1": newParams = jasonRampe1Data[i]; break;
-            case "jason_rampe2": newParams = jasonRampe2Data[i]; break;
-            case "jason_rampe3": newParams = jasonRampe3Data[i]; break;
-          }
-
-          if (newParams) {
-            const { name, paletteData, palGamma, ...mathParams } = newParams as any;
-            attractor.setParams(type, mathParams);
+          if (preset) {
+            const { params: mathParams, paletteData, palGamma } = preset;
+            attractor.setParams(type, mathParams as any);
             if (paletteData) palette.setPaletteData(paletteData);
             if (palGamma !== undefined) palette.setPalGamma(palGamma);
             worker.initialize({ params: mathParams, paletteData, palGamma });
           }
         }}
       />
+      </PresetSystemContext.Provider>
     );
   };
 
