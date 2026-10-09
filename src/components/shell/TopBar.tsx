@@ -15,18 +15,23 @@ const Bar = styled.header<{ $compact: boolean }>`
   justify-content: space-between;
   gap: 12px;
   height: ${p => (p.$compact ? "auto" : "48px")};
-  padding: ${p => (p.$compact ? "calc(env(safe-area-inset-top) + 10px) 12px 0" : "0 16px")};
-  background: ${p => (p.$compact ? "transparent" : p.theme.glassBar)};
-  backdrop-filter: ${p => (p.$compact ? "none" : "blur(12px)")};
-  -webkit-backdrop-filter: ${p => (p.$compact ? "none" : "blur(12px)")};
-  border-bottom: ${p => (p.$compact ? "none" : `1px solid ${p.theme.hairline}`)};
-  box-shadow: ${p => (p.$compact ? "none" : "0 1px 2px rgba(0, 0, 0, 0.25)")};
+  padding: ${p => (p.$compact ? "calc(env(safe-area-inset-top) + 10px) 12px 8px" : "0 16px")};
+  background: ${p => (p.$compact ? "rgba(11, 14, 23, 0.7)" : p.theme.glassBar)};
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-bottom: 1px solid ${p => (p.$compact ? "rgba(76, 215, 246, 0.2)" : p.theme.hairline)};
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.25);
   z-index: ${tokens.z.toolbar + 30};
 `;
-const Side = styled.div`display: flex; align-items: center; gap: 12px; flex: 1 1 0; min-width: 0;`;
+const Side = styled.div<{ $compact?: boolean }>`
+  display: flex; align-items: center; gap: 12px; min-width: 0;
+  flex: ${p => (p.$compact ? "0 1 auto" : "1 1 0")};
+`;
 const RightSide = styled(Side)`justify-content: flex-end; gap: 8px;`;
 const Brand = styled.div`
-  display: flex; align-items: center; gap: 8px; white-space: nowrap;
+  display: flex; align-items: center; gap: 8px; white-space: nowrap; min-width: 0;
+  .compact-name { font-size: 15px; overflow: hidden; text-overflow: ellipsis; }
+  @media (max-width: 380px) { .compact-name { display: none; } }
   font: 700 18px/1.5rem ${tokens.font.ui}; letter-spacing: -0.015em; color: ${p => p.theme.textHigh};
 `;
 const Mark = styled.span<{ $size: number }>`
@@ -37,15 +42,18 @@ const Mark = styled.span<{ $size: number }>`
   color: ${p => p.theme.primary};
   box-shadow: ${p => p.theme.glowPrimary};
 `;
-const PillWrap = styled.div`position: relative; display: flex; justify-content: center; min-width: 0;`;
+const PillWrap = styled.div<{ $compact?: boolean }>`
+  position: relative; display: flex; justify-content: center; min-width: 0;
+  flex: ${p => (p.$compact ? "1 1 auto" : "0 1 auto")};
+`;
 const Pill = styled.button<{ $compact: boolean }>`
   display: inline-flex; align-items: center; gap: 10px; max-width: 100%;
   min-height: ${p => (p.$compact ? "44px" : "30px")};
   padding: 0 12px; border-radius: ${tokens.radius.full}; cursor: pointer;
-  background: ${p => (p.$compact ? p.theme.glass2 : "rgba(24, 27, 37, 0.9)")};
-  border: 1px solid ${p => p.theme.hairlineStrong};
+  background: rgba(24, 27, 37, 0.85);
+  border: 1px solid ${p => (p.$compact ? "rgba(76, 215, 246, 0.3)" : p.theme.hairlineStrong)};
   color: ${p => p.theme.textHigh};
-  font: 500 13px/1.25rem ${tokens.font.ui};
+  font: 500 ${p => (p.$compact ? "12px/1rem " + tokens.font.mono : "13px/1.25rem " + tokens.font.ui)};
   transition: background 0.15s ease;
   &:hover { background: ${p => p.theme.surfaceHigh}; }
   .label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -81,7 +89,7 @@ const ShareButton = styled.button<{ $compact: boolean; $state: string }>`
   min-width: ${p => (p.$compact ? "44px" : "auto")};
   justify-content: center;
   padding: 0 10px; border-radius: ${p => (p.$compact ? tokens.radius.full : "8px")};
-  background: ${p => (p.$compact ? p.theme.glass2 : "rgba(39, 42, 51, 0.3)")};
+  background: ${p => (p.$compact ? "rgba(54, 57, 67, 0.2)" : "rgba(39, 42, 51, 0.3)")};
   border: 1px solid ${p =>
     p.$state === "failed" ? p.theme.danger : p.$state === "copied" ? p.theme.primaryBorder : p.theme.hairline};
   color: ${p => (p.$state === "failed" ? p.theme.danger : p.$state === "copied" ? p.theme.primary : p.theme.textMid)};
@@ -156,14 +164,14 @@ export const TopBar: React.FC<Props> = ({
 
   return (
     <Bar $compact={compact}>
-      <Side>
+      <Side $compact={compact}>
         <Brand>
-          <Mark $size={compact ? 36 : 24}><Icon name="all_inclusive" size={compact ? 20 : 16} /></Mark>
-          {!compact && "Chaos Iterator"}
+          <Mark $size={compact ? 32 : 24}><Icon name="all_inclusive" size={compact ? 18 : 16} /></Mark>
+          {compact ? <span className="compact-name">Chaos Iterator</span> : "Chaos Iterator"}
         </Brand>
       </Side>
 
-      <PillWrap ref={pillRef}>
+      <PillWrap ref={pillRef} $compact={compact}>
         <Pill type="button" $compact={compact} onClick={onPill} aria-haspopup={renderSystemPicker ? "dialog" : undefined}
           aria-expanded={renderSystemPicker ? pickerOpen : undefined} aria-label={`${systemLabel} — change system`}>
           <span className="dot" />
@@ -176,7 +184,7 @@ export const TopBar: React.FC<Props> = ({
         )}
       </PillWrap>
 
-      <RightSide>
+      <RightSide $compact={compact}>
         {!compact && (
           <ThemeSelect aria-label="Theme" value={currentTheme} onChange={e => setTheme(e.target.value)}>
             {availableThemes.map(t => <option key={t.id} value={t.id}>{t.label}</option>)}

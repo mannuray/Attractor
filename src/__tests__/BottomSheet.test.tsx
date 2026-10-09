@@ -1,5 +1,5 @@
 import React, { useReducer } from "react";
-import { screen, fireEvent } from "@testing-library/react";
+import { screen, fireEvent, act } from "@testing-library/react";
 import { renderWithTheme } from "./renderWithTheme";
 import { BottomSheet } from "../components/shell/BottomSheet";
 import { sheetReducer, initialSheet } from "../lib/sheetState";
@@ -37,4 +37,19 @@ describe("BottomSheet", () => {
     fireEvent.click(screen.getByRole("button", { name: "Collapse panel" }));
     expect(screen.queryByTestId("panel-params")).toBeNull();
   });
+
+  it("a swipe that produces no click does not swallow the next tap on the handle", () => {
+    renderWithTheme(<Harness />);
+    const handle = screen.getByRole("button", { name: "Expand panel" });
+    const fire = (type: string, y: number) =>
+      act(() => { handle.dispatchEvent(new MouseEvent(type, { bubbles: true, clientY: y })); });
+    fire("pointerdown", 300);
+    fire("pointerup", 200); // swipe up, no click follows (touch past tap tolerance)
+    expect(screen.getByTestId("panel-params")).toBeInTheDocument();
+    fire("pointerdown", 500);
+    fire("pointerup", 500);
+    fireEvent.click(screen.getByRole("button", { name: "Collapse panel" }));
+    expect(screen.queryByTestId("panel-params")).toBeNull();
+  });
 });
+

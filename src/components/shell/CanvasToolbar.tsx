@@ -24,7 +24,11 @@ const Bar = styled.div`
   border-radius: ${tokens.radius.full};
   box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.6), ${p => p.theme.glowPrimary};
 `;
-const MobileRow = styled.div`display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 12px;`;
+const MobileRow = styled.div`
+  display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 12px;
+  & > button { width: 100%; }
+  & > button:nth-child(2) { width: auto; }
+`;
 const RunButton = styled.button<{ $size: number }>`
   width: ${p => p.$size}px; height: ${p => p.$size}px; border-radius: 50%; border: none; cursor: pointer;
   display: grid; place-items: center; flex-shrink: 0;
@@ -48,11 +52,20 @@ const HuntButton = styled.button<{ $active: boolean; $mobile: boolean }>`
   &:active { transform: scale(0.95); }
   .spin { display: inline-flex; animation: ${spin} 1s linear infinite; }
 `;
-const OutlineButton = styled.button`
+const OutlineButton = styled.button<{ $active?: boolean }>`
   display: inline-flex; align-items: center; justify-content: center; gap: 6px; cursor: pointer;
-  height: 48px; padding: 0 14px; border-radius: 12px;
-  background: rgba(39, 42, 51, 0.8); border: 1px solid ${p => p.theme.hairlineStrong};
+  height: 44px; padding: 0 14px; border-radius: 12px;
+  background: ${p => (p.$active ? p.theme.primarySoft : "rgba(39, 42, 51, 0.6)")};
+  border: 1px solid ${p => (p.$active ? p.theme.primaryBorder : "rgba(61, 73, 76, 0.5)")};
   color: ${p => p.theme.textHigh}; font: 500 13px/1.25rem ${tokens.font.ui};
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+  .material-symbols-outlined { color: ${p => p.theme.primary}; }
+  &:active { transform: scale(0.95); }
+  .spin { display: inline-flex; animation: ${spin} 1s linear infinite; }
+`;
+const MobileRun = styled(RunButton)`
+  background: ${p => p.theme.primary};
+  &:hover { background: #2fd9f4; }
 `;
 const Divider = styled.span`width: 1px; height: 24px; background: rgba(255, 255, 255, 0.2);`;
 const Group = styled.div`display: flex; align-items: center; gap: 4px;`;
@@ -93,15 +106,22 @@ export const CanvasToolbar: React.FC<CanvasToolbarProps> = (p) => {
   );
 
   if (mobile) {
+    const mobileHunt = p.isFractalType
+      ? <span />
+      : p.hunting
+        ? <OutlineButton type="button" aria-label="Cancel hunt" $active onClick={p.onCancelHunt}>
+            <span className="spin"><Icon name="sparkle" size={18} /></span> Cancel
+          </OutlineButton>
+        : <OutlineButton type="button" aria-label="Hunt" onClick={p.onHunt}><Icon name="sparkle" size={18} /> Hunt</OutlineButton>;
     return (
       <MobileRow>
-        <div style={{ justifySelf: "start" }}>{hunt}</div>
-        {run}
-        <div style={{ justifySelf: "end" }}>
-          <OutlineButton type="button" aria-label="Fit to view" title="Fit to view" onClick={p.onFitToView}>
-            <Icon name="fit" size={18} /> Fit
-          </OutlineButton>
-        </div>
+        {mobileHunt}
+        <MobileRun type="button" aria-label={runLabel} title={runLabel} $size={48} onClick={p.onToggleIteration}>
+          <Icon name={runIcon} size={24} filled />
+        </MobileRun>
+        <OutlineButton type="button" aria-label="Fit to view" title="Fit to view" onClick={p.onFitToView}>
+          <Icon name="fit" size={18} /> Fit
+        </OutlineButton>
       </MobileRow>
     );
   }

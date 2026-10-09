@@ -1,5 +1,5 @@
 import React from "react";
-import { screen, act } from "@testing-library/react";
+import { screen, act, fireEvent } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { renderWithTheme } from "./renderWithTheme";
 import { ThemeProvider as AppThemeProvider } from "../theme/ThemeContext";
@@ -44,4 +44,14 @@ describe("ResponsiveShell", () => {
     expect(mounts).toBe(1);
     expect(screen.getByTestId("probe")).toBe(before);
   });
+
+  it("on mobile, tapping the canvas collapses an expanded sheet (events cross the canvas portal)", () => {
+    mockMatchMedia(true);
+    renderWithTheme(<MemoryRouter><AppThemeProvider><ResponsiveShell {...makeShellProps()} /></AppThemeProvider></MemoryRouter>);
+    fireEvent.click(screen.getByRole("tab", { name: "Color" }));
+    expect(screen.getByRole("tabpanel")).toBeInTheDocument();
+    fireEvent.pointerDown(screen.getByTestId("canvas"));
+    expect(screen.queryByRole("tabpanel")).toBeNull();
+  });
 });
+
