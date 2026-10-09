@@ -51,10 +51,23 @@ export interface ThemeColors {
 type RGB = [number, number, number];
 const rgba = (c: RGB, a: number) => `rgba(${c[0]}, ${c[1]}, ${c[2]}, ${a})`;
 
+// Pick the text color with the best WCAG contrast on a filled primary button.
+const luminance = ([r, g, b]: RGB) => {
+  const ch = (v: number) => { const x = v / 255; return x <= 0.03928 ? x / 12.92 : Math.pow((x + 0.055) / 1.055, 2.4); };
+  return 0.2126 * ch(r) + 0.7152 * ch(g) + 0.0722 * ch(b);
+};
+const contrast = (a: RGB, b: RGB) => {
+  const [hi, lo] = [luminance(a), luminance(b)].sort((x, y) => y - x);
+  return (hi + 0.05) / (lo + 0.05);
+};
+function onColor(bg: RGB): RGB {
+  const candidates: RGB[] = [bg.map(v => Math.round(v * 0.25)) as RGB, [10, 11, 16], [255, 255, 255]];
+  return candidates.reduce((best, c) => (contrast(c, bg) > contrast(best, bg) ? c : best));
+}
+
 // Mirrors the Stitch "Chaos Iterator" Material palette. `primary` is the light accent used for
 // text, icons and borders; `primaryContainer` is the saturated fill for primary buttons.
 function designColors(primary: RGB, primaryContainer: RGB, secondary: RGB) {
-  const dark = primaryContainer.map(v => Math.round(v * 0.25)) as RGB;
   return {
     primary: rgba(primary, 1),
     primaryContainer: rgba(primaryContainer, 1),
@@ -63,7 +76,7 @@ function designColors(primary: RGB, primaryContainer: RGB, secondary: RGB) {
     primarySoft: rgba(primary, 0.12),
     primaryBorder: rgba(primary, 0.45),
     focusBorder: rgba(primary, 0.6),
-    onPrimary: rgba(dark, 1),
+    onPrimary: rgba(onColor(primaryContainer), 1),
     secondary: rgba(secondary, 1),
     secondarySoft: rgba(secondary, 0.15),
     glowPrimary: `0 0 16px -2px ${rgba(primaryContainer, 0.35)}`,
@@ -134,7 +147,7 @@ export const themes: Record<string, { label: string; colors: ThemeColors }> = {
       success: "#10b981",
       danger: "#ef4444",
       bgPage: "#121214",
-      ...designColors([165, 180, 252], [99, 102, 241], [249, 168, 212]),
+      ...designColors([165, 180, 252], [79, 70, 229], [249, 168, 212]),
     }
   },
   emerald_matrix: {

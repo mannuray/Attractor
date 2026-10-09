@@ -41,4 +41,23 @@ describe("themes", () => {
     expect(tokens.font.mono).toMatch(/JetBrains Mono/);
     expect(tokens.breakpoint.mobileMax).toBe(1023);
   });
+
+  // WCAG contrast for text on primary buttons (13px semibold needs 4.5:1).
+  const lum = (c: string) => {
+    const [r, g, b] = (c.match(/\d+(\.\d+)?/g) || []).slice(0, 3).map(Number).map(v => {
+      const x = v / 255;
+      return x <= 0.03928 ? x / 12.92 : Math.pow((x + 0.055) / 1.055, 2.4);
+    });
+    return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+  };
+  const contrast = (a: string, b: string) => {
+    const [hi, lo] = [lum(a), lum(b)].sort((x, y) => y - x);
+    return (hi + 0.05) / (lo + 0.05);
+  };
+
+  it.each(Object.keys(themes))("%s primary-button text meets 4.5:1", (id) => {
+    const c = themes[id].colors;
+    expect(contrast(c.onPrimary, c.primaryContainer)).toBeGreaterThanOrEqual(4.5);
+  });
 });
+
