@@ -20,4 +20,6 @@ export interface ShellProps extends Omit<CanvasToolbarProps, "variant"> {
   rendering: boolean;
   statsRef: React.MutableRefObject<{ maxHits: number; totalIterations: number }>;
   maxIter?: number;
+  /** Restore the parameters from before the last Reset. */
+  onUndoReset?: () => void;
 }

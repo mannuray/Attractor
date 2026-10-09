@@ -1,15 +1,14 @@
-import React, { useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import styled from "styled-components";
 import { ShellProps } from "./types";
 import { SystemPanel, RenderPanel, ColorPanel, FxPanel, StatsReadout } from "../panels";
 import { Icon } from "../ui/Icon";
 import { tokens } from "../../theme/tokens";
 
-type SectionId = "system" | "params" | "render" | "color" | "fx";
+type TabId = "params" | "render" | "color" | "fx";
 
-const JUMPS: { id: SectionId; label: string; icon: string }[] = [
-  { id: "system", label: "System", icon: "category" },
-  { id: "params", label: "Parameters", icon: "grain" },
+const TABS: { id: TabId; label: string; icon: string }[] = [
+  { id: "params", label: "System & Parameters", icon: "grain" },
   { id: "render", label: "Render", icon: "aspect_ratio" },
   { id: "color", label: "Color", icon: "palette" },
   { id: "fx", label: "Effects", icon: "auto_fix_high" },
@@ -43,15 +42,15 @@ const SmallIconButton = styled.button`
   background: transparent; border: none; cursor: pointer; color: ${p => p.theme.textMid};
   &:hover { color: ${p => p.theme.primary}; background: ${p => p.theme.surfaceHigh}; }
 `;
-const Jumps = styled.nav<{ $collapsed: boolean }>`
+const Tabs = styled.div<{ $collapsed: boolean }>`
   display: grid;
-  grid-template-columns: ${p => (p.$collapsed ? "1fr" : "repeat(5, 1fr)")};
+  grid-template-columns: ${p => (p.$collapsed ? "1fr" : "repeat(4, 1fr)")};
   gap: 4px; padding: 4px;
   background: rgba(11, 14, 23, 0.8);
   border: 1px solid rgba(61, 73, 76, 0.2);
   border-radius: 8px;
 `;
-const JumpButton = styled.button<{ $active: boolean }>`
+const TabButton = styled.button<{ $active: boolean }>`
   display: grid; place-items: center; height: 28px; border-radius: 4px; cursor: pointer;
   background: ${p => (p.$active ? p.theme.primarySoft : "transparent")};
   border: 1px solid ${p => (p.$active ? p.theme.primaryBorder : "transparent")};
@@ -60,13 +59,19 @@ const JumpButton = styled.button<{ $active: boolean }>`
   &:hover { color: ${p => p.theme.primary}; background: ${p => (p.$active ? p.theme.primarySoft : p.theme.surfaceHigh)}; }
 `;
 const Body = styled.div`
-  position: relative; /* sections' offsetTop is measured from here for scroll tracking */
   flex: 1; min-height: 0; overflow-y: auto; padding: 16px 12px;
   display: flex; flex-direction: column; gap: 18px;
 `;
-const Section = styled.section`
-  scroll-margin-top: 8px;
-  &[data-divider] { padding-top: 14px; border-top: 1px solid rgba(61, 73, 76, 0.2); }
+const Toast = styled.div`
+  display: flex; align-items: center; justify-content: space-between; gap: 8px;
+  padding: 6px 8px 6px 10px; border-radius: 8px;
+  background: ${p => p.theme.surfaceHigh}; border: 1px solid ${p => p.theme.hairlineStrong};
+  font: 400 12px/1rem ${tokens.font.ui}; color: ${p => p.theme.textHigh};
+  button {
+    background: none; border: none; cursor: pointer; padding: 2px 6px; border-radius: 4px;
+    font: 600 12px/1rem ${tokens.font.ui}; color: ${p => p.theme.primary};
+    &:hover { background: ${p => p.theme.primarySoft}; }
+  }
 `;
 const Footer = styled.div`
   flex-shrink: 0; padding: 8px 12px 12px; display: flex; flex-direction: column; gap: 8px;
@@ -91,39 +96,44 @@ const RunButton = styled.button`
 type Props = ShellProps & { collapsed: boolean; onToggleCollapse: () => void };
 
 export const Inspector: React.FC<Props> = (p) => {
-  const [current, setCurrent] = useState<SectionId>("params");
-  const refs = useRef<Partial<Record<SectionId, HTMLElement | null>>>({});
+  const [tab, setTab] = useState<TabId>("params");
+  const [undoVisible, setUndoVisible] = useState(false);
+  const tabRefs = useRef<Partial<Record<TabId, HTMLButtonElement | null>>>({});
+  const undoTimer = useRef<number>();
 
-  const jump = (id: SectionId) => {
-    setCurrent(id);
-    const scroll = () => refs.current[id]?.scrollIntoView?.({ behavior: "smooth", block: "start" });
-    if (p.collapsed) {
-      p.onToggleCollapse();
-      requestAnimationFrame(scroll); // sections mount on expand; scroll next frame
-    } else {
-      scroll();
-    }
+  useEffect(() => () => window.clearTimeout(undoTimer.current), []);
+
+  const select = (id: TabId, focus = false) => {
+    if (p.collapsed) p.onToggleCollapse();
+    setTab(id);
+    if (focus) tabRefs.current[id]?.focus();
+  };
+  const onTabKeyDown = (e: React.KeyboardEvent) => {
+    const i = TABS.findIndex(t => t.id === tab);
+    const next =
+      e.key === "ArrowRight" ? (i + 1) % TABS.length :
+      e.key === "ArrowLeft" ? (i - 1 + TABS.length) % TABS.length :
+      e.key === "Home" ? 0 : e.key === "End" ? TABS.length - 1 : -1;
+    if (next < 0) return;
+    e.preventDefault();
+    select(TABS[next].id, true);
   };
 
-  // Highlight the last section whose top has scrolled past the panel's top edge.
-  const onBodyScroll = (e: React.UIEvent<HTMLDivElement>) => {
-    const y = e.currentTarget.scrollTop + 40;
-    let next: SectionId = JUMPS[0].id;
-    for (const j of JUMPS) {
-      const el = refs.current[j.id];
-      if (el && el.offsetTop <= y) next = j.id;
-    }
-    setCurrent(c => (c === next ? c : next));
+  const reset = () => {
+    p.onResetFractalView();
+    if (!p.onUndoReset) return;
+    setUndoVisible(true);
+    window.clearTimeout(undoTimer.current);
+    undoTimer.current = window.setTimeout(() => setUndoVisible(false), 6000);
   };
-
-  const section = (id: SectionId, children: React.ReactNode, divider = false) => (
-    <Section ref={el => { refs.current[id] = el; }} aria-label={JUMPS.find(j => j.id === id)!.label}
-      data-divider={divider ? "" : undefined}>
-      {children}
-    </Section>
-  );
+  const undo = () => {
+    window.clearTimeout(undoTimer.current);
+    setUndoVisible(false);
+    p.onUndoReset?.();
+  };
 
   const runLabel = p.isFractalType ? "Render" : p.iterating ? "Pause" : "Run";
+  const panelId = "inspector-panel";
 
   return (
     <Aside $collapsed={p.collapsed} aria-label="Inspector">
@@ -143,32 +153,45 @@ export const Inspector: React.FC<Props> = (p) => {
             <Icon name={p.collapsed ? "left_panel_open" : "right_panel_close"} size={18} />
           </SmallIconButton>
         </Header>
-        <Jumps $collapsed={p.collapsed} aria-label="Inspector sections">
-          {JUMPS.map(j => (
-            <JumpButton key={j.id} type="button" aria-label={`Jump to ${j.label}`} title={j.label}
-              aria-current={current === j.id ? "true" : undefined} $active={current === j.id} onClick={() => jump(j.id)}>
-              <Icon name={j.icon} size={16} />
-            </JumpButton>
+        <Tabs $collapsed={p.collapsed} role="tablist" aria-label="Inspector sections" aria-orientation={p.collapsed ? "vertical" : "horizontal"}>
+          {TABS.map(t => (
+            <TabButton key={t.id} ref={el => { tabRefs.current[t.id] = el; }} type="button" role="tab"
+              id={`inspector-tab-${t.id}`} aria-label={t.label} title={t.label}
+              aria-selected={tab === t.id} aria-controls={p.collapsed ? undefined : panelId}
+              tabIndex={tab === t.id ? 0 : -1} $active={!p.collapsed && tab === t.id}
+              onClick={() => select(t.id)} onKeyDown={onTabKeyDown}>
+              <Icon name={t.icon} size={16} />
+            </TabButton>
           ))}
-        </Jumps>
+        </Tabs>
       </Top>
 
       {!p.collapsed && (
         <>
-          <Body data-testid="inspector-body" onScroll={onBodyScroll}>
-            {section("system", <SystemPanel value={p.attractorType} onChange={p.onAttractorTypeChange} showSearch={false} listMaxHeight={136} />)}
-            {section("params", p.controls)}
-            {section("render", <RenderPanel canvasSize={p.canvasSize} onCanvasSizeChange={p.onCanvasSizeChange}
-              oversampling={p.oversampling} onOversamplingChange={p.onOversamplingChange} />)}
-            {section("color", <ColorPanel paletteData={p.paletteData} bgColor={p.bgColor}
-              onBgModeChange={p.onBgModeChange} onOpenPalette={p.onOpenPalette} />)}
-            {section("fx", <FxPanel fx={p.fx} onChange={p.onFxChange} />, true)}
+          <Body id={panelId} role="tabpanel" aria-labelledby={`inspector-tab-${tab}`} tabIndex={0}>
+            {tab === "params" && (
+              <>
+                <SystemPanel value={p.attractorType} onChange={p.onAttractorTypeChange} showSearch={false} listMaxHeight={136} />
+                {p.controls}
+              </>
+            )}
+            {tab === "render" && <RenderPanel canvasSize={p.canvasSize} onCanvasSizeChange={p.onCanvasSizeChange}
+              oversampling={p.oversampling} onOversamplingChange={p.onOversamplingChange} />}
+            {tab === "color" && <ColorPanel paletteData={p.paletteData} bgColor={p.bgColor}
+              onBgModeChange={p.onBgModeChange} onOpenPalette={p.onOpenPalette} />}
+            {tab === "fx" && <FxPanel fx={p.fx} onChange={p.onFxChange} />}
           </Body>
           <Footer>
             <StatsReadout statsRef={p.statsRef} running={p.iterating} rendering={p.rendering}
               isFractal={p.isFractalType} maxIter={p.maxIter} />
+            {undoVisible && (
+              <Toast role="status">
+                <span>Parameters reset</span>
+                <button type="button" aria-label="Undo reset" onClick={undo}>Undo</button>
+              </Toast>
+            )}
             <Actions>
-              <ResetButton type="button" aria-label="Reset parameters" title="Reset parameters to defaults" onClick={p.onResetFractalView}>
+              <ResetButton type="button" aria-label="Reset parameters" title="Reset parameters to defaults" onClick={reset}>
                 <Icon name="restart_alt" size={16} /> Reset
               </ResetButton>
               <RunButton type="button" aria-label={runLabel} onClick={p.onToggleIteration}>

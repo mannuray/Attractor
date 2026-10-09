@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo, useEffect, useState } from "react";
+import React, { useCallback, useMemo, useEffect, useRef, useState } from "react";
 
 // Registry & Modules (MUST BE AT THE TOP to ensure all registrations happen before use)
 import { registry } from "../../attractors";
@@ -177,14 +177,26 @@ function Home() {
     fractalZoom.clearDrag();
   }, [attractor, fractalZoom, worker]);
 
+  // Parameters before the last Reset, so the inspector can offer Undo.
+  const lastResetRef = useRef<{ type: AttractorType; params: any } | null>(null);
+
   const handleResetFractalView = useCallback(() => {
     const type = attractor.attractorType;
     const module = registry.get(type);
     if (module) {
+      lastResetRef.current = { type, params: attractor.params[type] };
       const defaults = module.defaultParams;
       attractor.setParams(type, defaults as any);
       worker.initialize({ params: defaults });
     }
+  }, [attractor, worker]);
+
+  const handleUndoReset = useCallback(() => {
+    const prev = lastResetRef.current;
+    if (!prev || prev.type !== attractor.attractorType) return;
+    lastResetRef.current = null;
+    attractor.setParams(prev.type, prev.params);
+    worker.initialize({ params: prev.params });
   }, [attractor, worker]);
 
   // The AI Hunter action
@@ -326,6 +338,7 @@ function Home() {
         onZoomOut={worker.zoomOut}
         onZoomReset={worker.zoomReset}
         onResetFractalView={handleResetFractalView}
+        onUndoReset={handleUndoReset}
       />
 
       <PaletteModal
