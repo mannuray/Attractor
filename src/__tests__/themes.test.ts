@@ -2,9 +2,10 @@ import { themes } from "../theme/themes";
 import { tokens } from "../theme/tokens";
 
 const NEW_KEYS = [
-  "primary", "primarySoft", "primaryBorder", "focusBorder", "onPrimary",
+  "primary", "primaryContainer", "primarySoft", "primaryBorder", "focusBorder", "onPrimary",
   "secondary", "secondarySoft", "glowPrimary", "glowSecondary",
-  "canvasBg", "surface", "surfaceLow", "surfaceHigh", "glass1", "glass2",
+  "canvasBg", "pageBg", "surfaceLowest", "surface", "surfaceLow", "surfaceHigh", "surfaceHighest",
+  "glass1", "glass2", "glassBar",
   "hairline", "hairlineStrong", "textHigh", "textMid", "textLow",
 ];
 const LEGACY_KEYS = ["accent", "accentBorder", "glassBg", "bgPage", "danger"];
@@ -24,9 +25,16 @@ describe("themes", () => {
     }
   });
 
-  it("cyber cyan matches the Stitch palette", () => {
-    expect(themes.cyber_cyan.colors.primary).toBe("rgba(6, 182, 212, 1)");
-    expect(themes.cyber_cyan.colors.secondary).toBe("rgba(139, 92, 246, 1)");
+  it("cyber cyan matches the Stitch Material palette", () => {
+    const c = themes.cyber_cyan.colors;
+    expect(c.primary).toBe("rgba(76, 215, 246, 1)");
+    expect(c.primaryContainer).toBe("rgba(6, 182, 212, 1)");
+    expect(c.secondary).toBe("rgba(208, 188, 255, 1)");
+    expect(c.pageBg).toBe("#10131c");
+    expect(c.surfaceLow).toBe("#181b25");
+    expect(c.surface).toBe("#1c1f29");
+    expect(c.textHigh).toBe("#e0e2ef");
+    expect(c.textMid).toBe("#bcc9cd");
   });
 
   it("exposes non-color tokens", () => {

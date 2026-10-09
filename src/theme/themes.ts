@@ -19,6 +19,7 @@ export interface ThemeColors {
   danger: string;
   bgPage: string;
   primary: string;
+  primaryContainer: string;
   primarySoft: string;
   primaryBorder: string;
   focusBorder: string;
@@ -28,11 +29,15 @@ export interface ThemeColors {
   glowPrimary: string;
   glowSecondary: string;
   canvasBg: string;
+  pageBg: string;
+  surfaceLowest: string;
   surface: string;
   surfaceLow: string;
   surfaceHigh: string;
+  surfaceHighest: string;
   glass1: string;
   glass2: string;
+  glassBar: string;
   hairline: string;
   hairlineStrong: string;
   textHigh: string;
@@ -43,28 +48,36 @@ export interface ThemeColors {
 type RGB = [number, number, number];
 const rgba = (c: RGB, a: number) => `rgba(${c[0]}, ${c[1]}, ${c[2]}, ${a})`;
 
-function designColors(primary: RGB, secondary: RGB) {
+// Mirrors the Stitch "Chaos Iterator" Material palette. `primary` is the light accent used for
+// text, icons and borders; `primaryContainer` is the saturated fill for primary buttons.
+function designColors(primary: RGB, primaryContainer: RGB, secondary: RGB) {
+  const dark = primaryContainer.map(v => Math.round(v * 0.25)) as RGB;
   return {
     primary: rgba(primary, 1),
-    primarySoft: rgba(primary, 0.15),
-    primaryBorder: rgba(primary, 0.6),
-    focusBorder: rgba(primary, 0.35),
-    onPrimary: "#0A0B10",
+    primaryContainer: rgba(primaryContainer, 1),
+    primarySoft: rgba(primary, 0.12),
+    primaryBorder: rgba(primary, 0.45),
+    focusBorder: rgba(primary, 0.6),
+    onPrimary: rgba(dark, 1),
     secondary: rgba(secondary, 1),
     secondarySoft: rgba(secondary, 0.15),
-    glowPrimary: `0 0 16px -2px ${rgba(primary, 0.35)}`,
+    glowPrimary: `0 0 16px -2px ${rgba(primaryContainer, 0.35)}`,
     glowSecondary: `0 0 16px -2px ${rgba(secondary, 0.35)}`,
-    canvasBg: "#0A0B10",
-    surface: "#0E111A",
-    surfaceLow: "#181B25",
-    surfaceHigh: "#272A33",
-    glass1: "rgba(14, 17, 26, 0.75)",
-    glass2: "rgba(22, 27, 40, 0.88)",
-    hairline: "rgba(255, 255, 255, 0.08)",
-    hairlineStrong: "rgba(255, 255, 255, 0.12)",
-    textHigh: "#F1F5F9",
-    textMid: "#94A3B8",
-    textLow: "#475569",
+    canvasBg: "#0b0e17",
+    pageBg: "#10131c",
+    surfaceLowest: "#0b0e17",
+    surface: "#1c1f29",
+    surfaceLow: "#181b25",
+    surfaceHigh: "#272a33",
+    surfaceHighest: "#32343f",
+    glass1: "rgba(24, 27, 37, 0.85)",
+    glass2: "rgba(24, 27, 37, 0.95)",
+    glassBar: "rgba(16, 19, 28, 0.8)",
+    hairline: "rgba(61, 73, 76, 0.3)",
+    hairlineStrong: "rgba(61, 73, 76, 0.45)",
+    textHigh: "#e0e2ef",
+    textMid: "#bcc9cd",
+    textLow: "rgba(188, 201, 205, 0.6)",
   };
 }
 
@@ -91,7 +104,7 @@ export const themes: Record<string, { label: string; colors: ThemeColors }> = {
       success: "#2dd4bf",
       danger: "#f43f5e",
       bgPage: "#05070a",
-      ...designColors([6, 182, 212], [139, 92, 246]),
+      ...designColors([76, 215, 246], [6, 182, 212], [208, 188, 255]),
     }
   },
   electric_indigo: {
@@ -116,7 +129,7 @@ export const themes: Record<string, { label: string; colors: ThemeColors }> = {
       success: "#10b981",
       danger: "#ef4444",
       bgPage: "#121214",
-      ...designColors([99, 102, 241], [236, 72, 153]),
+      ...designColors([165, 180, 252], [99, 102, 241], [249, 168, 212]),
     }
   },
   emerald_matrix: {
@@ -141,7 +154,7 @@ export const themes: Record<string, { label: string; colors: ThemeColors }> = {
       success: "#34d399",
       danger: "#fb7185",
       bgPage: "#020a05",
-      ...designColors([52, 211, 153], [34, 211, 238]),
+      ...designColors([110, 231, 183], [16, 185, 129], [103, 232, 249]),
     }
   },
   solar_flare: {
@@ -166,7 +179,7 @@ export const themes: Record<string, { label: string; colors: ThemeColors }> = {
       success: "#4ade80",
       danger: "#f87171",
       bgPage: "#0f0a05",
-      ...designColors([251, 146, 60], [244, 63, 94]),
+      ...designColors([253, 186, 116], [249, 115, 22], [253, 164, 175]),
     }
   },
   crimson_void: {
@@ -191,7 +204,7 @@ export const themes: Record<string, { label: string; colors: ThemeColors }> = {
       success: "#10b981",
       danger: "#e11d48",
       bgPage: "#0a0505",
-      ...designColors([244, 63, 94], [251, 146, 60]),
+      ...designColors([253, 164, 175], [244, 63, 94], [253, 186, 116]),
     }
   }
 };

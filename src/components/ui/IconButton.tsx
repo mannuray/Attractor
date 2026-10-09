@@ -19,10 +19,13 @@ const Btn = styled.button<{ $variant: Variant; $size: Size; $active: boolean }>`
   cursor: pointer;
   transition: background 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
   ${p => p.$variant === "primary" && css`
-    background: ${p.theme.primary};
+    background: ${p.theme.primaryContainer};
     color: ${p.theme.onPrimary};
     border: none;
-    &:hover { box-shadow: ${p.theme.glowPrimary}; }
+    font-weight: 600;
+    box-shadow: ${p.theme.glowPrimary};
+    &:hover { background: ${p.theme.primary}; }
+    &:active { transform: scale(0.95); }
   `}
   ${p => p.$variant === "soft" && css`
     background: ${p.$active ? p.theme.primarySoft : "rgba(255, 255, 255, 0.04)"};
