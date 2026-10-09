@@ -1,6 +1,7 @@
 /**
  * @jest-environment node
  */
+/* eslint-disable testing-library/render-result-naming-convention -- these render helpers are not Testing Library's render */
 // Runs without window/document, like the build-time prerender step.
 import { prerenderRoutes, renderPage } from "../prerender/entry";
 import { SYSTEM_PAGES } from "../content/systemPages";

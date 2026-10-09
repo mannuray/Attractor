@@ -61,6 +61,9 @@
   "jest": {
     "testMatch": [
       "<rootDir>/src/**/*.test.{js,jsx,ts,tsx}"
-    ]
+    ],
+    "moduleNameMapper": {
+      "^@img/(sharp-[a-z0-9-]+)/sharp\\.node$": "<rootDir>/node_modules/@img/$1/lib/$1.node"
+    }
   }
 }
