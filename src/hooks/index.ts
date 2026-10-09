@@ -7,3 +7,4 @@ export { buildIteratorPayload, getScale } from "./iteratorConfig";
 export { useUrlSync } from "./useUrlSync";
 export { useExportWorker } from "./useExportWorker";
 export { useFractalZoom } from "./useFractalZoom";
+export * from "./useIsMobile";
