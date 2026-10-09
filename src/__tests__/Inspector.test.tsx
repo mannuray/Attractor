@@ -26,6 +26,11 @@ describe("Inspector tabs", () => {
     expect(screen.queryByRole("list", { name: "Systems" })).toBeNull();
   });
 
+  it("links to the system's documentation page", () => {
+    renderInspector({ attractorType: "clifford" } as any);
+    expect(screen.getByRole("link", { name: "About this system" })).toHaveAttribute("href", "/systems/clifford-attractor");
+  });
+
   it("Look holds palette, background and effects", () => {
     renderInspector();
     fireEvent.click(screen.getByRole("tab", { name: "Look" }));

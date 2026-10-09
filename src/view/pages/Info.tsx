@@ -1,10 +1,10 @@
 
 import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
 import styled from "styled-components";
 import { GiscusComments } from "../../components/GiscusComments";
 import { tokens } from "../../theme/tokens";
 import { SYSTEM_PAGES } from "../../content/systemPages";
+import { DocLinksContext } from "../../content/docPrimitives";
 import {
   mobileQ,
   Section,
@@ -18,8 +18,8 @@ import {
   CreditSection,
   CreditLink,
 } from "../../content/docPrimitives";
-import { useTheme } from "../../theme/ThemeContext";
 import { Icon } from "../../components/ui/Icon";
+import { DocsHeader } from "../components/DocsHeader";
 
 // ============= STYLED COMPONENTS =============
 
@@ -399,41 +399,6 @@ const Page = styled.div`
   font-family: ${tokens.font.ui};
 `;
 
-const TopBar = styled.header`
-  position: sticky; top: 0; z-index: 30;
-  height: 56px; padding: 0 24px;
-  display: flex; align-items: center; justify-content: space-between; gap: 16px;
-  background: ${p => p.theme.glassBar};
-  backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
-  border-bottom: 1px solid ${p => p.theme.hairline};
-  .left { display: flex; align-items: center; gap: 16px; min-width: 0; }
-  .brand { display: flex; align-items: center; gap: 10px; font: 600 16px ${tokens.font.ui}; white-space: nowrap; }
-  .mark {
-    width: 28px; height: 28px; border-radius: 8px; display: grid; place-items: center; color: ${p => p.theme.primary};
-    background: ${p => p.theme.primarySoft}; border: 1px solid ${p => p.theme.primaryBorder}; box-shadow: ${p => p.theme.glowPrimary};
-  }
-  .sep { width: 1px; height: 18px; background: ${p => p.theme.hairline}; }
-  ${mobileQ} {
-    height: 52px; padding: 0 12px;
-    .brand .name, .sep { display: none; }
-  }
-`;
-
-const BackButton = styled.button`
-  display: inline-flex; align-items: center; gap: 6px; height: 32px; padding: 0 12px; border-radius: 8px; cursor: pointer;
-  background: rgba(39, 42, 51, 0.4); border: 1px solid ${p => p.theme.hairlineStrong};
-  color: ${p => p.theme.textHigh}; font: 500 13px ${tokens.font.ui};
-  &:hover { background: ${p => p.theme.surfaceHigh}; }
-  ${mobileQ} { height: 40px; }
-`;
-
-const ThemeSelect = styled.select`
-  height: 32px; border-radius: 8px; padding: 0 8px; cursor: pointer;
-  background: transparent; color: ${p => p.theme.textMid}; border: 1px solid ${p => p.theme.hairline};
-  font: 400 11px ${tokens.font.mono};
-  option { background: ${p => p.theme.surface}; color: ${p => p.theme.textHigh}; }
-`;
-
 const Layout = styled.div`
   display: grid;
   grid-template-columns: 260px minmax(0, 760px) 200px;
@@ -562,9 +527,12 @@ const LazyComments: React.FC<{ children: React.ReactNode }> = ({ children }) => 
   return <div ref={ref}>{show ? children : <div style={{ minHeight: 400 }} />}</div>;
 };
 
+const linkForTitle = (title: string) => {
+  const page = SYSTEM_PAGES.find(p => p.title === title);
+  return page ? `/systems/${page.slug}` : undefined;
+};
+
 const Info: React.FC = () => {
-  const navigate = useNavigate();
-  const { currentTheme, setTheme, availableThemes } = useTheme();
   const [active, setActive] = useState<GroupId>("getting-started");
   const [activeSystem, setActiveSystem] = useState<string | null>(null);
   const [systems, setSystems] = useState<Partial<Record<GroupId, string[]>>>({});
@@ -652,21 +620,7 @@ const Info: React.FC = () => {
 
   return (
     <Page>
-      <TopBar>
-        <div className="left">
-          <div className="brand">
-            <span className="mark"><Icon name="all_inclusive" size={16} /></span>
-            <span className="name">Chaos Iterator</span>
-          </div>
-          <span className="sep" />
-          <BackButton type="button" onClick={() => navigate("/")}>
-            <Icon name="arrow_back" size={16} /> Back to studio
-          </BackButton>
-        </div>
-        <ThemeSelect aria-label="Theme" value={currentTheme} onChange={e => setTheme(e.target.value)}>
-          {availableThemes.map(t => <option key={t.id} value={t.id}>{t.label}</option>)}
-        </ThemeSelect>
-      </TopBar>
+      <DocsHeader />
 
       <Layout>
         <Rail aria-label="Documentation">
@@ -689,11 +643,13 @@ const Info: React.FC = () => {
             <p>How to use the studio, the mathematics behind every system, a gallery of renders, and the people and ideas behind the project.</p>
           </Hero>
 
+          <DocLinksContext.Provider value={linkForTitle}>
           {GROUPS.map(g => (
             <Group key={g.id} id={g.id} ref={el => { groupRefs.current[g.id] = el; }}>
               {g.id === "community" ? <LazyComments><g.Body /></LazyComments> : <g.Body />}
             </Group>
           ))}
+          </DocLinksContext.Provider>
 
           <Footer>Chaos Iterator — strange attractors, IFS and fractals in the browser.</Footer>
         </Main>

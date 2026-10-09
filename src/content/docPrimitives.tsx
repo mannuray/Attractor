@@ -140,13 +140,33 @@ export const AttractorNameHeading = styled.h4`
   scroll-margin-top: 80px;
 `;
 
+/** Pages that list several write-ups (Help & About) provide a link to each write-up's own page. */
+export const DocLinksContext = React.createContext<((title: string) => string | undefined) | null>(null);
+
+const NameRow = styled.div`
+  display: flex; align-items: baseline; justify-content: space-between; gap: 12px; flex-wrap: wrap;
+  a {
+    flex-shrink: 0; font: 400 12px/1rem ${tokens.font.mono}; color: ${p => p.theme.primary}; text-decoration: none;
+    &:hover { text-decoration: underline; }
+  }
+`;
+
 // System headings carry an anchor id + marker so the navigation rail can list and link them.
 export const AttractorName: React.FC<{ children?: React.ReactNode }> = ({ children }) => {
   const text = typeof children === "string" ? children : "";
-  return (
+  const linkFor = React.useContext(DocLinksContext);
+  const href = text && linkFor ? linkFor(text) : undefined;
+  const heading = (
     <AttractorNameHeading id={text ? `system-${slug(text)}` : undefined} data-system={text || undefined}>
       {children}
     </AttractorNameHeading>
+  );
+  if (!href) return heading;
+  return (
+    <NameRow>
+      {heading}
+      <a href={href} aria-label={`Open the ${text} page`}>Open page →</a>
+    </NameRow>
   );
 };
 

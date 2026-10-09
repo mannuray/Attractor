@@ -3,6 +3,7 @@ import styled from "styled-components";
 import { ShellProps } from "./types";
 import { RenderPanel, ColorPanel, FxPanel, StatsReadout } from "../panels";
 import { useShare } from "../../hooks/useShare";
+import { systemPageFor } from "../../content/systemPages";
 import { Icon } from "../ui/Icon";
 import { tokens } from "../../theme/tokens";
 
@@ -68,6 +69,8 @@ const SystemRow = styled.div`
   background: ${p => p.theme.surfaceLowest}; border: 1px solid ${p => p.theme.hairline};
   .k { font: 400 11px/0.875rem ${tokens.font.mono}; letter-spacing: 0.06em; text-transform: uppercase; color: ${p => p.theme.textMid}; }
   h3 { margin: 2px 0 0; font: 600 15px/1.25rem ${tokens.font.ui}; color: ${p => p.theme.textHigh}; }
+  .about { display: inline-block; margin-top: 2px; font: 400 11px/0.875rem ${tokens.font.mono}; color: ${p => p.theme.primary}; text-decoration: none; }
+  .about:hover { text-decoration: underline; }
   button {
     display: inline-flex; align-items: center; gap: 2px; padding: 4px 8px; border-radius: 6px; cursor: pointer;
     background: transparent; border: 1px solid ${p => p.theme.primaryBorder};
@@ -160,6 +163,8 @@ export const Inspector: React.FC<Props> = (p) => {
     p.onUndoReset?.();
   };
 
+  const aboutPage = systemPageFor(p.attractorType);
+  const aboutHref = aboutPage ? `/systems/${aboutPage.slug}` : undefined;
   const runLabel = p.isFractalType ? "Render" : p.iterating ? "Pause" : "Run";
   const panelId = "inspector-panel";
 
@@ -203,6 +208,7 @@ export const Inspector: React.FC<Props> = (p) => {
                   <div>
                     <div className="k">System</div>
                     <h3>{p.systemLabel}</h3>
+                    {aboutHref && <a className="about" href={aboutHref}>About this system</a>}
                   </div>
                   {p.onChangeSystem && (
                     <button type="button" aria-label="Change system" onClick={p.onChangeSystem}>
