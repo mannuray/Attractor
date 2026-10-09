@@ -28,6 +28,7 @@ import symmetricIconData, {
 
 // Types
 import { CONFIG, AttractorType } from "../../attractors/shared/types";
+import { DragPoint } from "../../hooks/useFractalZoom";
 
 const slugify = (text: string): string => {
   return text
@@ -146,18 +147,13 @@ function Home() {
     worker.initialize({ attractorType: type, params: attractor.getParamsForType(type) as Record<string, any> });
   }, [attractor, worker]);
 
-  const handleFractalMouseDown = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
-    if (!attractor.isFractalType) return;
-    fractalZoom.handleMouseDown(e, worker.zoom);
-  }, [attractor.isFractalType, fractalZoom, worker.zoom]);
+  const handleSelectStart = useCallback((pt: DragPoint) => fractalZoom.beginDrag(pt), [fractalZoom]);
+  const handleSelectMove = useCallback((pt: DragPoint) => fractalZoom.moveDrag(pt), [fractalZoom]);
+  const handleSelectCancel = useCallback(() => fractalZoom.clearDrag(), [fractalZoom]);
 
-  const handleFractalMouseMove = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
-    fractalZoom.handleMouseMove(e, worker.zoom);
-  }, [fractalZoom, worker.zoom]);
-
-  const handleFractalMouseUp = useCallback(() => {
+  const handleSelectEnd = useCallback(() => {
     if (!fractalZoom.isDragging) {
-      fractalZoom.handleMouseUp();
+      fractalZoom.endDrag();
       return;
     }
 
@@ -287,9 +283,11 @@ function Home() {
       rendering={worker.rendering}
       isDragging={fractalZoom.isDragging}
       dragSelection={dragSelection}
-      onMouseDown={handleFractalMouseDown}
-      onMouseMove={handleFractalMouseMove}
-      onMouseUp={handleFractalMouseUp}
+      onSelectStart={handleSelectStart}
+      onSelectMove={handleSelectMove}
+      onSelectEnd={handleSelectEnd}
+      onSelectCancel={handleSelectCancel}
+      onZoomChange={worker.setZoom}
       fx={attractor.fx}
     />
   );

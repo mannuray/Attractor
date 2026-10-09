@@ -16,9 +16,9 @@ interface UseFractalZoomReturn {
   dragStart: DragPoint | null;
   dragEnd: DragPoint | null;
   isDragging: boolean;
-  handleMouseDown: (e: React.MouseEvent<HTMLDivElement>, displayZoom: number) => void;
-  handleMouseMove: (e: React.MouseEvent<HTMLDivElement>, displayZoom: number) => void;
-  handleMouseUp: () => void;
+  beginDrag: (pt: DragPoint) => void;
+  moveDrag: (pt: DragPoint) => void;
+  endDrag: () => void;
   calculateNewParams: <T extends FractalParams>(
     currentParams: T,
     canvasSize: number
@@ -99,24 +99,18 @@ export function useFractalZoom(): UseFractalZoomReturn {
   const [dragEnd, setDragEnd] = useState<DragPoint | null>(null);
   const [isDragging, setIsDragging] = useState(false);
 
-  const handleMouseDown = useCallback((e: React.MouseEvent<HTMLDivElement>, displayZoom: number) => {
-    const rect = e.currentTarget.getBoundingClientRect();
-    const x = (e.clientX - rect.left) / displayZoom;
-    const y = (e.clientY - rect.top) / displayZoom;
-    setDragStart({ x, y });
-    setDragEnd({ x, y });
+  const beginDrag = useCallback((pt: DragPoint) => {
+    setDragStart(pt);
+    setDragEnd(pt);
     setIsDragging(true);
   }, []);
 
-  const handleMouseMove = useCallback((e: React.MouseEvent<HTMLDivElement>, displayZoom: number) => {
+  const moveDrag = useCallback((pt: DragPoint) => {
     if (!isDragging || !dragStart) return;
-    const rect = e.currentTarget.getBoundingClientRect();
-    const x = (e.clientX - rect.left) / displayZoom;
-    const y = (e.clientY - rect.top) / displayZoom;
-    setDragEnd({ x, y });
+    setDragEnd(pt);
   }, [isDragging, dragStart]);
 
-  const handleMouseUp = useCallback(() => {
+  const endDrag = useCallback(() => {
     setIsDragging(false);
   }, []);
 
@@ -146,9 +140,9 @@ export function useFractalZoom(): UseFractalZoomReturn {
     dragStart,
     dragEnd,
     isDragging,
-    handleMouseDown,
-    handleMouseMove,
-    handleMouseUp,
+    beginDrag,
+    moveDrag,
+    endDrag,
     calculateNewParams,
     calculateNewLyapunovParams,
     clearDrag,

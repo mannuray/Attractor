@@ -1,5 +1,7 @@
 import React from "react";
 import styled, { keyframes, css } from "styled-components";
+import { useCanvasGestures } from "../hooks/useCanvasGestures";
+import { DragPoint } from "../hooks/useFractalZoom";
 
 const CanvasContainer = styled.div<{ $scrollable: boolean }>`
   flex: 1;
@@ -16,6 +18,7 @@ const CanvasContainer = styled.div<{ $scrollable: boolean }>`
   background-size: 48px 48px;
   background-position: center center;
   transition: background-color 0.5s ease;
+  touch-action: none;
 `;
 
 const renderPulse = keyframes`
@@ -102,9 +105,11 @@ interface CanvasAreaProps {
   rendering: boolean;
   isDragging: boolean;
   dragSelection: { left: number; top: number; width: number; height: number } | null;
-  onMouseDown: (e: React.MouseEvent<HTMLDivElement>) => void;
-  onMouseMove: (e: React.MouseEvent<HTMLDivElement>) => void;
-  onMouseUp: () => void;
+  onSelectStart: (pt: DragPoint) => void;
+  onSelectMove: (pt: DragPoint) => void;
+  onSelectEnd: () => void;
+  onSelectCancel: () => void;
+  onZoomChange: (z: number) => void;
   fx?: {
     enabled: boolean;
     bloom: number;
@@ -124,24 +129,47 @@ export const CanvasArea: React.FC<CanvasAreaProps> = ({
   rendering,
   isDragging,
   dragSelection,
-  onMouseDown,
-  onMouseMove,
-  onMouseUp,
+  onSelectStart,
+  onSelectMove,
+  onSelectEnd,
+  onSelectCancel,
+  onZoomChange,
   fx
 }) => {
   const scaledSize = canvasSize * zoom;
+  const wrapperRef = React.useRef<HTMLDivElement>(null);
+
+  const toCanvasPoint = React.useCallback((clientX: number, clientY: number) => {
+    const el = wrapperRef.current;
+    if (!el) return null;
+    const r = el.getBoundingClientRect();
+    const x = (clientX - r.left) / zoom;
+    const y = (clientY - r.top) / zoom;
+    if (x < 0 || y < 0 || x > canvasSize || y > canvasSize) return null;
+    return { x, y };
+  }, [zoom, canvasSize]);
+
+  const gestures = useCanvasGestures({
+    zoom,
+    onZoomChange,
+    scrollRef: containerRef,
+    selectEnabled: isFractalType,
+    toCanvasPoint,
+    onSelectStart,
+    onSelectMove,
+    onSelectEnd,
+    onSelectCancel,
+  });
 
   return (
-    <CanvasContainer ref={containerRef} $scrollable={zoom > 1}>
+    <CanvasContainer ref={containerRef} $scrollable={zoom > 1} {...gestures}>
       <CanvasWrapper
         $width={scaledSize}
         $height={scaledSize}
         $isFractal={isFractalType}
         $rendering={rendering}
         $fx={fx}
-        onMouseDown={onMouseDown}
-        onMouseMove={onMouseMove}
-        onMouseUp={onMouseUp}
+        ref={wrapperRef}
       >
         <StyledCanvas
           key={canvasKey}

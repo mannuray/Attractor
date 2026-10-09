@@ -9,3 +9,4 @@ export { useExportWorker } from "./useExportWorker";
 export { useFractalZoom } from "./useFractalZoom";
 export * from "./useIsMobile";
 export * from "./useShare";
+export * from "./useCanvasGestures";
