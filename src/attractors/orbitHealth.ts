@@ -20,12 +20,15 @@ function mulberry32(seed: number) {
   };
 }
 
-export function orbitHealth(math: string, params: Record<string, any>, steps = 200000): OrbitHealth {
+/** Start points like the studio's (it starts each orbit at a random point within ±0.1). */
+export const STUDIO_STARTS: [number, number][] = [[0.05, 0.07], [-0.08, 0.03], [0.09, -0.06]];
+
+export function orbitHealth(math: string, params: Record<string, any>, steps = 200000, start: [number, number] = STUDIO_STARTS[0]): OrbitHealth {
   const seeded = Object.create(Math) as Math;
   seeded.random = mulberry32(12345);
   // eslint-disable-next-line no-new-func -- runs the system's own math string, exactly as worker.js does
   const fn = new Function("p", "params", "Math", math) as (p: Float64Array, params: object, m: Math) => void;
-  const p = new Float64Array([0.05, 0.07]);
+  const p = new Float64Array(start);
   const warmup = 1000;
   const xs = new Float64Array(steps), ys = new Float64Array(steps);
   for (let i = 0; i < warmup + steps; i++) {
@@ -46,4 +49,15 @@ export function orbitHealth(math: string, params: Record<string, any>, steps = 2
     cells.add(Math.min(255, Math.floor(((xs[i] - minX) / w) * 256)) * 256 + Math.min(255, Math.floor(((ys[i] - minY) / h) * 256)));
   }
   return { kind: cells.size < 200 ? "collapses" : "attractor", distinct: cells.size };
+}
+
+/** The worst result over the studio-like start points: a preset must work from any of them. */
+export function presetHealth(math: string, params: Record<string, any>, steps = 100000): OrbitHealth {
+  let worst: OrbitHealth = { kind: "attractor", distinct: Infinity };
+  for (const start of STUDIO_STARTS) {
+    const h = orbitHealth(math, params, steps, start);
+    if (h.kind !== "attractor") return h;
+    if (h.distinct < worst.distinct) worst = h;
+  }
+  return worst;
 }

@@ -2501,7 +2501,7 @@ export const tinkerbellData = [
     { position: 0.6, red: 255, green: 105, blue: 180 },
     { position: 1, red: 255, green: 255, blue: 255 }
   ]},
-  { name: "Diamond", alpha: 0.9, beta: -0.65, gamma: 2.0, delta: 0.45, scale: 0.15, palGamma: 0.5, paletteData: [
+  { name: "Diamond", alpha: 0.888, beta: -0.642, gamma: 1.984, delta: 0.437, scale: 0.15, palGamma: 0.5, paletteData: [
     { position: 0, red: 0, green: 0, blue: 0 },
     { position: 0.3, red: 185, green: 242, blue: 255 },
     { position: 0.6, red: 0, green: 191, blue: 255 },
@@ -2513,26 +2513,26 @@ export const tinkerbellData = [
     { position: 0.6, red: 255, green: 69, blue: 0 },
     { position: 1, red: 255, green: 255, blue: 255 }
   ]},
-  { name: "Spiral", alpha: 0.88, beta: -0.62, gamma: 2.0, delta: 0.46, scale: 0.15, palGamma: 0.5, paletteData: [
+  { name: "Spiral", alpha: 0.874, beta: -0.627, gamma: 2.006, delta: 0.457, scale: 0.15, palGamma: 0.5, paletteData: [
     { position: 0, red: 0, green: 0, blue: 0 },
     { position: 0.3, red: 147, green: 112, blue: 219 },
     { position: 0.6, red: 186, green: 85, blue: 211 },
     { position: 1, red: 255, green: 255, blue: 255 }
   ]},
-  { name: "Web", alpha: 0.95, beta: -0.57, gamma: 2.0, delta: 0.54, scale: 0.15, palGamma: 0.5, paletteData: [
+  { name: "Web", alpha: 0.947, beta: -0.57, gamma: 1.994, delta: 0.533, scale: 0.15, palGamma: 0.5, paletteData: [
     { position: 0, red: 0, green: 0, blue: 0 },
     { position: 0.3, red: 192, green: 192, blue: 192 },
     { position: 0.6, red: 169, green: 169, blue: 169 },
     { position: 1, red: 255, green: 255, blue: 255 }
   ]},
-  { name: "Flame", alpha: 0.87, beta: -0.63, gamma: 2.0, delta: 0.49, scale: 0.15, palGamma: 0.5, paletteData: [
+  { name: "Flame", alpha: 0.864, beta: -0.617, gamma: 2.016, delta: 0.483, scale: 0.15, palGamma: 0.5, paletteData: [
     { position: 0, red: 0, green: 0, blue: 0 },
     { position: 0.2, red: 255, green: 69, blue: 0 },
     { position: 0.5, red: 255, green: 140, blue: 0 },
     { position: 0.8, red: 255, green: 215, blue: 0 },
     { position: 1, red: 255, green: 255, blue: 255 }
   ]},
-  { name: "Wave", alpha: 0.93, beta: -0.59, gamma: 2.0, delta: 0.51, scale: 0.15, palGamma: 0.5, paletteData: [
+  { name: "Wave", alpha: 0.925, beta: -0.59, gamma: 1.994, delta: 0.503, scale: 0.15, palGamma: 0.5, paletteData: [
     { position: 0, red: 0, green: 0, blue: 0 },
     { position: 0.3, red: 0, green: 128, blue: 128 },
     { position: 0.6, red: 32, green: 178, blue: 170 },
@@ -2554,19 +2554,19 @@ export const henonData = [
     { position: 0.6, red: 186, green: 85, blue: 211 },
     { position: 1, red: 255, green: 255, blue: 255 }
   ]},
-  { name: "Chaotic", alpha: 1.0, beta: 0.3, scale: 0.5, palGamma: 0.5, paletteData: [
+  { name: "Chaotic", alpha: 1.39, beta: 0.24, scale: 0.37, palGamma: 0.5, paletteData: [
     { position: 0, red: 0, green: 0, blue: 0 },
     { position: 0.3, red: 255, green: 0, blue: 0 },
     { position: 0.6, red: 255, green: 165, blue: 0 },
     { position: 1, red: 255, green: 255, blue: 255 }
   ]},
-  { name: "Dense", alpha: 0.2, beta: 0.9991, scale: 0.35, palGamma: 0.5, paletteData: [
+  { name: "Dense", alpha: 1.3, beta: 0.35, scale: 0.335, palGamma: 0.5, paletteData: [
     { position: 0, red: 0, green: 0, blue: 0 },
     { position: 0.3, red: 0, green: 128, blue: 0 },
     { position: 0.6, red: 50, green: 205, blue: 50 },
     { position: 1, red: 255, green: 255, blue: 255 }
   ]},
-  { name: "Orbit", alpha: -0.2, beta: 1.01, scale: 0.4, palGamma: 0.5, paletteData: [
+  { name: "Orbit", alpha: 1.22, beta: 0.28, scale: 0.353, palGamma: 0.5, paletteData: [
     { position: 0, red: 0, green: 0, blue: 0 },
     { position: 0.3, red: 255, green: 215, blue: 0 },
     { position: 0.6, red: 255, green: 255, blue: 0 },
@@ -2578,7 +2578,7 @@ export const henonData = [
     { position: 0.6, red: 135, green: 206, blue: 250 },
     { position: 1, red: 255, green: 255, blue: 255 }
   ]},
-  { name: "Band", alpha: 0.85, beta: 0.9, scale: 0.4, palGamma: 0.5, paletteData: [
+  { name: "Band", alpha: 1.05, beta: 0.4, scale: 0.314, palGamma: 0.5, paletteData: [
     { position: 0, red: 0, green: 0, blue: 0 },
     { position: 0.3, red: 255, green: 20, blue: 147 },
     { position: 0.6, red: 255, green: 105, blue: 180 },
@@ -2655,7 +2655,7 @@ export const bedheadData = [
     { position: 0.6, red: 210, green: 180, blue: 140 },
     { position: 1, red: 255, green: 255, blue: 255 }
   ]},
-  { name: "Frost", alpha: 0.4, beta: -0.9, scale: 0.28, palGamma: 0.5, paletteData: [
+  { name: "Frost", alpha: 0.114, beta: -1.075, scale: 0.28, palGamma: 0.5, paletteData: [
     { position: 0, red: 0, green: 0, blue: 20 },
     { position: 0.3, red: 70, green: 130, blue: 180 },
     { position: 0.6, red: 176, green: 224, blue: 230 },
@@ -2695,7 +2695,7 @@ export const svenssonData = [
     { position: 0.6, red: 255, green: 182, blue: 193 },
     { position: 1, red: 255, green: 255, blue: 255 }
   ]},
-  { name: "Galaxy", alpha: -1.4, beta: 1.6, gamma: 1.0, delta: 0.7, scale: 0.25, palGamma: 0.5, paletteData: [
+  { name: "Galaxy", alpha: -1.365, beta: 1.552, gamma: 0.908, delta: 0.695, scale: 0.25, palGamma: 0.5, paletteData: [
     { position: 0, red: 0, green: 0, blue: 0 },
     { position: 0.2, red: 25, green: 25, blue: 112 },
     { position: 0.5, red: 138, green: 43, blue: 226 },
@@ -2749,7 +2749,7 @@ export const fractalDreamData = [
     { position: 0.6, red: 186, green: 85, blue: 211 },
     { position: 1, red: 255, green: 255, blue: 255 }
   ]},
-  { name: "Dream 2", alpha: -2.8276, beta: 2.0914, gamma: 1.0757, delta: 0.7922, scale: 0.3, palGamma: 0.5, paletteData: [
+  { name: "Dream 2", alpha: -2.933, beta: 2.001, gamma: 1, delta: 0.818, scale: 0.3, palGamma: 0.5, paletteData: [
     { position: 0, red: 0, green: 0, blue: 0 },
     { position: 0.3, red: 0, green: 191, blue: 255 },
     { position: 0.6, red: 135, green: 206, blue: 250 },
