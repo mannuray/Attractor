@@ -2,8 +2,8 @@
 // /?type=clifford&alpha=1.2 gets the static home page with that render's preview card;
 // everything else, and any failure, falls through to the static page untouched.
 import { next } from "@vercel/functions";
-import { injectShareMeta } from "./src/seo/injectShareMeta";
-import { parseShareParams } from "./src/seo/ogParams";
+import { injectShareMeta } from "../seo/injectShareMeta";
+import { parseShareParams } from "../seo/ogParams";
 
 export default async function proxy(request: Request): Promise<Response> {
   const url = new URL(request.url);

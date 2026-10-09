@@ -1,8 +1,8 @@
 // GET /api/og?type=<system>&<params> → the 1200×630 share card for that exact studio link.
 // Every spelling of a render is redirected to one canonical query, so the CDN keeps one
 // image per render and junk parameters cannot force fresh renders.
-import { parseShareParams, shareQuery } from "../src/seo/ogParams";
-import { renderShareImage } from "../src/seo/ogRender";
+import { parseShareParams, shareQuery } from "../seo/ogParams";
+import { renderShareImage } from "../seo/ogRender";
 
 const IMMUTABLE = "public, max-age=31536000, s-maxage=31536000, immutable";
 

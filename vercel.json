@@ -5,13 +5,13 @@
   "outputDirectory": "build",
   "cleanUrls": true,
   "functions": {
-    "api/og.ts": {
+    "api/og.js": {
       "includeFiles": "{public/worker.js,node_modules/katex/dist/fonts/KaTeX_SansSerif-*.ttf}",
       "maxDuration": 30
     }
   },
   "proxy": {
-    "entrypoint": "proxy.ts",
+    "entrypoint": "proxy.js",
     "matcher": [
       "/"
     ]

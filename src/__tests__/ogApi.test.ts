@@ -2,7 +2,7 @@
  * @jest-environment node
  */
 import { Request, Response, Headers } from "whatwg-fetch";
-import { GET } from "../../api/og";
+import { GET } from "../server/og";
 
 // Jest 27's node environment has no fetch classes (Vercel's Node runtime does).
 Object.assign(globalThis, { Request, Response, Headers });

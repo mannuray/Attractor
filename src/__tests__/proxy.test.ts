@@ -16,7 +16,7 @@ const HOME = `<html><head>
 </head><body></body></html>`;
 
 // eslint-disable-next-line import/first
-import proxy from "../../proxy";
+import proxy from "../server/proxy";
 
 const passesThrough = (res: globalThis.Response) => res.headers.get("x-middleware-next") === "1";
 
