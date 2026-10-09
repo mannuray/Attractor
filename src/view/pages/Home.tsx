@@ -331,6 +331,7 @@ function Home() {
       <PaletteModal
         isOpen={paletteModalOpen}
         onClose={handleClosePalette}
+        subtitle={systemLabel}
         paletteData={palette.paletteData}
         onPaletteChange={palette.setPaletteData}
         palGamma={palette.palGamma}
