@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import styled from "styled-components";
 import { ShellProps } from "./types";
 import { TopBar } from "./TopBar";
-import { Inspector, InspectorTab } from "./Inspector";
+import { Inspector } from "./Inspector";
 import { CanvasToolbar } from "./CanvasToolbar";
 import { tokens } from "../../theme/tokens";
 import { registry } from "../../attractors/registry";
@@ -20,7 +20,6 @@ const ToolbarDock = styled.div`
 
 export const DesktopShell: React.FC<ShellProps> = (p) => {
   const [collapsed, setCollapsed] = useState(false);
-  const [tab, setTab] = useState<InspectorTab>("params");
 
   const { canvas, ...rest } = p;
   return (
@@ -36,7 +35,7 @@ export const DesktopShell: React.FC<ShellProps> = (p) => {
             <CanvasToolbar {...rest} />
           </ToolbarDock>
         </Stage>
-        <Inspector {...p} collapsed={collapsed} onToggleCollapse={() => setCollapsed(c => !c)} tab={tab} onTabChange={setTab} />
+        <Inspector {...p} collapsed={collapsed} onToggleCollapse={() => setCollapsed(c => !c)} />
       </Row>
     </Page>
   );

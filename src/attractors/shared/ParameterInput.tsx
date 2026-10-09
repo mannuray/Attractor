@@ -1,9 +1,15 @@
 import React, { useState, useRef, useEffect } from "react";
 import { Label, ParameterRow, ParameterRowWithSlider, SliderInput, ValueText, ValueInput } from "./styles";
 import styled from "styled-components";
+import { tokens } from "../../theme/tokens";
 
+// Stitch: lowercase monospace parameter names ("parameter a")
 const InlineLabel = styled(Label)`
   margin-bottom: 0;
+  font: 400 12px/1rem ${tokens.font.mono};
+  letter-spacing: 0;
+  text-transform: none;
+  color: ${p => p.theme.textHigh};
 `;
 
 interface EditableValueProps {

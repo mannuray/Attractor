@@ -1,3 +1,4 @@
+import React from "react";
 import styled, { css } from "styled-components";
 import { ThemeColors } from "../../theme/themes";
 import { tokens } from "../../theme/tokens";
@@ -36,11 +37,10 @@ export const glassEffect = css`
 `;
 
 // Card style
+// Wrapper around a system's controls; sections are separated by the inspector layout itself.
 export const Card = styled.div`
-  padding: 0 0 16px;
-  margin-bottom: 16px;
-  border-bottom: 1px solid ${p => p.theme.hairline};
-  &:last-child { border-bottom: none; }
+  display: flex;
+  flex-direction: column;
 `;
 
 // Field wrapper
@@ -298,45 +298,60 @@ export const ParameterRow = styled.div`
   justify-content: space-between;
   align-items: center;
   gap: 8px;
-  padding: 4px 0;
 `;
 
 // Parameter grid
-export const ParameterGrid = styled.div`
+const ParameterCard = styled.div`
   display: flex;
   flex-direction: column;
-  gap: 0;
+  gap: 10px;
+  padding: 10px;
+  margin-bottom: 12px;
+  background: rgba(11, 14, 23, 0.6);
+  border: 1px solid ${p => p.theme.hairline};
+  border-radius: 12px;
+  /* Stitch alternates cyan / violet accents down the parameter list */
+  & > *:nth-child(odd of :not([data-card-head])) { --param-accent: ${p => p.theme.primary}; }
+  & > *:nth-child(even of :not([data-card-head])) { --param-accent: ${p => p.theme.secondary}; }
+`;
+const ParameterCardHead = styled.div`
+  font: 600 11px/0.875rem ${tokens.font.mono};
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: ${p => p.theme.primary};
 `;
 
 // Display value as text
 export const ValueText = styled.span<{ $clickable?: boolean }>`
   min-width: 64px;
-  padding: 4px 8px;
-  border-radius: 6px;
+  height: 24px;
+  padding: 0 6px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  border-radius: 4px;
   background: ${p => p.theme.surface};
-  border: 1px solid ${p => p.theme.hairline};
-  font: 500 12px ${tokens.font.mono};
+  border: 1px solid ${p => p.theme.hairlineStrong};
+  font: 400 12px/1rem ${tokens.font.mono};
   font-variant-numeric: tabular-nums;
-  color: ${p => p.theme.textHigh};
-  text-align: right;
+  color: var(--param-accent, ${p => p.theme.primary});
   ${props => props.$clickable && css`
     cursor: text;
-    &:hover {
-      border-color: ${props.theme.focusBorder};
-    }
+    &:hover { border-color: var(--param-accent, ${props.theme.primary}); }
   `}
 `;
 
 // Compact inline input
 export const ValueInput = styled.input`
   width: 80px;
-  padding: 4px 8px;
-  font: 500 12px ${tokens.font.mono};
+  height: 24px;
+  padding: 0 6px;
+  font: 400 12px/1rem ${tokens.font.mono};
   text-align: right;
   background: ${p => p.theme.surface};
-  border: 1px solid ${p => p.theme.focusBorder};
-  border-radius: 6px;
-  color: ${p => p.theme.textHigh};
+  border: 1px solid var(--param-accent, ${p => p.theme.primary});
+  border-radius: 4px;
+  color: var(--param-accent, ${p => p.theme.primary});
   outline: none;
 
   &::-webkit-outer-spin-button,
@@ -348,6 +363,7 @@ export const ValueInput = styled.input`
 
   @media (max-width: ${tokens.breakpoint.mobileMax}px) {
     font-size: 16px;
+    height: 32px;
   }
 `;
 
@@ -355,43 +371,43 @@ export const ValueInput = styled.input`
 export const ParameterRowWithSlider = styled.div`
   display: flex;
   flex-direction: column;
-  padding: 4px 0;
+  gap: 4px;
 `;
 
 // Range slider
 export const SliderInput = styled.input.attrs({ type: "range" })`
   width: 100%;
   height: 4px;
-  margin: 10px 0 8px;
+  margin: 6px 0;
   padding: 0;
   appearance: none;
   -webkit-appearance: none;
   background: linear-gradient(
     to right,
-    ${p => p.theme.primary} 0%,
-    ${p => p.theme.primary} var(--val, 50%),
-    rgba(255, 255, 255, 0.1) var(--val, 50%),
-    rgba(255, 255, 255, 0.1) 100%
+    var(--param-accent, ${p => p.theme.primary}) 0%,
+    var(--param-accent, ${p => p.theme.primary}) var(--val, 50%),
+    ${p => p.theme.surfaceHighest} var(--val, 50%),
+    ${p => p.theme.surfaceHighest} 100%
   );
   cursor: pointer;
-  border-radius: 2px;
+  border-radius: 8px;
 
   &::-webkit-slider-thumb {
     -webkit-appearance: none;
     width: 14px;
     height: 14px;
     border-radius: 50%;
-    background: ${p => p.theme.textHigh};
-    border: 2px solid ${p => p.theme.primary};
-    box-shadow: ${p => p.theme.glowPrimary};
+    background: var(--param-accent, ${p => p.theme.primary});
+    border: none;
+    box-shadow: 0 0 10px -1px var(--param-accent, ${p => p.theme.primary});
   }
 
   &::-moz-range-thumb {
-    width: 12px;
-    height: 12px;
+    width: 14px;
+    height: 14px;
+    border: none;
     border-radius: 50%;
-    background: ${p => p.theme.textHigh};
-    border: 2px solid ${p => p.theme.primary};
+    background: var(--param-accent, ${p => p.theme.primary});
   }
 
   @media (max-width: ${tokens.breakpoint.mobileMax}px) {
@@ -401,3 +417,12 @@ export const SliderInput = styled.input.attrs({ type: "range" })`
     &::-webkit-slider-thumb { width: 22px; height: 22px; }
   }
 `;
+
+// Titled card wrapping a system's parameter rows (one per system's Controls).
+export const ParameterGrid: React.FC<{ children?: React.ReactNode }> = ({ children }) =>
+  React.createElement(
+    ParameterCard,
+    { role: "group", "aria-label": "Parameters" },
+    React.createElement(ParameterCardHead, { "data-card-head": "", "aria-hidden": true } as React.HTMLAttributes<HTMLDivElement>, "Parameters"),
+    children
+  );

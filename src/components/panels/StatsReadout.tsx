@@ -12,13 +12,21 @@ export function formatDuration(ms: number): string {
 }
 
 const Grid = styled.dl<{ $compact: boolean }>`
+  margin: 0;
   display: grid;
   grid-template-columns: ${p => (p.$compact ? "auto auto auto" : "auto 1fr")};
   gap: ${p => (p.$compact ? "0 10px" : "4px 12px")};
-  margin: 0;
-  font: 400 11px/1.6 ${tokens.font.mono};
+  font: 400 11px/0.875rem ${tokens.font.mono};
+  ${p => !p.$compact && `
+    padding: 8px;
+    background: rgba(11, 14, 23, 0.9);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: 8px;
+  `}
   dt { color: ${p => p.theme.textMid}; display: ${p => (p.$compact ? "none" : "block")}; }
-  dd { margin: 0; color: ${p => p.theme.primary}; text-align: ${p => (p.$compact ? "left" : "right")}; }
+  dd { margin: 0; text-align: ${p => (p.$compact ? "left" : "right")}; color: ${p => p.theme.textHigh}; }
+  dd:nth-of-type(1) { color: ${p => p.theme.primary}; font-weight: 500; }
+  dd:nth-of-type(3) { color: ${p => p.theme.secondary}; }
 `;
 
 interface Props {
@@ -46,9 +54,9 @@ export const StatsReadout: React.FC<Props> = ({ statsRef, running, rendering, is
 
   return (
     <Grid $compact={compact} aria-label="Render statistics">
-      <dt>Iterations</dt><dd>{formatCompact(sample.iterations)}</dd>
-      <dt>Points/sec</dt><dd>{formatCompact(Math.round(sample.rate))}{compact ? " pts/s" : ""}</dd>
-      <dt>Elapsed</dt><dd>{formatDuration(sample.elapsedMs)}</dd>
+      <dt>Iterations:</dt><dd>{formatCompact(sample.iterations)}</dd>
+      <dt>Points/sec:</dt><dd>{formatCompact(Math.round(sample.rate))}{compact ? " pts/s" : ""}</dd>
+      <dt>Elapsed:</dt><dd>{formatDuration(sample.elapsedMs)}</dd>
     </Grid>
   );
 };

@@ -24,12 +24,12 @@ describe("ResponsiveShell", () => {
     const props = makeShellProps({ systemLabel: "Clifford", iterating: true });
     renderWithTheme(<MemoryRouter><AppThemeProvider><ResponsiveShell {...props} /></AppThemeProvider></MemoryRouter>);
     expect(screen.getByTestId("canvas")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Pause" })).toBeInTheDocument();
+    expect(screen.getAllByRole("button", { name: "Pause" }).length).toBeGreaterThan(0);
 
     act(() => set(true));
     expect(screen.getByTestId("canvas")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /Clifford/ })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Pause" })).toBeInTheDocument();
+    expect(screen.getAllByRole("button", { name: "Pause" }).length).toBeGreaterThan(0);
   });
 
   it("does not remount the canvas when crossing the breakpoint (the worker owns the canvas element)", () => {

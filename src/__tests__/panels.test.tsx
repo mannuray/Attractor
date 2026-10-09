@@ -1,5 +1,5 @@
 import React from "react";
-import { screen, fireEvent } from "@testing-library/react";
+import { screen, fireEvent, within } from "@testing-library/react";
 import { renderWithTheme } from "./renderWithTheme";
 import "../attractors"; // registers all modules
 import { registry } from "../attractors/registry";
@@ -9,30 +9,41 @@ import { formatDuration } from "../components/panels/StatsReadout";
 
 describe("SystemPanel", () => {
   it("shows the active system's category and filters by search", () => {
-    const onChange = jest.fn();
-    renderWithTheme(<SystemPanel value="clifford" onChange={onChange} />);
+    renderWithTheme(<SystemPanel value="clifford" onChange={() => {}} />);
     expect(screen.getByRole("button", { name: "Attractors" })).toHaveAttribute("aria-pressed", "true");
     fireEvent.change(screen.getByRole("searchbox", { name: "Search systems" }), { target: { value: "jong" } });
-    const options = screen.getAllByRole("option");
-    expect(options.length).toBeGreaterThan(0);
-    options.forEach(o => expect(o.textContent!.toLowerCase()).toContain("jong"));
+    const items = within(screen.getByRole("list", { name: "Systems" })).getAllByRole("button");
+    expect(items.length).toBeGreaterThan(0);
+    items.forEach(o => expect(o.textContent!.toLowerCase()).toContain("jong"));
   });
 
   it("search spans all categories", () => {
     renderWithTheme(<SystemPanel value="clifford" onChange={() => {}} />);
     fireEvent.change(screen.getByRole("searchbox", { name: "Search systems" }), { target: { value: "mandel" } });
-    expect(screen.getByRole("option", { name: /mandelbrot/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /mandelbrot/i })).toBeInTheDocument();
   });
 
-  it("picking a system calls onChange and onPicked", () => {
+  it("systems are keyboard-focusable buttons; picking calls onChange and onPicked", () => {
     const onChange = jest.fn();
     const onPicked = jest.fn();
     renderWithTheme(<SystemPanel value="clifford" onChange={onChange} onPicked={onPicked} />);
     fireEvent.click(screen.getByRole("button", { name: "Fractals" }));
     const first = registry.getByCategory("Fractals")[0];
-    fireEvent.click(screen.getByRole("option", { name: first.label }));
+    const item = screen.getByRole("button", { name: first.label });
+    expect(item.tagName).toBe("BUTTON");
+    fireEvent.click(item);
     expect(onChange).toHaveBeenCalledWith(first.id);
     expect(onPicked).toHaveBeenCalled();
+  });
+
+  it("marks the current system", () => {
+    renderWithTheme(<SystemPanel value="clifford" onChange={() => {}} />);
+    expect(screen.getByRole("button", { name: "Clifford" })).toHaveAttribute("aria-current", "true");
+  });
+
+  it("can hide the search box", () => {
+    renderWithTheme(<SystemPanel value="clifford" onChange={() => {}} showSearch={false} />);
+    expect(screen.queryByRole("searchbox")).toBeNull();
   });
 });
 
