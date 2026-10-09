@@ -216,7 +216,7 @@ export function ColorPickerPopup({
         boxShadow: "0 25px 80px rgba(0,0,0,0.6), 0 0 40px rgba(245, 158, 11, 0.25)",
       }}
       onClick={(e) => e.stopPropagation()}
-      onMouseDown={(e) => e.stopPropagation()}
+      onPointerDown={(e) => e.stopPropagation()}
     >
       <div style={{
         background: "linear-gradient(135deg, #1a1214 0%, #2d1f1f 100%)",
@@ -295,11 +295,12 @@ export function ColorPickerPopup({
               borderRadius: "12px",
               cursor: "crosshair",
               display: "block",
+              touchAction: "none",
             }}
-            onMouseDown={(e) => { setIsDraggingSquare(true); handleSquareInteraction(e); }}
-            onMouseMove={(e) => isDraggingSquare && handleSquareInteraction(e)}
-            onMouseUp={() => setIsDraggingSquare(false)}
-            onMouseLeave={() => setIsDraggingSquare(false)}
+            onPointerDown={(e) => { e.currentTarget.setPointerCapture(e.pointerId); setIsDraggingSquare(true); handleSquareInteraction(e); }}
+            onPointerMove={(e) => isDraggingSquare && handleSquareInteraction(e)}
+            onPointerUp={() => setIsDraggingSquare(false)}
+            onPointerCancel={() => setIsDraggingSquare(false)}
           />
           {/* Picker Indicator */}
           <div style={{
@@ -328,11 +329,12 @@ export function ColorPickerPopup({
               borderRadius: "12px",
               cursor: "pointer",
               display: "block",
+              touchAction: "none",
             }}
-            onMouseDown={(e) => { setIsDraggingHue(true); handleHueInteraction(e); }}
-            onMouseMove={(e) => isDraggingHue && handleHueInteraction(e)}
-            onMouseUp={() => setIsDraggingHue(false)}
-            onMouseLeave={() => setIsDraggingHue(false)}
+            onPointerDown={(e) => { e.currentTarget.setPointerCapture(e.pointerId); setIsDraggingHue(true); handleHueInteraction(e); }}
+            onPointerMove={(e) => isDraggingHue && handleHueInteraction(e)}
+            onPointerUp={() => setIsDraggingHue(false)}
+            onPointerCancel={() => setIsDraggingHue(false)}
           />
           {/* Hue Indicator */}
           <div style={{
@@ -528,12 +530,12 @@ function ColorBar({ palletteArg, changePalletCallback }: ColorBarProps) {
     };
 
     timeoutId = setTimeout(() => {
-      document.addEventListener("mousedown", handleClickOutside);
+      document.addEventListener("pointerdown", handleClickOutside);
     }, 100);
 
     return () => {
       clearTimeout(timeoutId);
-      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("pointerdown", handleClickOutside);
     };
   }, [pickerOpen]);
 
@@ -582,11 +584,11 @@ function ColorBar({ palletteArg, changePalletCallback }: ColorBarProps) {
       hasMoved.current = false;
     };
 
-    window.addEventListener("mousemove", handleMouseMove);
-    window.addEventListener("mouseup", handleMouseUp);
+    window.addEventListener("pointermove", handleMouseMove);
+    window.addEventListener("pointerup", handleMouseUp);
     return () => {
-      window.removeEventListener("mousemove", handleMouseMove);
-      window.removeEventListener("mouseup", handleMouseUp);
+      window.removeEventListener("pointermove", handleMouseMove);
+      window.removeEventListener("pointerup", handleMouseUp);
     };
   }, [draggingIndex, palette, changePalletCallback]);
 
@@ -766,8 +768,9 @@ function ColorBar({ palletteArg, changePalletCallback }: ColorBarProps) {
                   cursor: isFirst || isLast ? "pointer" : "ew-resize",
                   zIndex: isSelected ? 10 : 1,
                   transition: "transform 0.15s ease",
+                  touchAction: "none",
                 }}
-                onMouseDown={(e) => handleHandleMouseDown(index, e)}
+                onPointerDown={(e) => handleHandleMouseDown(index, e)}
                 onMouseEnter={(e) => {
                   if (!isSelected) e.currentTarget.style.transform = "translateX(-50%) scale(1.15)";
                 }}

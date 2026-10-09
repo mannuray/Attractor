@@ -1,8 +1,10 @@
-import React, { lazy, Suspense, useState } from "react";
+import React, { lazy, Suspense, useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import styled from "styled-components";
 import { Color } from "../model-controller/Attractor/palette";
-import { Field, Label, Input, Select, FlexRow, ButtonPrimary, colors } from "../attractors/shared/styles";
+import { Field, Label, Input, Select, FlexRow, SliderInput } from "../attractors/shared/styles";
+import { IconButton } from "./ui/IconButton";
+import { tokens } from "../theme/tokens";
 import { ColorPickerPopup, RGB } from "../view/components/colorbar";
 import { ModalOverlay, ModalContent, ModalHeader, ModalTitle, CloseButton } from "./ModalStyles";
 
@@ -10,47 +12,42 @@ const ColorBar = lazy(() => import("../view/components/colorbar"));
 
 const ColorBarWrapper = styled.div`
   margin-bottom: 24px;
-  background: ${colors.darkerBg};
+  background: ${p => p.theme.surface};
   padding: 12px;
-  border-radius: 4px;
-  border: 1px solid ${colors.accentMuted};
+  border-radius: 10px;
+  border: 1px solid ${p => p.theme.hairline};
 `;
 
 const ColorPickerWrapper = styled.div`
   display: flex;
   align-items: center;
   gap: 12px;
-  background: ${colors.darkerBg};
+  background: ${p => p.theme.surface};
   padding: 10px;
-  border-radius: 4px;
-  border: 1px solid ${colors.accentBorder};
+  border-radius: 10px;
+  border: 1px solid ${p => p.theme.hairline};
 `;
 
 const ColorPreview = styled.div<{ $color: string }>`
   width: 36px;
   height: 36px;
-  border-radius: 4px;
+  border-radius: 8px;
   background: ${props => props.$color};
-  border: 1px solid ${colors.accentBorder};
-  transition: all 0.2s ease;
+  border: 1px solid ${p => p.theme.hairlineStrong};
+  transition: border-color 0.15s ease;
 
   &:hover {
-    transform: scale(1.1);
-    border-color: ${colors.accent};
-    box-shadow: 0 0 12px ${colors.accentSubtle};
+    border-color: ${p => p.theme.focusBorder};
   }
 `;
 
 const ColorValueLabel = styled.span`
-  color: ${colors.accentLight};
-  font-size: 11px;
-  font-weight: 700;
-  font-family: 'JetBrains Mono', monospace;
+  color: ${p => p.theme.textMid};
+  font: 500 12px ${tokens.font.mono};
   cursor: pointer;
-  
+
   &:hover {
-    color: ${colors.accent};
-    text-shadow: 0 0 8px ${colors.accentMuted};
+    color: ${p => p.theme.textHigh};
   }
 `;
 
@@ -91,6 +88,13 @@ export const PaletteModal: React.FC<PaletteModalProps> = ({
 }) => {
   const [bgPickerOpen, setBgPickerOpen] = useState(false);
 
+  useEffect(() => {
+    if (!isOpen || bgPickerOpen) return;
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [isOpen, bgPickerOpen, onClose]);
+
   if (!isOpen) return null;
 
   const bgColorHex = `#${bgColor.r.toString(16).padStart(2, '0')}${bgColor.g.toString(16).padStart(2, '0')}${bgColor.b.toString(16).padStart(2, '0')}`;
@@ -101,10 +105,10 @@ export const PaletteModal: React.FC<PaletteModalProps> = ({
 
   return (
     <ModalOverlay onClick={onClose}>
-      <ModalContent onClick={(e) => e.stopPropagation()}>
+      <ModalContent role="dialog" aria-modal="true" aria-labelledby="palette-title" onClick={(e) => e.stopPropagation()}>
         <ModalHeader>
-          <ModalTitle>Engine.Palette</ModalTitle>
-          <CloseButton onClick={onClose}>×</CloseButton>
+          <ModalTitle id="palette-title">Palette</ModalTitle>
+          <CloseButton aria-label="Close" onClick={onClose}>×</CloseButton>
         </ModalHeader>
 
         <ColorBarWrapper>
@@ -117,15 +121,14 @@ export const PaletteModal: React.FC<PaletteModalProps> = ({
         </ColorBarWrapper>
 
         <Field>
-          <Label>Signal Gamma ({palGamma.toFixed(2)})</Label>
-          <Input
-            type="range"
+          <Label>Gamma ({palGamma.toFixed(2)})</Label>
+          <SliderInput
             min="0.1"
             max="2.5"
             step="0.01"
             value={palGamma}
             onChange={(e) => onGammaChange(parseFloat(e.target.value))}
-            $editable
+            style={{ '--val': `${((palGamma - 0.1) / 2.4) * 100}%` } as React.CSSProperties}
           />
         </Field>
 
@@ -135,14 +138,14 @@ export const PaletteModal: React.FC<PaletteModalProps> = ({
             value={palScale ? "dynamic" : "fixed"}
             onChange={(e) => onScaleModeChange(e.target.value === "dynamic")}
           >
-            <option value="dynamic">Auto (Peak)</option>
-            <option value="fixed">Manual (Gain)</option>
+            <option value="dynamic">Auto (peak)</option>
+            <option value="fixed">Manual (max)</option>
           </Select>
         </Field>
 
         {!palScale && (
           <Field>
-            <Label>Gain Threshold</Label>
+            <Label>Max</Label>
             <Input
               type="number"
               value={palMax}
@@ -155,7 +158,7 @@ export const PaletteModal: React.FC<PaletteModalProps> = ({
         )}
 
         <Field>
-          <Label>Base.Canvas</Label>
+          <Label>Background</Label>
           <ColorPickerWrapper>
             <ColorPreview
               $color={bgColorHex}
@@ -169,7 +172,7 @@ export const PaletteModal: React.FC<PaletteModalProps> = ({
         </Field>
 
         <FlexRow $justify="flex-end" style={{ marginTop: 24 }}>
-          <ButtonPrimary onClick={onClose} style={{ width: '100px' }}>Commit</ButtonPrimary>
+          <IconButton label="Done" variant="primary" onClick={onClose}>Done</IconButton>
         </FlexRow>
       </ModalContent>
 
