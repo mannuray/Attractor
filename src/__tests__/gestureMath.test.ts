@@ -1,38 +1,43 @@
-import { distance, midpoint, clampZoom, pinchZoom, clientToCanvas } from "../lib/gestureMath";
+import { distance, midpoint, clientToCanvas, wheelFactor } from "../lib/gestureMath";
 
 describe("gestureMath", () => {
-  it("computes distance and midpoint", () => {
+  it("distance and midpoint", () => {
     expect(distance({ x: 0, y: 0 }, { x: 3, y: 4 })).toBe(5);
-    expect(midpoint({ x: 0, y: 0 }, { x: 4, y: 2 })).toEqual({ x: 2, y: 1 });
+    expect(midpoint({ x: 0, y: 0 }, { x: 10, y: 20 })).toEqual({ x: 5, y: 10 });
   });
 
-  it("scales zoom by finger spread", () => {
-    expect(pinchZoom(1, 100, 200)).toBe(2);
-    expect(pinchZoom(2, 200, 100)).toBe(1);
+  it("maps client points through the (transformed) canvas rect", () => {
+    const rect = { left: 100, top: 50, width: 600, height: 600 };
+    expect(clientToCanvas(rect, 0.5, 1200, 400, 350, false)).toEqual({ x: 600, y: 600 });
+    expect(clientToCanvas(rect, 0.5, 1200, 50, 350, false)).toBeNull();
+    expect(clientToCanvas(rect, 0.5, 1200, 50, 2000, true)).toEqual({ x: 0, y: 1200 });
   });
 
-  it("clamps to [0.1, 4]", () => {
-    expect(pinchZoom(1, 10, 1000)).toBe(4);
-    expect(pinchZoom(1, 1000, 1)).toBe(0.1);
-  });
+  describe("wheelFactor", () => {
+    const w = (deltaY: number, extra: Partial<WheelEvent> = {}) => wheelFactor({ deltaY, deltaMode: 0, ctrlKey: false, ...extra });
 
-  it("keeps zoom finite when fingers start at the same point", () => {
-    expect(pinchZoom(1.5, 0, 50)).toBe(1.5);
-    expect(clampZoom(NaN)).toBe(1);
-    expect(clampZoom(Infinity)).toBe(1);
-  });
-
-  describe("clientToCanvas", () => {
-    const rect = { left: 100, top: 50, width: 400, height: 400 };
-    it("maps client coords to canvas pixels using the display zoom", () => {
-      expect(clientToCanvas(rect, 0.5, 800, 300, 250, false)).toEqual({ x: 400, y: 400 });
+    it("scrolling up zooms in, down zooms out, symmetrically", () => {
+      expect(w(-100)).toBeGreaterThan(1);
+      expect(w(100)).toBeLessThan(1);
+      expect(w(-100) * w(100)).toBeCloseTo(1);
     });
-    it("rejects a start point outside the canvas", () => {
-      expect(clientToCanvas(rect, 0.5, 800, 50, 250, false)).toBeNull();
+
+    it("one mouse-wheel notch is a gentle step", () => {
+      expect(w(-100)).toBeGreaterThan(1.1);
+      expect(w(-100)).toBeLessThan(1.3);
     });
-    it("clamps moves that overshoot the edge instead of freezing", () => {
-      expect(clientToCanvas(rect, 0.5, 800, 900, -20, true)).toEqual({ x: 800, y: 0 });
+
+    it("trackpad pinch (ctrl+wheel, small deltas) is more sensitive per pixel", () => {
+      expect(w(-10, { ctrlKey: true })).toBeGreaterThan(w(-10));
+    });
+
+    it("line-mode wheels are treated like pixel wheels", () => {
+      expect(w(-3, { deltaMode: 1 })).toBeCloseTo(w(-48));
+    });
+
+    it("caps a single huge event", () => {
+      expect(w(-100000)).toBeLessThanOrEqual(2);
+      expect(w(100000)).toBeGreaterThanOrEqual(0.5);
     });
   });
 });
-
