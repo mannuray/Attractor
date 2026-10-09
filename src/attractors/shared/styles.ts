@@ -1,5 +1,6 @@
 import styled, { css } from "styled-components";
 import { ThemeColors } from "../../theme/themes";
+import { tokens } from "../../theme/tokens";
 
 // Color helper object that works with styled-components props
 export const colors = {
@@ -26,23 +27,20 @@ export const colors = {
 
 // Glass effect mixin
 export const glassEffect = css`
-  background: ${colors.glassBg};
-  backdrop-filter: blur(24px);
-  -webkit-backdrop-filter: blur(24px);
-  border: 1px solid ${colors.accentBorder};
-  border-radius: 12px;
-  box-shadow: 0 8px 32px ${colors.shadow};
+  background: ${p => p.theme.glass1};
+  backdrop-filter: blur(16px) saturate(160%);
+  -webkit-backdrop-filter: blur(16px) saturate(160%);
+  border: 1px solid ${p => p.theme.hairline};
+  border-radius: 14px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.45);
 `;
 
 // Card style
 export const Card = styled.div`
-  background: ${colors.darkerBg};
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border: 1px solid ${colors.accentBorder};
-  padding: 16px;
-  border-radius: 12px;
+  padding: 0 0 16px;
   margin-bottom: 16px;
+  border-bottom: 1px solid ${p => p.theme.hairline};
+  &:last-child { border-bottom: none; }
 `;
 
 // Field wrapper
@@ -54,38 +52,43 @@ export const Field = styled.div`
 export const Label = styled.label`
   display: block;
   margin-bottom: 6px;
-  font-size: 10px;
-  font-weight: 800;
-  color: ${colors.accentLight};
+  font: 600 11px/1 ${tokens.font.mono};
+  letter-spacing: 0.08em;
   text-transform: uppercase;
-  letter-spacing: 2px;
-  font-family: 'JetBrains Mono', 'Fira Code', monospace;
+  color: ${p => p.theme.textMid};
+`;
+
+// Small uppercase section label used across panels
+export const SectionLabel = styled.label`
+  display: block;
+  margin: 0 0 8px;
+  font: 600 11px/1 ${tokens.font.mono};
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: ${p => p.theme.textMid};
 `;
 
 // Base input styles
 const inputBase = css`
   width: 100%;
+  min-height: 36px;
   padding: 8px 12px;
-  font-size: 13px;
-  border-radius: 6px;
-  border: 1px solid ${colors.accentBorder};
+  font: 500 12px ${tokens.font.ui};
+  border-radius: 10px;
+  border: 1px solid ${p => p.theme.hairline};
   box-sizing: border-box;
-  background: ${colors.darkestBg};
-  color: ${colors.white};
-  font-weight: 500;
+  background: ${p => p.theme.surface};
+  color: ${p => p.theme.textHigh};
   outline: none;
-  transition: all 0.2s ease;
+  transition: border-color 0.15s ease;
 
   &:focus {
-    border-color: ${colors.accent};
-    box-shadow: 0 0 0 2px ${colors.accentSubtle}, 0 0 10px ${colors.accentMuted};
+    border-color: ${p => p.theme.focusBorder};
   }
 
   &:disabled {
-    background: rgba(0, 0, 0, 0.3);
-    color: rgba(255, 255, 255, 0.2);
+    opacity: 0.4;
     cursor: not-allowed;
-    border-color: ${colors.accentMuted};
   }
 `;
 
@@ -101,18 +104,14 @@ export const Select = styled.select`
   cursor: pointer;
   appearance: none;
   -webkit-appearance: none;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='cyan' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%2394A3B8' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
   background-repeat: no-repeat;
   background-position: right 12px center;
   padding-right: 36px;
 
-  &:hover:not(:disabled) {
-    border-color: ${colors.accentLight};
-  }
-
   option {
-    background: ${colors.darkestBg};
-    color: ${colors.white};
+    background: ${p => p.theme.surface};
+    color: ${p => p.theme.textHigh};
   }
 `;
 
@@ -215,17 +214,15 @@ export const FloatingButton = styled.button`
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 16px;
-  background: ${colors.darkestBg};
-  border: 1px solid ${colors.accentBorder};
-  border-radius: 8px;
-  color: ${colors.accent};
-  backdrop-filter: blur(8px);
+  font-size: 14px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid ${p => p.theme.hairline};
+  border-radius: 10px;
+  color: ${p => p.theme.textHigh};
 
   &:hover {
-    background: ${colors.accentSubtle};
-    border-color: ${colors.accent};
-    box-shadow: 0 0 12px ${colors.accentMuted};
+    border-color: ${p => p.theme.focusBorder};
+    box-shadow: none;
   }
 `;
 
@@ -257,52 +254,42 @@ export const SectionHeader = styled.div<{ $collapsed?: boolean }>`
   justify-content: space-between;
   cursor: pointer;
   padding: 8px 0;
-  border-bottom: 1px solid ${colors.accentMuted};
-  margin-bottom: ${props => props.$collapsed ? "0" : "16px"};
+  margin-bottom: ${props => props.$collapsed ? "0" : "12px"};
   user-select: none;
-
-  &:hover {
-    border-color: ${colors.accentBorderLight};
-  }
 `;
 
 export const SectionTitle = styled.h3`
   margin: 0;
-  font-size: 10px;
-  font-weight: 800;
-  color: ${colors.accentDim};
+  font: 600 11px/1 ${tokens.font.mono};
+  letter-spacing: 0.08em;
   text-transform: uppercase;
-  letter-spacing: 2px;
-  font-family: 'JetBrains Mono', monospace;
+  color: ${p => p.theme.textMid};
 `;
 
 export const CollapseIcon = styled.span<{ $collapsed?: boolean }>`
   font-size: 9px;
-  color: ${colors.accentDim};
+  color: ${p => p.theme.textMid};
   transform: rotate(${props => props.$collapsed ? "-90deg" : "0"});
-  transition: transform 0.3s ease;
+  transition: transform 0.2s ease;
 `;
 
 // Stats row
 export const StatsRow = styled.div`
   display: flex;
   justify-content: space-between;
-  font-size: 9px;
-  color: ${colors.accentDim};
+  font: 400 11px ${tokens.font.mono};
+  color: ${p => p.theme.textMid};
   padding: 10px 0;
-  border-top: 1px solid ${colors.accentMuted};
-  font-family: 'JetBrains Mono', monospace;
+  border-top: 1px solid ${p => p.theme.hairline};
 `;
 
 export const StatLabel = styled.span`
   font-weight: 500;
-  text-transform: uppercase;
-  letter-spacing: 1px;
 `;
 
 export const StatValue = styled.span`
-  color: ${colors.accentLight};
-  font-weight: 700;
+  color: ${p => p.theme.primary};
+  font-weight: 500;
 `;
 
 // Parameter row layout
@@ -310,7 +297,8 @@ export const ParameterRow = styled.div`
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 6px 0;
+  gap: 8px;
+  padding: 4px 0;
 `;
 
 // Parameter grid
@@ -322,43 +310,34 @@ export const ParameterGrid = styled.div`
 
 // Display value as text
 export const ValueText = styled.span<{ $clickable?: boolean }>`
-  font-size: 12px;
-  font-weight: 700;
-  color: ${colors.white};
-  font-family: 'JetBrains Mono', monospace;
+  min-width: 64px;
+  padding: 4px 8px;
+  border-radius: 6px;
+  background: ${p => p.theme.surface};
+  border: 1px solid ${p => p.theme.hairline};
+  font: 500 12px ${tokens.font.mono};
   font-variant-numeric: tabular-nums;
+  color: ${p => p.theme.textHigh};
   text-align: right;
   ${props => props.$clickable && css`
-    cursor: pointer;
-    padding: 2px 6px;
-    border-radius: 4px;
-    background: ${props.theme.accentSubtle};
+    cursor: text;
     &:hover {
-      background: ${props.theme.accentMuted};
-      color: ${props.theme.accent};
-      box-shadow: 0 0 8px ${props.theme.accentSubtle};
+      border-color: ${props.theme.focusBorder};
     }
   `}
 `;
 
 // Compact inline input
 export const ValueInput = styled.input`
-  width: 70px;
+  width: 80px;
   padding: 4px 8px;
-  font-size: 12px;
-  font-weight: 700;
-  font-family: 'JetBrains Mono', monospace;
+  font: 500 12px ${tokens.font.mono};
   text-align: right;
-  background: ${colors.darkestBg};
-  border: 1px solid ${colors.accentBorder};
-  border-radius: 4px;
-  color: ${colors.white};
+  background: ${p => p.theme.surface};
+  border: 1px solid ${p => p.theme.focusBorder};
+  border-radius: 6px;
+  color: ${p => p.theme.textHigh};
   outline: none;
-
-  &:focus {
-    border-color: ${colors.accent};
-    box-shadow: 0 0 8px ${colors.accentSubtle};
-  }
 
   &::-webkit-outer-spin-button,
   &::-webkit-inner-spin-button {
@@ -366,6 +345,10 @@ export const ValueInput = styled.input`
     margin: 0;
   }
   -moz-appearance: textfield;
+
+  @media (max-width: ${tokens.breakpoint.mobileMax}px) {
+    font-size: 16px;
+  }
 `;
 
 // Wrapper for parameter row + slider
@@ -384,36 +367,37 @@ export const SliderInput = styled.input.attrs({ type: "range" })`
   appearance: none;
   -webkit-appearance: none;
   background: linear-gradient(
-    to right, 
-    ${colors.accent} 0%, 
-    ${colors.accent} var(--val, 50%), 
-    ${colors.accentMuted} var(--val, 50%), 
-    ${colors.accentMuted} 100%
+    to right,
+    ${p => p.theme.primary} 0%,
+    ${p => p.theme.primary} var(--val, 50%),
+    rgba(255, 255, 255, 0.1) var(--val, 50%),
+    rgba(255, 255, 255, 0.1) 100%
   );
   cursor: pointer;
   border-radius: 2px;
 
   &::-webkit-slider-thumb {
     -webkit-appearance: none;
-    width: 12px;
-    height: 12px;
+    width: 14px;
+    height: 14px;
     border-radius: 50%;
-    background: ${colors.accent};
-    border: 2px solid ${colors.bgPage};
-    box-shadow: 0 0 8px ${colors.accentMuted};
-    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-  }
-
-  &:hover::-webkit-slider-thumb {
-    transform: scale(1.3);
-    box-shadow: 0 0 15px ${colors.accentSoft};
+    background: ${p => p.theme.textHigh};
+    border: 2px solid ${p => p.theme.primary};
+    box-shadow: ${p => p.theme.glowPrimary};
   }
 
   &::-moz-range-thumb {
-    width: 10px;
-    height: 10px;
+    width: 12px;
+    height: 12px;
     border-radius: 50%;
-    background: ${colors.accent};
-    border: 2px solid ${colors.bgPage};
+    background: ${p => p.theme.textHigh};
+    border: 2px solid ${p => p.theme.primary};
+  }
+
+  @media (max-width: ${tokens.breakpoint.mobileMax}px) {
+    height: 24px;
+    padding: 10px 0;
+    background-clip: content-box;
+    &::-webkit-slider-thumb { width: 22px; height: 22px; }
   }
 `;
