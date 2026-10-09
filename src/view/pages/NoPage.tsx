@@ -1,5 +1,6 @@
 import React from "react";
 import styled from "styled-components";
+import { tokens } from "../../theme/tokens";
 
 function NoPage(props) {
   return (
@@ -11,7 +12,7 @@ function NoPage(props) {
 }
 
 const Text1 = styled.span`
-  font-family: Roboto;
+  font-family: ${tokens.font.ui};
   font-style: normal;
   font-weight: 700;
   color: #121212;
@@ -23,7 +24,7 @@ const Text1 = styled.span`
 `;
 
 const Text2 = styled.span`
-  font-family: Roboto;
+  font-family: ${tokens.font.ui};
   font-style: normal;
   font-weight: 700;
   color: #121212;

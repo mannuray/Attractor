@@ -5,14 +5,15 @@ import styled, { css } from "styled-components";
 import 'katex/dist/katex.min.css';
 import { InlineMath, BlockMath } from 'react-katex';
 import { GiscusComments } from "../../components/GiscusComments";
+import { tokens } from "../../theme/tokens";
 
 // ============= STYLED COMPONENTS =============
 
 const PageContainer = styled.div`
   min-height: 100vh;
-  background: ${props => props.theme.bgPage};
+  background: ${props => props.theme.canvasBg};
   color: ${props => props.theme.white};
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-family: ${tokens.font.ui};
   transition: background 0.5s ease;
 `;
 
@@ -22,7 +23,7 @@ const Header = styled.header`
   background: ${props => props.theme.darkestBg};
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
-  border-bottom: 1px solid ${props => props.theme.accentBorder};
+  border-bottom: 1px solid ${props => props.theme.hairline};
   z-index: 100;
 `;
 
@@ -42,9 +43,9 @@ const BackButton = styled.button`
   font-weight: 800;
   text-transform: uppercase;
   letter-spacing: 1px;
-  font-family: 'JetBrains Mono', monospace;
+  font-family: ${tokens.font.mono};
   background: transparent;
-  border: 1px solid ${props => props.theme.accentBorder};
+  border: 1px solid ${props => props.theme.hairline};
   border-radius: 4px;
   color: ${props => props.theme.accent};
   cursor: pointer;
@@ -64,7 +65,7 @@ const Title = styled.h1`
   font-weight: 900;
   letter-spacing: 2px;
   text-transform: uppercase;
-  font-family: 'JetBrains Mono', monospace;
+  font-family: ${tokens.font.mono};
   color: ${props => props.theme.accent};
   text-shadow: 0 0 10px ${props => props.theme.accentMuted};
 `;
@@ -74,7 +75,7 @@ const TabNav = styled.nav`
   gap: 2px;
   padding: 0 24px;
   background: rgba(0, 0, 0, 0.2);
-  border-bottom: 1px solid ${props => props.theme.accentMuted};
+  border-bottom: 1px solid ${props => props.theme.hairline};
   overflow-x: auto;
 
   &::-webkit-scrollbar {
@@ -88,7 +89,7 @@ const Tab = styled.button<{ $active: boolean }>`
   font-weight: 800;
   text-transform: uppercase;
   letter-spacing: 2px;
-  font-family: 'JetBrains Mono', monospace;
+  font-family: ${tokens.font.mono};
   background: transparent;
   border: none;
   border-bottom: 2px solid ${props => props.$active ? props.theme.accent : "transparent"};
@@ -132,7 +133,7 @@ const Content = styled.main`
 const Section = styled.section`
   background: ${props => props.theme.darkerBg};
   backdrop-filter: blur(12px);
-  border: 1px solid ${props => props.theme.accentMuted};
+  border: 1px solid ${props => props.theme.hairline};
   border-radius: 8px;
   padding: 40px;
   margin-bottom: 32px;
@@ -146,7 +147,7 @@ const SectionTitle = styled.h2`
   text-transform: uppercase;
   letter-spacing: 3px;
   color: ${props => props.theme.accentLight};
-  font-family: 'JetBrains Mono', monospace;
+  font-family: ${tokens.font.mono};
   border-left: 4px solid ${props => props.theme.accent};
   padding-left: 20px;
 `;
@@ -158,7 +159,7 @@ const SubTitle = styled.h3`
   text-transform: uppercase;
   letter-spacing: 1.5px;
   color: ${props => props.theme.accentDim};
-  font-family: 'JetBrains Mono', monospace;
+  font-family: ${tokens.font.mono};
 `;
 
 const Paragraph = styled.p`
@@ -173,7 +174,7 @@ const MathBlock = styled.div`
   background: ${props => props.theme.darkestBg};
   padding: 24px;
   border-radius: 4px;
-  border: 1px solid ${props => props.theme.accentBorder};
+  border: 1px solid ${props => props.theme.hairline};
   margin: 32px 0;
   overflow-x: auto;
 
@@ -185,7 +186,7 @@ const MathBlock = styled.div`
 
 const AttractorCard = styled.div`
   background: ${props => props.theme.darkBg};
-  border: 1px solid ${props => props.theme.accentMuted};
+  border: 1px solid ${props => props.theme.hairline};
   border-radius: 8px;
   padding: 32px;
   margin-bottom: 40px;
@@ -210,7 +211,7 @@ const GalleryImage = styled.img`
   max-width: 600px;
   height: auto;
   border-radius: 4px;
-  border: 1px solid ${props => props.theme.accentBorder};
+  border: 1px solid ${props => props.theme.hairline};
   box-shadow: 0 0 30px rgba(0, 0, 0, 0.6);
   margin: 24px 0;
   cursor: pointer;
@@ -236,7 +237,7 @@ const GridImage = styled.img`
   aspect-ratio: 1;
   object-fit: cover;
   border-radius: 4px;
-  border: 1px solid ${props => props.theme.accentBorder};
+  border: 1px solid ${props => props.theme.hairline};
   box-shadow: 0 12px 40px rgba(0, 0, 0, 0.6);
   cursor: pointer;
   transition: all 0.3s ease;
@@ -257,7 +258,7 @@ const ImageLabel = styled.span`
   margin-top: 12px;
   text-transform: uppercase;
   letter-spacing: 1.5px;
-  font-family: 'JetBrains Mono', monospace;
+  font-family: ${tokens.font.mono};
 `;
 
 const AttractorContent = styled.div`
@@ -281,7 +282,7 @@ const UsageList = styled.ul`
 
 const UsageItem = styled.li`
   padding: 16px 0;
-  border-bottom: 1px solid ${props => props.theme.accentMuted};
+  border-bottom: 1px solid ${props => props.theme.hairline};
   display: flex;
   gap: 16px;
   line-height: 1.7;
@@ -303,7 +304,7 @@ const StepNumber = styled.span`
   font-size: 13px;
   font-weight: 900;
   color: ${props => props.theme.bgPage};
-  font-family: 'JetBrains Mono', monospace;
+  font-family: ${tokens.font.mono};
 `;
 
 const ParamList = styled.div`
@@ -316,11 +317,11 @@ const ParamList = styled.div`
 const ParamBadge = styled.span`
   padding: 4px 10px;
   background: ${props => props.theme.accentSubtle};
-  border: 1px solid ${props => props.theme.accentBorder};
+  border: 1px solid ${props => props.theme.hairline};
   border-radius: 4px;
   font-size: 10px;
   font-weight: 800;
-  font-family: 'JetBrains Mono', monospace;
+  font-family: ${tokens.font.mono};
   color: ${props => props.theme.accentLight};
 `;
 
@@ -328,14 +329,14 @@ const CreditSection = styled.div`
   text-align: center;
   padding: 32px;
   margin-top: 40px;
-  border-top: 1px solid ${props => props.theme.accentMuted};
+  border-top: 1px solid ${props => props.theme.hairline};
 `;
 
 const CreditLink = styled.a`
   color: ${props => props.theme.accent};
   font-weight: 700;
   text-decoration: none;
-  font-family: 'JetBrains Mono', monospace;
+  font-family: ${tokens.font.mono};
   font-size: 12px;
   
   &:hover {
@@ -1830,27 +1831,27 @@ const HowToUseTab: React.FC = () => (
       <UsageList>
         <UsageItem>
           <StepNumber>1</StepNumber>
-          <span><strong>Select a Type:</strong> Use the dropdown in the sidebar to choose from Attractors, IFS, or Fractals. Each category contains multiple visualization types.</span>
+          <span><strong>Select a Type:</strong> Click the system name at the top (or the System tab) to choose from Attractors, IFS, or Fractals. Each category contains multiple visualization types.</span>
         </UsageItem>
         <UsageItem>
           <StepNumber>2</StepNumber>
-          <span><strong>Discovery AI:</strong> Click the ◈ (HUNT) button in the bottom command bar to automatically find visually interesting chaotic systems.</span>
+          <span><strong>Discovery AI:</strong> Click Hunt in the floating toolbar (or the bottom panel on mobile) to automatically find visually interesting chaotic systems.</span>
         </UsageItem>
         <UsageItem>
           <StepNumber>3</StepNumber>
-          <span><strong>Edit Parameters:</strong> Adjust sliders in the sidebar to modify the underlying math in real-time.</span>
+          <span><strong>Edit Parameters:</strong> Adjust sliders in the Parameters tab to modify the underlying math in real-time.</span>
         </UsageItem>
         <UsageItem>
           <StepNumber>4</StepNumber>
-          <span><strong>Visual FX:</strong> Open the "Studio.FX" panel in the sidebar to apply high-end post-processing like Bloom and Grain.</span>
+          <span><strong>Visual FX:</strong> Open the Effects tab to apply post-processing like Bloom, Grain and Vignette.</span>
         </UsageItem>
         <UsageItem>
           <StepNumber>5</StepNumber>
-          <span><strong>Customize Colors:</strong> Click the LUT button to open the color editor and modify the 32-bit color lookup table.</span>
+          <span><strong>Customize Colors:</strong> Open the Color tab and click Edit to modify the color palette and background.</span>
         </UsageItem>
         <UsageItem>
           <StepNumber>6</StepNumber>
-          <span><strong>Save Your Art:</strong> Click the OUT button to export your creation as a high-resolution PNG image.</span>
+          <span><strong>Save Your Art:</strong> Click Export to save your creation as a high-resolution PNG image.</span>
         </UsageItem>
       </UsageList>
     </Section>
