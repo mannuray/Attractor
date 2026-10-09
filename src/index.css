@@ -95,6 +95,15 @@ html, body, #root {
   }
 }
 
+/* Self-hosted subset of Material Symbols Outlined (see scripts/fetch-icon-font.sh). */
+@font-face {
+  font-family: 'Material Symbols Outlined';
+  font-style: normal;
+  font-weight: 300 500;
+  font-display: block;
+  src: url('./assets/fonts/material-symbols-outlined.woff2') format('woff2');
+}
+
 .material-symbols-outlined {
   font-family: 'Material Symbols Outlined';
   font-weight: normal;

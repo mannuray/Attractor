@@ -2,7 +2,7 @@ import React from "react";
 
 // Icons use Google's Material Symbols Outlined font (the icon set of the Stitch designs).
 // Legacy short names map to Material glyphs; any other string is used as a glyph name directly.
-const ALIASES = {
+export const ICON_ALIASES = {
   play: "play_arrow",
   pause: "pause",
   sparkle: "auto_awesome",
@@ -25,7 +25,7 @@ const ALIASES = {
   search: "search",
 } as const;
 
-export type IconName = keyof typeof ALIASES | (string & {});
+export type IconName = keyof typeof ICON_ALIASES | (string & {});
 
 export const Icon: React.FC<{ name: IconName; size?: number; filled?: boolean; className?: string }> = ({
   name,
@@ -41,6 +41,6 @@ export const Icon: React.FC<{ name: IconName; size?: number; filled?: boolean; c
       fontVariationSettings: filled ? "'FILL' 1" : undefined,
     }}
   >
-    {(ALIASES as Record<string, string>)[name] ?? name}
+    {(ICON_ALIASES as Record<string, string>)[name] ?? name}
   </span>
 );
