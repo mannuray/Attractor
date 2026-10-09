@@ -8,7 +8,7 @@ import { StopPicker } from "./palette/StopPicker";
 import { Segmented } from "./ui/Segmented";
 import { Icon } from "./ui/Icon";
 import { useIsMobile } from "../hooks/useIsMobile";
-import { Stop, isEndStop, removeStop, setStopColor, toHex, fromHex, defaultStopIndex } from "../lib/colorRamp";
+import { Stop, isEndStop, removeStop, setStopColor, toHex, fromHex, defaultStopIndex, addStopInWidestGap } from "../lib/colorRamp";
 import { BgMode, bgColorFor, bgModeOf } from "../lib/bgMode";
 import { tokens } from "../theme/tokens";
 
@@ -78,6 +78,12 @@ const Label = styled.span`
 `;
 const Row = styled.div`display: flex; align-items: center; justify-content: space-between; gap: 12px;`;
 const Muted = styled.span`font: 400 11px/0.875rem ${tokens.font.mono}; color: ${p => p.theme.textLow};`;
+const AddStop = styled.button`
+  display: inline-flex; align-items: center; gap: 2px; padding: 2px 6px; border-radius: 4px; cursor: pointer;
+  background: transparent; border: none; color: ${p => p.theme.primary}; font: 400 11px/0.875rem ${tokens.font.mono};
+  &:hover { background: ${p => p.theme.primarySoft}; }
+  ${mobile} { min-height: 40px; }
+`;
 const Section = styled.div`
   display: flex; flex-direction: column; gap: 12px; padding-top: 16px; border-top: 1px solid rgba(61, 73, 76, 0.2);
 `;
@@ -202,7 +208,12 @@ export const PaletteModal: React.FC<PaletteModalProps> = ({
           <div>
             <Row style={{ marginBottom: 8 }}>
               <Label>Color ramp</Label>
-              <Muted>{stops.length} stops</Muted>
+              <span style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                <Muted>{stops.length} stops</Muted>
+                <AddStop type="button" aria-label="Add stop" onClick={() => { const r = addStopInWidestGap(stops); commit(r.stops, r.index); }}>
+                  <Icon name="add" size={14} /> Add stop
+                </AddStop>
+              </span>
             </Row>
             <ColorRamp stops={stops} selected={sel} onSelect={setSelected} onDraft={setDraft} onCommit={commit} touch={isMobile} />
           </div>

@@ -1,6 +1,6 @@
 import React, { useRef, useState } from "react";
 import styled from "styled-components";
-import { Stop, addStop, moveStop, toHex } from "../../lib/colorRamp";
+import { Stop, addStop, moveStop, removeStop, toHex } from "../../lib/colorRamp";
 import { tokens } from "../../theme/tokens";
 
 const Wrap = styled.div`position: relative; padding: 4px 0 4px; user-select: none;`;
@@ -89,6 +89,20 @@ export const ColorRamp: React.FC<Props> = ({ stops, selected, onSelect, onDraft,
     draftRef.current = null;
   };
 
+  // Keyboard: arrows move (Shift = 10x), Delete/Backspace removes a middle stop.
+  const onHandleKeyDown = (i: number) => (e: React.KeyboardEvent) => {
+    if (e.key === "ArrowLeft" || e.key === "ArrowRight") {
+      e.preventDefault();
+      const step = (e.shiftKey ? 0.1 : 0.01) * (e.key === "ArrowLeft" ? -1 : 1);
+      const next = moveStop(stops, i, Math.round((stops[i].position + step) * 1000) / 1000);
+      if (next !== stops) onCommit(next, i);
+    } else if (e.key === "Delete" || e.key === "Backspace") {
+      e.preventDefault();
+      const next = removeStop(stops, i);
+      if (next !== stops) onCommit(next, Math.max(0, i - 1));
+    }
+  };
+
   const onBarDoubleClick = (e: React.MouseEvent<HTMLDivElement>) => {
     const { stops: next, index } = addStop(stops, positionFrom(e.clientX, e.currentTarget));
     onCommit(next, index);
@@ -107,12 +121,12 @@ export const ColorRamp: React.FC<Props> = ({ stops, selected, onSelect, onDraft,
             style={{ left: `${s.position * 100}%`, zIndex: i === selected ? 4 : i === 0 || i === stops.length - 1 ? 3 : 1 }}
             onPointerDown={onHandleDown(i)} onPointerMove={onHandleMove(i)}
             onPointerUp={endDrag} onPointerCancel={endDrag} onLostPointerCapture={endDrag}
-            onClick={() => onSelect(i)}>
+            onClick={() => onSelect(i)} onKeyDown={onHandleKeyDown(i)}>
             <span className="tip" /><span className="dot" />
           </Handle>
         ))}
       </Track>
-      <Hint>{touch ? "Tap a stop to edit · Double-tap bar to add · Drag to move" : "Click a stop to edit · Double-click the bar to add · Drag to move"}</Hint>
+      <Hint>{touch ? "Tap a stop to edit · Double-tap bar to add · Drag to move" : "Click a stop to edit · Double-click the bar to add · Drag or use arrow keys to move"}</Hint>
     </Wrap>
   );
 };

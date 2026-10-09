@@ -90,3 +90,12 @@ export function defaultStopIndex(stops: Stop[]): number {
   }
   return best;
 }
+
+/** Add a stop in the middle of the widest gap between neighbouring stops. */
+export function addStopInWidestGap(stops: Stop[]): { stops: Stop[]; index: number } {
+  let gap = 0;
+  for (let i = 1; i < stops.length; i++) {
+    if (stops[i].position - stops[i - 1].position > stops[gap + 1].position - stops[gap].position) gap = i - 1;
+  }
+  return addStop(stops, (stops[gap].position + stops[gap + 1].position) / 2);
+}

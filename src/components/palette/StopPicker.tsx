@@ -32,6 +32,7 @@ const Grid = styled.div`
 const SV = styled.div`
   position: relative; width: 180px; height: 150px; flex-shrink: 0; border-radius: 8px; overflow: hidden;
   cursor: crosshair; touch-action: none; border: 1px solid rgba(255, 255, 255, 0.1);
+  &:focus-visible { outline: 2px solid ${p => p.theme.focusBorder}; outline-offset: 2px; }
   .w { position: absolute; inset: 0; background: linear-gradient(to right, #fff, transparent); }
   .b { position: absolute; inset: 0; background: linear-gradient(to top, #000, transparent); }
   .reticle {
@@ -45,6 +46,7 @@ const SV = styled.div`
 `;
 const Hue = styled.div<{ $horizontal: boolean }>`
   position: relative; flex-shrink: 0; border-radius: 8px; cursor: pointer; touch-action: none;
+  &:focus-visible { outline: 2px solid ${p => p.theme.focusBorder}; outline-offset: 2px; }
   border: 1px solid rgba(255, 255, 255, 0.1);
   width: ${p => (p.$horizontal ? "100%" : "20px")}; height: ${p => (p.$horizontal ? "28px" : "150px")};
   background: linear-gradient(${p => (p.$horizontal ? "to right" : "to bottom")}, #f00 0%, #ff0 17%, #0f0 33%, #0ff 50%, #00f 67%, #f0f 83%, #f00 100%);
@@ -152,6 +154,31 @@ export const StopPicker: React.FC<Props> = ({ color, position, canDelete, horizo
       apply({ ...hsvRef.current, h: Math.min(359.9, Math.max(0, t * 360)) });
     }
   };
+  // Keyboard: hue arrows ±1° (Shift ±10°); square arrows change saturation (←/→) and brightness (↑/↓).
+  const keyCommit = (next: { h: number; s: number; v: number }) => {
+    apply(next);
+    if (draftColor.current) onCommit(draftColor.current);
+    draftColor.current = null;
+  };
+  const onHueKey = (e: React.KeyboardEvent) => {
+    const d = (e.shiftKey ? 10 : 1) * (e.key === "ArrowRight" || e.key === "ArrowUp" ? 1 : e.key === "ArrowLeft" || e.key === "ArrowDown" ? -1 : 0);
+    if (!d) return;
+    e.preventDefault();
+    keyCommit({ ...hsvRef.current, h: Math.min(359, Math.max(0, Math.round(hsvRef.current.h) + d)) });
+  };
+  const onSvKey = (e: React.KeyboardEvent) => {
+    const step = e.shiftKey ? 0.1 : 0.01;
+    const cur = hsvRef.current;
+    const next =
+      e.key === "ArrowRight" ? { ...cur, s: Math.min(1, cur.s + step) } :
+      e.key === "ArrowLeft" ? { ...cur, s: Math.max(0, cur.s - step) } :
+      e.key === "ArrowUp" ? { ...cur, v: Math.min(1, cur.v + step) } :
+      e.key === "ArrowDown" ? { ...cur, v: Math.max(0, cur.v - step) } : null;
+    if (!next) return;
+    e.preventDefault();
+    keyCommit(next);
+  };
+
   const start = (kind: "sv" | "hue") => (e: React.PointerEvent) => {
     drag.current = kind;
     try { e.currentTarget.setPointerCapture(e.pointerId); } catch {}
@@ -187,13 +214,19 @@ export const StopPicker: React.FC<Props> = ({ color, position, canDelete, horizo
         </DeleteButton>
       </Head>
       <Grid>
-        <SV ref={svRef} style={{ backgroundColor: hueColor }} aria-label="Saturation and brightness"
+        <SV ref={svRef} style={{ backgroundColor: hueColor }} role="slider" tabIndex={0}
+          aria-label="Saturation and brightness" aria-valuemin={0} aria-valuemax={100}
+          aria-valuenow={Math.round(hsv.s * 100)}
+          aria-valuetext={`Saturation ${Math.round(hsv.s * 100)}%, brightness ${Math.round(hsv.v * 100)}%`}
+          onKeyDown={onSvKey}
           onPointerDown={start("sv")} onPointerMove={e => drag.current === "sv" && fromPointer(e)}
           onPointerUp={end} onPointerCancel={end} onLostPointerCapture={end}>
           <div className="w" /><div className="b" />
           <div className="reticle" style={{ left: `${hsv.s * 100}%`, top: `${(1 - hsv.v) * 100}%` }} />
         </SV>
-        <Hue ref={hueRef} $horizontal={horizontalHue} aria-label="Hue"
+        <Hue ref={hueRef} $horizontal={horizontalHue} role="slider" tabIndex={0} aria-label="Hue"
+          aria-valuemin={0} aria-valuemax={360} aria-valuenow={Math.round(hsv.h)}
+          aria-orientation={horizontalHue ? "horizontal" : "vertical"} onKeyDown={onHueKey}
           onPointerDown={start("hue")} onPointerMove={e => drag.current === "hue" && fromPointer(e)}
           onPointerUp={end} onPointerCancel={end} onLostPointerCapture={end}>
           <div className="h" style={horizontalHue ? { left: `${(hsv.h / 360) * 100}%`, background: hueColor } : { top: `${(hsv.h / 360) * 100}%` }} />
@@ -207,7 +240,15 @@ export const StopPicker: React.FC<Props> = ({ color, position, canDelete, horizo
                 <span>#</span>
                 <input id="stop-hex" aria-label="HEX" value={hexText} maxLength={7}
                   onChange={e => setHexText(e.target.value.replace(/^#/, ""))}
-                  onBlur={commitHex} onKeyDown={e => { if (e.key === "Enter") commitHex(); }} />
+                  onBlur={commitHex}
+                  onKeyDown={e => {
+                    if (e.key === "Enter") commitHex();
+                    if (e.key === "Escape") {
+                      // Revert the field only; don't let Escape reach the dialog and close it.
+                      e.stopPropagation();
+                      setHexText(toHex(color).slice(1));
+                    }
+                  }} />
               </HexBox>
             </div>
           </SwatchRow>

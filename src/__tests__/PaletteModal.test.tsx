@@ -112,5 +112,56 @@ describe("PaletteModal", () => {
       expect(end).toBeGreaterThan(mid);
     });
   });
+
+  describe("keyboard", () => {
+    it("arrow keys move the selected stop (Shift for bigger steps)", () => {
+      const p = props();
+      renderWithTheme(<PaletteModal {...p} />);
+      const stop = screen.getByRole("button", { name: "Stop 2 at 50%" });
+      fireEvent.keyDown(stop, { key: "ArrowRight" });
+      expect(p.onPaletteChange).toHaveBeenLastCalledWith([stops[0], { ...stops[1], position: 0.51 }, stops[2]]);
+      fireEvent.keyDown(stop, { key: "ArrowLeft", shiftKey: true });
+      expect(p.onPaletteChange).toHaveBeenLastCalledWith([stops[0], { ...stops[1], position: 0.4 }, stops[2]]);
+    });
+
+    it("Delete removes the selected middle stop", () => {
+      const p = props();
+      renderWithTheme(<PaletteModal {...p} />);
+      fireEvent.keyDown(screen.getByRole("button", { name: "Stop 2 at 50%" }), { key: "Delete" });
+      expect(p.onPaletteChange).toHaveBeenLastCalledWith([stops[0], stops[2]]);
+    });
+
+    it("Add stop inserts a stop in the widest gap", () => {
+      const p = props();
+      renderWithTheme(<PaletteModal {...p} />);
+      fireEvent.click(screen.getByRole("button", { name: "Add stop" }));
+      const next = p.onPaletteChange.mock.calls.pop()[0];
+      expect(next).toHaveLength(4);
+      expect(next[1].position).toBeCloseTo(0.25);
+    });
+
+    it("Escape in the HEX field reverts it without closing the editor", () => {
+      const p = props();
+      renderWithTheme(<PaletteModal {...p} />);
+      const hex = screen.getByRole("textbox", { name: "HEX" });
+      fireEvent.change(hex, { target: { value: "FF00" } });
+      fireEvent.keyDown(hex, { key: "Escape" });
+      expect(p.onClose).not.toHaveBeenCalled();
+      expect(hex).toHaveValue("1E5A9C");
+    });
+
+    it("hue and saturation/brightness are keyboard sliders", () => {
+      const p = props();
+      renderWithTheme(<PaletteModal {...p} />);
+      const hue = screen.getByRole("slider", { name: "Hue" });
+      const before = Number(hue.getAttribute("aria-valuenow"));
+      fireEvent.keyDown(hue, { key: "ArrowRight", shiftKey: true });
+      expect(Number(hue.getAttribute("aria-valuenow"))).toBe(Math.round(before + 10));
+      expect(p.onPaletteChange).toHaveBeenCalled();
+      const sv = screen.getByRole("slider", { name: "Saturation and brightness" });
+      fireEvent.keyDown(sv, { key: "ArrowDown" });
+      expect(p.onPaletteChange).toHaveBeenCalledTimes(2);
+    });
+  });
 });
 
