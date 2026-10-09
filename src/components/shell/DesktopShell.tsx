@@ -15,7 +15,7 @@ const Page = styled.div`
 const Row = styled.div`display: flex; min-height: 0;`;
 const Stage = styled.main`flex: 1; min-width: 0; position: relative; display: flex;`;
 const ToolbarDock = styled.div`
-  position: absolute; left: 50%; bottom: 24px; transform: translateX(-50%); z-index: ${tokens.z.toolbar};
+  position: absolute; left: 24px; bottom: 24px; z-index: ${tokens.z.toolbar};
 `;
 
 export const DesktopShell: React.FC<ShellProps> = (p) => {

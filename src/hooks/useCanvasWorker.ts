@@ -47,7 +47,8 @@ export interface UseCanvasWorkerReturn {
 
   // Read-only state
   canvasSize: number;
-  zoom: number;
+  /** Increments each time a fractal render's first (preview) frame is on the canvas. */
+  fractalFrame: number;
   containerSize: { width: number; height: number };
   iterating: boolean;
   canvasKey: number;
@@ -67,11 +68,6 @@ export interface UseCanvasWorkerReturn {
   saveImage: () => void;
   setCanvasSize: (size: number) => void;
   setOversampling: (value: number) => void;
-  setZoom: (zoom: number) => void;
-  fitToView: () => void;
-  zoomIn: () => void;
-  zoomOut: () => void;
-  zoomReset: () => void;
   setIsEditing: (editing: boolean) => void;
 }
 
@@ -91,11 +87,10 @@ export function useCanvasWorker(options: UseCanvasWorkerOptions): UseCanvasWorke
   const imageDataPoolRef = useRef<{ data: ImageData; size: number } | null>(null);
   const useOffscreenRef = useRef<boolean>(supportsOffscreenCanvas());
   const canvasTransferredRef = useRef<boolean>(false);
-  const fitTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // State
   const [canvasSize, setCanvasSizeState] = useState(CONFIG.DEFAULT_CANVAS_SIZE);
-  const [zoom, setZoomState] = useState(1);
+  const [fractalFrame, setFractalFrame] = useState(0);
   const [containerSize, setContainerSize] = useState({ width: 0, height: 0 });
   const [iterating, setIterating] = useState(false);
   const [canvasKey, setCanvasKey] = useState(0);
@@ -230,10 +225,6 @@ export function useCanvasWorker(options: UseCanvasWorkerOptions): UseCanvasWorke
       cancelAnimationFrame(rafIdRef.current);
       rafIdRef.current = null;
     }
-    if (fitTimeoutRef.current !== null) {
-      clearTimeout(fitTimeoutRef.current);
-      fitTimeoutRef.current = null;
-    }
   }, []);
 
   const stopHunt = useCallback(() => {
@@ -339,7 +330,7 @@ export function useCanvasWorker(options: UseCanvasWorkerOptions): UseCanvasWorke
           if (type === "stats") {
             statsRef.current.maxHits = payload.maxHits;
             statsRef.current.totalIterations = payload.totalIterations || 0;
-            if (payload.fractalPreview) { setRendering(true); setRenderProgress(0); }
+            if (payload.fractalPreview) { setRendering(true); setRenderProgress(0); setFractalFrame(f => f + 1); }
             if (payload.fractalComplete) { setRendering(false); setRenderProgress(null); }
           } else if (type === "fractalProgress") {
             setRendering(true);
@@ -427,19 +418,6 @@ export function useCanvasWorker(options: UseCanvasWorkerOptions): UseCanvasWorke
         }
       };
     }
-
-    if (fitTimeoutRef.current !== null) {
-      clearTimeout(fitTimeoutRef.current);
-    }
-    fitTimeoutRef.current = setTimeout(() => {
-      fitTimeoutRef.current = null;
-      const container = containerRef.current;
-      if (container) {
-        const { width, height } = container.getBoundingClientRect();
-        const fitZoom = Math.min((width - 40) / currentSize, (height - 40) / currentSize);
-        setZoomState(Math.max(0.1, Math.min(fitZoom, 1)));
-      }
-    }, 100);
 
     statsRef.current.maxHits = 0;
     statsRef.current.totalIterations = 0;
@@ -570,36 +548,11 @@ export function useCanvasWorker(options: UseCanvasWorkerOptions): UseCanvasWorke
     initialize({ oversampling: value });
   }, [initialize]);
 
-  const setZoom = useCallback((z: number) => {
-    setZoomState(z);
-  }, []);
-
-  const fitToView = useCallback(() => {
-    const container = containerRef.current;
-    if (!container) return;
-    const { width, height } = container.getBoundingClientRect();
-    const size = latestProps.current.canvasSize;
-    const fitZ = Math.min((width - 40) / size, (height - 40) / size);
-    setZoomState(Math.max(0.1, Math.min(fitZ, 1)));
-  }, []);
-
-  const zoomIn = useCallback(() => {
-    setZoomState(z => Math.min(z * 1.5, 4));
-  }, []);
-
-  const zoomOut = useCallback(() => {
-    setZoomState(z => Math.max(z / 1.5, 0.1));
-  }, []);
-
-  const zoomReset = useCallback(() => {
-    setZoomState(1);
-  }, []);
-
   return {
     canvasRef,
     containerRef,
     canvasSize,
-    zoom,
+    fractalFrame,
     containerSize,
     statsRef,
     iterating,
@@ -616,11 +569,6 @@ export function useCanvasWorker(options: UseCanvasWorkerOptions): UseCanvasWorke
     saveImage,
     setCanvasSize,
     setOversampling,
-    setZoom,
-    fitToView,
-    zoomIn,
-    zoomOut,
-    zoomReset,
     setIsEditing,
   };
 }

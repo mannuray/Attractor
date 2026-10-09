@@ -18,6 +18,9 @@ import { CanvasArea, PaletteModal, ExportModal } from "../../components";
 import { ResponsiveShell } from "../../components/shell";
 import { bgColorFor, BgMode } from "../../lib/bgMode";
 import { useTheme } from "../../theme/ThemeContext";
+import { useViewport } from "../../hooks/useViewport";
+import { CanvasMap, remapComplexView, remapLyapunovView, fractalDepth } from "../../lib/viewport";
+import { formatCompact } from "../../attractors/shared/types";
 
 // Data
 import symmetricIconData, {
@@ -227,6 +230,36 @@ function Home() {
     setHunting(false);
   }, [worker]);
 
+  // Canvas viewport: attractors zoom the picture; fractals zoom the maths (re-render).
+  const handleFractalCommit = useCallback((map: CanvasMap) => {
+    const type = attractor.attractorType;
+    const current = attractor.params[type] as any;
+    const next = type === "lyapunov"
+      ? remapLyapunovView(current, map, worker.canvasSize)
+      : remapComplexView(current, map, worker.canvasSize);
+    attractor.setParams(type, next);
+    worker.initialize({ params: next });
+  }, [attractor, worker]);
+
+  const viewport = useViewport({
+    containerRef: worker.containerRef,
+    canvasSize: worker.canvasSize,
+    refitKey: attractor.attractorType,
+    onCommit: attractor.isFractalType ? handleFractalCommit : undefined,
+  });
+
+  // A new fractal frame is on the canvas: the CSS preview of the zoom can go.
+  const { settle } = viewport;
+  useEffect(() => { settle(); }, [worker.fractalFrame, settle]);
+
+  const zoomLabel = useMemo(() => {
+    if (!attractor.isFractalType) return `${viewport.percent}%`;
+    const defaults = registry.get(attractor.attractorType)?.defaultParams ?? {};
+    const depth = fractalDepth(attractor.params[attractor.attractorType] as any, defaults);
+    if (depth < 10) return `${Number(depth.toFixed(1))}×`;
+    return `${formatCompact(Math.round(depth))}×`;
+  }, [attractor.isFractalType, attractor.attractorType, attractor.params, viewport.percent]);
+
   // Drag selection rect
   const dragSelection = useMemo(() => {
     if (!fractalZoom.dragStart || !fractalZoom.dragEnd) return null;
@@ -306,7 +339,7 @@ function Home() {
       canvasRef={worker.canvasRef}
       containerRef={worker.containerRef}
       canvasSize={worker.canvasSize}
-      zoom={worker.zoom}
+      view={viewport.view}
       canvasKey={worker.canvasKey}
       isFractalType={attractor.isFractalType}
       isDragging={fractalZoom.isDragging}
@@ -315,7 +348,9 @@ function Home() {
       onSelectMove={handleSelectMove}
       onSelectEnd={handleSelectEnd}
       onSelectCancel={handleSelectCancel}
-      onZoomChange={worker.setZoom}
+      onPan={viewport.panBy}
+      onZoomAt={viewport.zoomAtClient}
+      onGestureEnd={viewport.gestureEnd}
       fx={attractor.fx}
     />
   );
@@ -349,11 +384,11 @@ function Home() {
         onHunt={handleHunt}
         onCancelHunt={handleCancelHunt}
         isFractalType={attractor.isFractalType}
-        zoom={worker.zoom}
-        onFitToView={worker.fitToView}
-        onZoomIn={worker.zoomIn}
-        onZoomOut={worker.zoomOut}
-        onZoomReset={worker.zoomReset}
+        zoomLabel={zoomLabel}
+        onFitToView={viewport.fit}
+        onZoomIn={viewport.zoomIn}
+        onZoomOut={viewport.zoomOut}
+        onZoomReset={viewport.actualPixels}
         onResetFractalView={handleResetFractalView}
         onUndoReset={handleUndoReset}
       />

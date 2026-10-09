@@ -7,7 +7,9 @@ export interface CanvasToolbarProps {
   iterating: boolean; onToggleIteration: () => void;
   hunting: boolean; onHunt: () => void; onCancelHunt: () => void;
   isFractalType: boolean;
-  zoom: number;
+  /** "150%" for attractors (fit = 100%), or how deep a fractal is, e.g. "12.5×". */
+  zoomLabel: string;
+  /** onZoomReset shows one canvas pixel per screen pixel (attractors only). */
   onFitToView: () => void; onZoomIn: () => void; onZoomOut: () => void; onZoomReset: () => void;
   onResetFractalView: () => void;
   variant?: "desktop" | "mobile";
@@ -175,9 +177,11 @@ export const CanvasToolbar: React.FC<CanvasToolbarProps> = (p) => {
       <Group>
         <TextBtn type="button" aria-label="Fit to view" title="Fit to view" onClick={p.onFitToView}>Fit</TextBtn>
         <RoundBtn type="button" aria-label="Zoom out" title="Zoom out" onClick={p.onZoomOut}><Icon name="minus" size={16} /></RoundBtn>
-        <ZoomText>{Math.round(p.zoom * 100)}%</ZoomText>
+        <ZoomText aria-live="polite">{p.zoomLabel}</ZoomText>
         <RoundBtn type="button" aria-label="Zoom in" title="Zoom in" onClick={p.onZoomIn}><Icon name="plus" size={16} /></RoundBtn>
-        <TextBtn type="button" aria-label="Actual size" title="Actual size" onClick={p.onZoomReset}>1:1</TextBtn>
+        {!p.isFractalType && (
+          <TextBtn type="button" aria-label="Actual pixels" title="Actual pixels (1 canvas pixel = 1 screen pixel)" onClick={p.onZoomReset}>1:1</TextBtn>
+        )}
         {p.isFractalType && (
           <RoundBtn type="button" aria-label="Recenter" title="Reset fractal view" onClick={p.onResetFractalView}>
             <Icon name="recenter" size={16} />

@@ -12,7 +12,7 @@ export function makeShellProps(over: Partial<ShellProps> = {}): ShellProps {
     onOpenExport: jest.fn(), rendering: false,
     statsRef: { current: { maxHits: 0, totalIterations: 0 } }, maxIter: undefined,
     iterating: false, onToggleIteration: jest.fn(), hunting: false, onHunt: jest.fn(), onCancelHunt: jest.fn(),
-    isFractalType: false, zoom: 1, onFitToView: jest.fn(), onZoomIn: jest.fn(), onZoomOut: jest.fn(),
+    isFractalType: false, zoomLabel: "100%", onFitToView: jest.fn(), onZoomIn: jest.fn(), onZoomOut: jest.fn(),
     onZoomReset: jest.fn(), onResetFractalView: jest.fn(),
     ...over,
   };
