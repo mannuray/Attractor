@@ -185,7 +185,7 @@ export async function renderShareImage(meta: SystemMeta, params: Record<string, 
   const [brand, label, tagline, url] = await Promise.all([
     textLayer(`<span foreground="#a5b4fc" size="22pt" letter_spacing="2048">CHAOS ITERATOR</span>`, "Bold", textWidth),
     textLayer(`<span foreground="#ffffff" size="54pt">${escapeMarkup(meta.label)}</span>`, "Bold", textWidth),
-    textLayer(`<span foreground="#c7cad6" size="24pt">${escapeMarkup(meta.category === "Fractals" ? "Fractal" : meta.category === "IFS" ? "Iterated function system" : "Strange attractor")} · rendered from this exact link</span>`, "Regular", textWidth),
+    textLayer(`<span foreground="#c7cad6" size="24pt">${escapeMarkup(meta.category === "Fractals" ? "Fractal" : meta.category === "IFS" ? "Iterated function system" : "Strange attractor")} — rendered from this exact link</span>`, "Regular", textWidth),
     textLayer(`<span foreground="#8b90a3" size="20pt">chaos-iterator.vercel.app — make your own, free</span>`, "Regular", textWidth),
   ]);
 
