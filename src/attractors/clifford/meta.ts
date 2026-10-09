@@ -1,0 +1,21 @@
+import type { SystemMeta } from "../registry";
+import type { CliffordParams } from "./types";
+
+export const cliffordMeta: SystemMeta = {
+  id: "clifford",
+  label: "Clifford",
+  category: "Attractors",
+  defaultParams: { alpha: 1.5, beta: -1.8, gamma: 1.6, delta: 2.0, scale: 0.2 } as CliffordParams,
+  paramRanges: {
+    alpha: { min: -3, max: 3 },
+    beta: { min: -3, max: 3 },
+    gamma: { min: -3, max: 3 },
+    delta: { min: -3, max: 3 },
+  },
+  workerIteratorName: "clifford_iterator",
+  math: `
+    const x = p[0], y = p[1];
+    p[0] = Math.sin(params.alpha * y) + params.gamma * Math.cos(params.alpha * x);
+    p[1] = Math.sin(params.beta * x) + params.delta * Math.cos(params.beta * y);
+  `
+};

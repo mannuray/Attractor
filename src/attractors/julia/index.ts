@@ -1,17 +1,9 @@
 import { registry } from "../registry";
+import { juliaMeta } from "./meta";
 import { JuliaControls } from "./Controls";
-import { DEFAULT_JULIA } from "./config";
-import { JuliaParams } from "./types";
 
 export * from "./types";
 export * from "./config";
 export { JuliaControls };
 
-registry.register({
-  id: "julia",
-  label: "Julia",
-  category: "Fractals",
-  defaultParams: DEFAULT_JULIA as JuliaParams,
-  Controls: JuliaControls,
-  workerIteratorName: "julia"
-});
+registry.register({ ...juliaMeta, Controls: JuliaControls });

@@ -1,4 +1,4 @@
-import React from "react";
+import type React from "react";
 import { AttractorType } from "./shared/types";
 
 export type AttractorCategory = "Attractors" | "IFS" | "Fractals";
@@ -27,6 +27,9 @@ export interface AttractorModule<P = any> {
   // New: Serialized math function
   math?: string; 
 }
+
+/** A system without its React controls: plain data usable outside the UI. */
+export type SystemMeta = Omit<AttractorModule, "Controls">;
 
 class AttractorRegistry {
   private modules: Map<AttractorType, AttractorModule> = new Map();

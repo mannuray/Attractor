@@ -1,0 +1,24 @@
+import type { SystemMeta } from "../registry";
+import { DEFAULT_GUMOWSKI_MIRA } from "./config";
+import type { GumowskiMiraParams } from "./types";
+
+export const gumowskiMiraMeta: SystemMeta = {
+  id: "gumowski_mira",
+  label: "Gumowski-Mira",
+  category: "Attractors",
+  defaultParams: DEFAULT_GUMOWSKI_MIRA as GumowskiMiraParams,
+  paramRanges: {
+    alpha: { min: -0.1, max: 0.1 },
+    sigma: { min: 0.01, max: 0.1 },
+    mu: { min: -1, max: 1 },
+  },
+  workerIteratorName: "gumowski_mira_iterator",
+  math: `
+const f = (x) => params.mu * x + (2 * (1 - params.mu) * x * x) / (1 + x * x);
+const x = p[0], y = p[1];
+const fx = f(x);
+const nx = y + params.alpha * (1 - params.sigma * y * y) * y + fx;
+p[0] = nx;
+p[1] = -x + f(nx);
+`
+};

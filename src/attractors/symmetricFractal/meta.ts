@@ -1,0 +1,31 @@
+import type { SystemMeta } from "../registry";
+import { DEFAULT_SYMMETRIC_FRACTAL } from "./config";
+import type { SymmetricFractalParams } from "./types";
+
+export const symmetricFractalMeta: SystemMeta = {
+  id: "symmetric_fractal",
+  label: "Symmetric Fractal",
+  category: "IFS",
+  defaultParams: DEFAULT_SYMMETRIC_FRACTAL as SymmetricFractalParams,
+  paramRanges: {
+    a: { min: -1, max: 1 },
+    b: { min: -1, max: 1 },
+    c: { min: -1, max: 1 },
+    d: { min: -1, max: 1 },
+    alpha: { min: -0.5, max: 0.5 },
+    beta: { min: -0.5, max: 0.5 },
+    p: { min: 3, max: 12, step: 1 },
+  },
+  workerIteratorName: "symmetric_fractal_iterator",
+  math: `
+const x = p[0], y = p[1];
+let nx = params.a * x + params.b * y + params.alpha;
+let ny = params.c * x + params.d * y + params.beta;
+const angle = (2 * Math.PI * Math.floor(Math.random() * params.p)) / params.p;
+const cos = Math.cos(angle), sin = Math.sin(angle);
+let rx = nx * cos - ny * sin;
+let ry = nx * sin + ny * cos;
+if (params.reflect && Math.random() < 0.5) rx = -rx;
+p[0] = rx; p[1] = ry;
+`
+};
