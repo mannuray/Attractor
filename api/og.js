@@ -2754,19 +2754,19 @@ p[1] = -x + f(nx);
 
 // src/attractors/sprott/config.ts
 var DEFAULT_SPROTT = {
-  a1: 1,
-  a2: -0.1,
-  a3: 0.9,
-  a4: -0.5,
-  a5: -0.6,
-  a6: -1.1,
-  a7: -0.3,
-  a8: -0.1,
-  a9: -0.3,
-  a10: -0.6,
-  a11: 0.8,
-  a12: -0.5,
-  scale: 0.2
+  a1: 0.8,
+  a2: -0.7,
+  a3: -0.6,
+  a4: -0.2,
+  a5: -0.8,
+  a6: 0.1,
+  a7: -0.2,
+  a8: 0.3,
+  a9: 1,
+  a10: -0.4,
+  a11: -0.9,
+  a12: 0.9,
+  scale: 0.33
 };
 
 // src/attractors/sprott/meta.ts
@@ -2929,16 +2929,16 @@ p[0] = zr * cos - zi * sin; p[1] = zr * sin + zi * cos;
 
 // src/attractors/mobius/config.ts
 var DEFAULT_MOBIUS = {
-  aRe: 0.5,
-  aIm: 0.5,
-  bRe: 0.3,
-  bIm: 0.2,
-  cRe: 0.1,
-  cIm: 0.1,
-  dRe: 0.6,
-  dIm: 0.3,
-  n: 5,
-  scale: 0.3
+  aRe: 0.18,
+  aIm: -0.01,
+  bRe: -0.17,
+  bIm: -0.06,
+  cRe: -0.94,
+  cIm: 0.22,
+  dRe: -0.14,
+  dIm: 0.99,
+  n: 8,
+  scale: 1.76
 };
 
 // src/attractors/mobius/meta.ts
@@ -2951,9 +2951,9 @@ var mobiusMeta = {
   math: `
 const x = p[0], y = p[1];
 const numr = params.aRe * x - params.aIm * y + params.bRe;
-const numi = params.aRe * y + params.aIm * x + params.bi; // Wait, worker has this.bi, but params has bIm
-const denr = params.cRe * x - params.cIm * y + params.dr; // Wait, worker has this.dr, but params has dRe
-const deni = params.cRe * y + params.cIm * x + params.di; // Wait, worker has this.di, but params has dIm
+const numi = params.aRe * y + params.aIm * x + params.bIm;
+const denr = params.cRe * x - params.cIm * y + params.dRe;
+const deni = params.cRe * y + params.cIm * x + params.dIm;
 const d2 = denr * denr + deni * deni + 0.0001;
 const zr = (numr * denr + numi * deni) / d2;
 const zi = (numi * denr - numr * deni) / d2;

@@ -1,18 +1,15 @@
 import { MobiusParams } from "./types";
 
 export const DEFAULT_MOBIUS: MobiusParams = {
-  aRe: 0.5, aIm: 0.5,
-  bRe: 0.3, bIm: 0.2,
-  cRe: 0.1, cIm: 0.1,
-  dRe: 0.6, dIm: 0.3,
-  n: 5,
-  scale: 0.3,
+  aRe: 0.18, aIm: -0.01, bRe: -0.17, bIm: -0.06, cRe: -0.94, cIm: 0.22, dRe: -0.14, dIm: 0.99, n: 8, scale: 1.76,
 };
 
+// Found by searching for maps whose orbit stays bounded and settles on a fractal (dimension
+// between 1.15 and 1.8): the earlier values never contracted and only drew noise.
 export const mobiusPresets: { name: string; params: MobiusParams }[] = [
-  { name: "Flower 1", params: { aRe: 0.5, aIm: 0.5, bRe: 0.3, bIm: 0.2, cRe: 0.1, cIm: 0.1, dRe: 0.6, dIm: 0.3, n: 5, scale: 0.3 } },
-  { name: "Flower 2", params: { aRe: 0.6, aIm: 0.3, bRe: 0.2, bIm: 0.4, cRe: 0.15, cIm: 0.05, dRe: 0.5, dIm: 0.4, n: 6, scale: 0.28 } },
-  { name: "Spiral Web", params: { aRe: 0.4, aIm: 0.6, bRe: 0.25, bIm: 0.15, cRe: 0.1, cIm: 0.2, dRe: 0.55, dIm: 0.25, n: 7, scale: 0.25 } },
-  { name: "Star", params: { aRe: 0.45, aIm: 0.55, bRe: 0.35, bIm: 0.1, cRe: 0.05, cIm: 0.15, dRe: 0.65, dIm: 0.2, n: 8, scale: 0.22 } },
-  { name: "Pentagon", params: { aRe: 0.5, aIm: 0.4, bRe: 0.3, bIm: 0.3, cRe: 0.1, cIm: 0.1, dRe: 0.6, dIm: 0.35, n: 5, scale: 0.32 } },
+  { name: "Rosette Ring", params: { aRe: 0.18, aIm: -0.01, bRe: -0.17, bIm: -0.06, cRe: -0.94, cIm: 0.22, dRe: -0.14, dIm: 0.99, n: 8, scale: 1.76 } },
+  { name: "Pentaflake", params: { aRe: -0.42, aIm: 0.22, bRe: -0.01, bIm: 0.09, cRe: -0.38, cIm: 0.03, dRe: -0.66, dIm: 0.93, n: 5, scale: 3.66 } },
+  { name: "Triangles", params: { aRe: 0.53, aIm: -0.38, bRe: 0.74, bIm: -0.35, cRe: -0.19, cIm: 0.04, dRe: -0.86, dIm: -0.68, n: 3, scale: 0.34 } },
+  { name: "Dendrite", params: { aRe: -0.46, aIm: -0.18, bRe: 0.37, bIm: 0.22, cRe: -0.37, cIm: -0.39, dRe: -0.56, dIm: 0.72, n: 3, scale: 0.39 } },
+  { name: "Star", params: { aRe: 0.35, aIm: -0.37, bRe: -0.45, bIm: -0.23, cRe: 0.62, cIm: -0.12, dRe: 0.2, dIm: -0.98, n: 6, scale: 0.49 } },
 ];

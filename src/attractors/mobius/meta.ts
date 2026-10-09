@@ -11,9 +11,9 @@ export const mobiusMeta: SystemMeta = {
   math: `
 const x = p[0], y = p[1];
 const numr = params.aRe * x - params.aIm * y + params.bRe;
-const numi = params.aRe * y + params.aIm * x + params.bi; // Wait, worker has this.bi, but params has bIm
-const denr = params.cRe * x - params.cIm * y + params.dr; // Wait, worker has this.dr, but params has dRe
-const deni = params.cRe * y + params.cIm * x + params.di; // Wait, worker has this.di, but params has dIm
+const numi = params.aRe * y + params.aIm * x + params.bIm;
+const denr = params.cRe * x - params.cIm * y + params.dRe;
+const deni = params.cRe * y + params.cIm * x + params.dIm;
 const d2 = denr * denr + deni * deni + 0.0001;
 const zr = (numr * denr + numi * deni) / d2;
 const zi = (numi * denr - numr * deni) / d2;
