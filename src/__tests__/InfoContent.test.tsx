@@ -50,4 +50,13 @@ describe("Help & About keeps all of its content", () => {
     const imgs = Array.from(container.querySelectorAll("img"));
     expect(imgs.every(i => i.getAttribute("loading") === "lazy")).toBe(true);
   });
+
+  it("Getting started describes the controls that actually exist", () => {
+    const { container } = renderInfo();
+    const steps = Array.from(container.querySelectorAll("ol li")).map(li => li.textContent || "").join("\n");
+    expect(steps).not.toMatch(/Parameters tab|Effects tab|Color tab and click Edit|LUT button|OUT button|sidebar/);
+    expect(steps).toMatch(/Parameters card/);
+    expect(steps).toMatch(/Edit palette/);
+  });
 });
+

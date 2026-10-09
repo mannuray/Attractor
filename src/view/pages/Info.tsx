@@ -1717,15 +1717,15 @@ const HowToUseTab: React.FC = () => (
         </UsageItem>
         <UsageItem>
           <StepNumber>3</StepNumber>
-          <span><strong>Edit Parameters:</strong> Adjust sliders in the Parameters tab to modify the underlying math in real-time.</span>
+          <span><strong>Edit Parameters:</strong> Adjust the sliders in the Parameters card of the inspector (Params on mobile) to modify the underlying math in real-time.</span>
         </UsageItem>
         <UsageItem>
           <StepNumber>4</StepNumber>
-          <span><strong>Visual FX:</strong> Open the Effects tab to apply post-processing like Bloom, Grain and Vignette.</span>
+          <span><strong>Visual FX:</strong> Use the Effects section of the inspector (under Color on mobile) to apply post-processing like Bloom, Grain and Vignette.</span>
         </UsageItem>
         <UsageItem>
           <StepNumber>5</StepNumber>
-          <span><strong>Customize Colors:</strong> Open the Color tab and click Edit to modify the color palette and background.</span>
+          <span><strong>Customize Colors:</strong> In the Palette section, click Edit palette to change the color ramp, tone and background.</span>
         </UsageItem>
         <UsageItem>
           <StepNumber>6</StepNumber>
