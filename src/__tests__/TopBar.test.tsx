@@ -58,5 +58,17 @@ describe("TopBar", () => {
     expect(screen.getByText("Couldn't copy", { selector: "[data-visible-status]" })).toBeInTheDocument();
     Object.assign(navigator, { clipboard: original });
   });
+
+  it("moves focus into the system picker and returns it to the pill on Escape", () => {
+    wrap(
+      <TopBar systemLabel="Clifford" systemCount={27} onOpenExport={() => {}}
+        renderSystemPicker={(close) => <><input aria-label="Search systems" /><button onClick={close}>Pick</button></>} />
+    );
+    const pill = screen.getByRole("button", { name: /Clifford/ });
+    fireEvent.click(pill);
+    expect(document.activeElement).toBe(screen.getByRole("textbox", { name: "Search systems" }));
+    fireEvent.keyDown(document, { key: "Escape" });
+    expect(document.activeElement).toBe(pill);
+  });
 });
 

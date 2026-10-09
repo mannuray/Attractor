@@ -141,11 +141,24 @@ export const TopBar: React.FC<Props> = ({
   const [pickerOpen, setPickerOpen] = useState(false);
   const pillRef = useRef<HTMLDivElement>(null);
   const shareText = status === "copied" ? "Copied" : status === "failed" ? "Couldn't copy" : "Share";
+  const pillButtonRef = useRef<HTMLButtonElement>(null);
+  const popoverRef = useRef<HTMLDivElement>(null);
   const close = useCallback(() => setPickerOpen(false), []);
+  // Escape returns focus to the pill (a pick moves on to the canvas, so focus isn't forced back).
+  const closeToPill = useCallback(() => { setPickerOpen(false); pillButtonRef.current?.focus(); }, []);
+
+  // Move focus into the picker when it opens.
+  useEffect(() => {
+    if (!pickerOpen) return;
+    const first = popoverRef.current?.querySelector<HTMLElement>(
+      'input, button, [href], select, textarea, [tabindex]:not([tabindex="-1"])'
+    );
+    first?.focus();
+  }, [pickerOpen]);
 
   useEffect(() => {
     if (!pickerOpen) return;
-    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") close(); };
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") closeToPill(); };
     const onDown = (e: PointerEvent) => {
       if (pillRef.current && !pillRef.current.contains(e.target as Node)) close();
     };
@@ -155,7 +168,7 @@ export const TopBar: React.FC<Props> = ({
       document.removeEventListener("keydown", onKey);
       document.removeEventListener("pointerdown", onDown);
     };
-  }, [pickerOpen, close]);
+  }, [pickerOpen, close, closeToPill]);
 
   const onPill = () => {
     if (renderSystemPicker) setPickerOpen(o => !o);
@@ -172,7 +185,7 @@ export const TopBar: React.FC<Props> = ({
       </Side>
 
       <PillWrap ref={pillRef} $compact={compact}>
-        <Pill type="button" $compact={compact} onClick={onPill} aria-haspopup={renderSystemPicker ? "dialog" : undefined}
+        <Pill ref={pillButtonRef} type="button" $compact={compact} onClick={onPill} aria-haspopup={renderSystemPicker ? "dialog" : undefined}
           aria-expanded={renderSystemPicker ? pickerOpen : undefined} aria-label={`${systemLabel} — change system`}>
           <span className="dot" />
           <span className="label">{systemLabel}</span>
@@ -180,7 +193,7 @@ export const TopBar: React.FC<Props> = ({
           <span className="chev"><Icon name="chevronDown" size={16} /></span>
         </Pill>
         {pickerOpen && renderSystemPicker && (
-          <Popover role="dialog" aria-label="Choose system">{renderSystemPicker(close)}</Popover>
+          <Popover ref={popoverRef} role="dialog" aria-label="Choose system">{renderSystemPicker(close)}</Popover>
         )}
       </PillWrap>
 
