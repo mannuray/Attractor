@@ -18,6 +18,8 @@ export interface ShellProps extends Omit<CanvasToolbarProps, "variant"> {
   paletteData: Color[]; bgColor: BgColor; onBgModeChange: (m: BgMode) => void; onOpenPalette: () => void;
   onOpenExport: () => void;
   rendering: boolean;
+  /** 0..1 while a fractal is being refined, null otherwise. */
+  renderProgress?: number | null;
   statsRef: React.MutableRefObject<{ maxHits: number; totalIterations: number }>;
   maxIter?: number;
   /** Restore the parameters from before the last Reset. */

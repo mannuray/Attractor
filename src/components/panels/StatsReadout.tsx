@@ -36,9 +36,10 @@ const Grid = styled.dl<{ $compact: boolean }>`
 interface Props {
   statsRef: React.MutableRefObject<{ maxHits: number; totalIterations: number }>;
   running: boolean; rendering: boolean; isFractal: boolean; maxIter?: number; compact?: boolean;
+  renderProgress?: number | null;
 }
 
-export const StatsReadout: React.FC<Props> = ({ statsRef, running, rendering, isFractal, maxIter, compact = false }) => {
+export const StatsReadout: React.FC<Props> = ({ statsRef, running, rendering, isFractal, maxIter, compact = false, renderProgress = null }) => {
   const [sample, setSample] = useState<StatsSample>(() => samples.get(statsRef) ?? initialStats);
   const runningRef = useRef(running);
   runningRef.current = running;
@@ -56,7 +57,10 @@ export const StatsReadout: React.FC<Props> = ({ statsRef, running, rendering, is
     return () => window.clearInterval(id);
   }, [statsRef, isFractal]);
 
-  if (rendering) return <Grid $compact={compact}><dt>Status</dt><dd>Computing…</dd></Grid>;
+  if (rendering) {
+    const label = renderProgress == null ? "Computing…" : `Refining ${Math.round(renderProgress * 100)}%`;
+    return <Grid $compact={compact}><dt>Status</dt><dd>{label}</dd></Grid>;
+  }
   if (isFractal) return <Grid $compact={compact}><dt>Complexity</dt><dd>{maxIter ?? "—"}</dd></Grid>;
 
   return (

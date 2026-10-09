@@ -3,7 +3,7 @@ import { screen, fireEvent, within } from "@testing-library/react";
 import { renderWithTheme } from "./renderWithTheme";
 import "../attractors"; // registers all modules
 import { registry } from "../attractors/registry";
-import { SystemPanel, RenderPanel, ColorPanel, FxPanel } from "../components/panels";
+import { SystemPanel, RenderPanel, ColorPanel, FxPanel, StatsReadout } from "../components/panels";
 import { paletteGradient } from "../components/panels/ColorPanel";
 import { formatDuration } from "../components/panels/StatsReadout";
 
@@ -127,6 +127,14 @@ describe("FxPanel", () => {
     fireEvent.blur(vignette);
     expect(onChange).not.toHaveBeenCalled();
     expect(vignette).toHaveValue("65%");
+  });
+});
+
+describe("StatsReadout", () => {
+  it("shows refinement progress for fractals while rendering", () => {
+    renderWithTheme(<StatsReadout statsRef={{ current: { maxHits: 0, totalIterations: 0 } }} running={false}
+      rendering isFractal maxIter={256} renderProgress={0.4} />);
+    expect(screen.getByText("Refining 40%")).toBeInTheDocument();
   });
 });
 

@@ -239,7 +239,7 @@ export const Inspector: React.FC<Props> = (p) => {
           </Body>
           <Footer>
             <StatsReadout statsRef={p.statsRef} running={p.iterating} rendering={p.rendering}
-              isFractal={p.isFractalType} maxIter={p.maxIter} />
+              isFractal={p.isFractalType} maxIter={p.maxIter} renderProgress={p.renderProgress} />
             {undoVisible && (
               <Toast role="status">
                 <span>Parameters reset</span>

@@ -61,4 +61,19 @@ describe("CanvasToolbar", () => {
     renderWithTheme(<CanvasToolbar {...base()} isFractalType />);
     expect(screen.getByRole("button", { name: "Render" })).toBeInTheDocument();
   });
+
+  it("shows refinement progress instead of a pulsing glow", () => {
+    const { rerender } = renderWithTheme(<CanvasToolbar {...base()} isFractalType renderProgress={0.62} />);
+    const bar = screen.getByRole("progressbar", { name: "Refining" });
+    expect(bar).toHaveAttribute("aria-valuenow", "62");
+    expect(screen.getByText("Refining 62%")).toBeInTheDocument();
+    rerender(<CanvasToolbar {...base()} isFractalType renderProgress={null} />);
+    expect(screen.queryByRole("progressbar")).toBeNull();
+  });
+
+  it("mobile shows the progress bar too", () => {
+    renderWithTheme(<CanvasToolbar {...base()} isFractalType variant="mobile" renderProgress={0.3} />);
+    expect(screen.getByRole("progressbar", { name: "Refining" })).toHaveAttribute("aria-valuenow", "30");
+  });
 });
+

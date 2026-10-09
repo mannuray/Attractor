@@ -68,6 +68,7 @@ const Preview = styled.div`
   position: relative; aspect-ratio: 1 / 1; border-radius: 12px; overflow: hidden;
   background: #090b10; border: 1px solid rgba(61, 73, 76, 0.3); box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.6);
   .glow { position: absolute; inset: 18%; border-radius: 50%; filter: blur(28px); opacity: 0.75; }
+  img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
   .badge {
     position: absolute; bottom: 8px; padding: 2px 8px; border-radius: 6px;
     background: rgba(11, 14, 23, 0.85); border: 1px solid rgba(255, 255, 255, 0.08);
@@ -126,10 +127,12 @@ interface ExportModalProps {
   canvasSize?: number;
   oversampling?: number;
   paletteData?: Color[];
+  /** Snapshot of the current render (object URL), shown as the preview when available. */
+  previewSrc?: string | null;
 }
 
 export const ExportModal: React.FC<ExportModalProps> = ({
-  isOpen, onClose, onExportCurrent, onExportSize, exporting, subtitle, canvasSize, oversampling, paletteData,
+  isOpen, onClose, onExportCurrent, onExportSize, exporting, subtitle, canvasSize, oversampling, paletteData, previewSrc,
 }) => {
   const [choice, setChoice] = useState<Choice>(2160);
   const wasExporting = useRef(false);
@@ -176,9 +179,11 @@ export const ExportModal: React.FC<ExportModalProps> = ({
 
         <Body>
           <Col>
-            <Label><span className="dot" />Palette preview</Label>
-            <Preview aria-hidden="true">
-              {glow && <div className="glow" style={{ background: glow }} />}
+            <Label><span className="dot" />{previewSrc ? "Preview" : "Palette preview"}</Label>
+            <Preview>
+              {previewSrc
+                ? <img src={previewSrc} alt="Current render" />
+                : glow && <div className="glow" style={{ background: glow }} aria-hidden="true" />}
               <span className="badge" style={{ left: 8 }}>{subtitle ?? "Render"}</span>
               <span className="badge" style={{ right: 8 }}>1:1</span>
             </Preview>

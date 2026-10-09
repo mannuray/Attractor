@@ -54,6 +54,10 @@ export interface UseCanvasWorkerReturn {
   isEditing: boolean;
   oversampling: number;
   rendering: boolean;
+  /** 0..1 while a fractal's full-res pass is painting, null otherwise. */
+  renderProgress: number | null;
+  /** PNG of the current canvas (null if unavailable). */
+  requestSnapshot: () => Promise<Blob | null>;
 
   // Actions
   initialize: (overrides?: InitializeOverrides) => void;
@@ -98,6 +102,9 @@ export function useCanvasWorker(options: UseCanvasWorkerOptions): UseCanvasWorke
   const [isEditing, setIsEditing] = useState(false);
   const [oversampling, setOversamplingState] = useState(CONFIG.ALIAS);
   const [rendering, setRendering] = useState(false);
+  const [renderProgress, setRenderProgress] = useState<number | null>(null);
+  const snapshotWaiters = useRef(new Map<number, (b: Blob | null) => void>());
+  const snapshotId = useRef(0);
 
   // Stable ref to latest props so callbacks don't need to re-bind
   const latestProps = useRef({
@@ -332,7 +339,15 @@ export function useCanvasWorker(options: UseCanvasWorkerOptions): UseCanvasWorke
           if (type === "stats") {
             statsRef.current.maxHits = payload.maxHits;
             statsRef.current.totalIterations = payload.totalIterations || 0;
-            if (payload.fractalComplete) setRendering(false);
+            if (payload.fractalPreview) { setRendering(true); setRenderProgress(0); }
+            if (payload.fractalComplete) { setRendering(false); setRenderProgress(null); }
+          } else if (type === "fractalProgress") {
+            setRendering(true);
+            setRenderProgress(payload.progress);
+          } else if (type === "snapshot") {
+            const resolve = snapshotWaiters.current.get(payload.id);
+            snapshotWaiters.current.delete(payload.id);
+            resolve?.(payload.blob ?? null);
           } else if (type === "imageExport") {
             const blob = payload.blob;
             const url = URL.createObjectURL(blob);
@@ -527,6 +542,24 @@ export function useCanvasWorker(options: UseCanvasWorkerOptions): UseCanvasWorke
     link.click();
   }, []);
 
+  const requestSnapshot = useCallback((): Promise<Blob | null> => {
+    if (useOffscreenRef.current && canvasTransferredRef.current && workerRef.current) {
+      const worker = workerRef.current;
+      const id = ++snapshotId.current;
+      return new Promise(resolve => {
+        snapshotWaiters.current.set(id, resolve);
+        worker.postMessage({ type: "snapshot", payload: { id } });
+        // Never leave the caller hanging (e.g. the worker was replaced meanwhile).
+        setTimeout(() => {
+          if (snapshotWaiters.current.delete(id)) resolve(null);
+        }, 3000);
+      });
+    }
+    const canvasEl = canvasRef.current;
+    if (!canvasEl) return Promise.resolve(null);
+    return new Promise(resolve => canvasEl.toBlob(b => resolve(b), "image/png"));
+  }, []);
+
   const setCanvasSize = useCallback((size: number) => {
     setCanvasSizeState(size);
     initialize({ size });
@@ -574,6 +607,8 @@ export function useCanvasWorker(options: UseCanvasWorkerOptions): UseCanvasWorke
     isEditing,
     oversampling,
     rendering,
+    renderProgress,
+    requestSnapshot,
     initialize,
     toggleIteration,
     hunt,

@@ -137,8 +137,22 @@ function Home() {
 
   const handleOpenPalette = useCallback(() => setPaletteModalOpen(true), []);
   const handleClosePalette = useCallback(() => setPaletteModalOpen(false), []);
-  const handleOpenExport = useCallback(() => setExportModalOpen(true), []);
-  const handleCloseExport = useCallback(() => setExportModalOpen(false), []);
+  // Snapshot of the current render for the export dialog's preview.
+  const [exportPreview, setExportPreview] = useState<string | null>(null);
+  const exportOpenRef = useRef(false);
+  const handleOpenExport = useCallback(() => {
+    exportOpenRef.current = true;
+    setExportModalOpen(true);
+    worker.requestSnapshot().then(blob => {
+      // Ignore a snapshot that arrives after the dialog was closed.
+      if (blob && exportOpenRef.current) setExportPreview(URL.createObjectURL(blob));
+    });
+  }, [worker]);
+  const handleCloseExport = useCallback(() => {
+    exportOpenRef.current = false;
+    setExportModalOpen(false);
+    setExportPreview(prev => { if (prev) URL.revokeObjectURL(prev); return null; });
+  }, []);
 
   // --- Handlers that bridge attractor state + worker ---
 
@@ -292,7 +306,6 @@ function Home() {
       zoom={worker.zoom}
       canvasKey={worker.canvasKey}
       isFractalType={attractor.isFractalType}
-      rendering={worker.rendering}
       isDragging={fractalZoom.isDragging}
       dragSelection={dragSelection}
       onSelectStart={handleSelectStart}
@@ -324,6 +337,7 @@ function Home() {
         onOpenPalette={handleOpenPalette}
         onOpenExport={handleOpenExport}
         rendering={worker.rendering}
+        renderProgress={worker.renderProgress}
         statsRef={worker.statsRef}
         maxIter={currentMaxIter}
         iterating={worker.iterating}
@@ -367,6 +381,7 @@ function Home() {
         canvasSize={worker.canvasSize}
         oversampling={worker.oversampling}
         paletteData={palette.paletteData}
+        previewSrc={exportPreview}
       />
     </>
   );

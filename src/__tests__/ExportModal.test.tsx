@@ -61,5 +61,10 @@ describe("ExportModal", () => {
     expect(screen.getByText("Link copied")).toBeInTheDocument();
     Object.assign(navigator, { clipboard: original });
   });
+
+  it("shows a snapshot of the current render when one is available", () => {
+    renderWithTheme(<ExportModal {...props()} subtitle="Clifford" previewSrc="blob:snap" />);
+    expect(screen.getByRole("img", { name: "Current render" })).toHaveAttribute("src", "blob:snap");
+  });
 });
 

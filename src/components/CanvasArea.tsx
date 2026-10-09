@@ -1,5 +1,5 @@
 import React from "react";
-import styled, { keyframes, css } from "styled-components";
+import styled from "styled-components";
 import { useCanvasGestures } from "../hooks/useCanvasGestures";
 import { clientToCanvas } from "../lib/gestureMath";
 import { DragPoint } from "../hooks/useFractalZoom";
@@ -21,16 +21,10 @@ const CanvasContainer = styled.div<{ $scrollable: boolean }>`
   touch-action: none;
 `;
 
-const renderPulse = keyframes`
-  0%, 100% { box-shadow: 0 0 15px 4px var(--pulse-color-1), 0 0 40px 8px var(--pulse-color-2); }
-  50% { box-shadow: 0 0 30px 8px var(--pulse-color-3), 0 0 60px 16px var(--pulse-color-4); }
-`;
-
 const CanvasWrapper = styled.div<{ 
   $width: number; 
   $height: number; 
   $isFractal: boolean; 
-  $rendering: boolean;
   $fx: any;
 }>`
   position: relative;
@@ -41,12 +35,6 @@ const CanvasWrapper = styled.div<{
   overflow: hidden;
   box-shadow: 0 0 120px rgba(0, 0, 0, 0.6);
   
-  --pulse-color-1: ${props => props.theme.danger}99;
-  --pulse-color-2: ${props => props.theme.danger}44;
-  --pulse-color-3: ${props => props.theme.danger}E6;
-  --pulse-color-4: ${props => props.theme.danger}80;
-  
-  animation: ${props => props.$rendering ? css`${renderPulse} 1.5s ease-in-out infinite` : "none"};
 
   /* Apply CSS Filters for FX */
   filter: ${props => props.$fx?.enabled ? `
@@ -100,7 +88,6 @@ interface CanvasAreaProps {
   zoom: number;
   canvasKey: number;
   isFractalType: boolean;
-  rendering: boolean;
   isDragging: boolean;
   dragSelection: { left: number; top: number; width: number; height: number } | null;
   onSelectStart: (pt: DragPoint) => void;
@@ -124,7 +111,6 @@ export const CanvasArea: React.FC<CanvasAreaProps> = ({
   zoom,
   canvasKey,
   isFractalType,
-  rendering,
   isDragging,
   dragSelection,
   onSelectStart,
@@ -160,7 +146,6 @@ export const CanvasArea: React.FC<CanvasAreaProps> = ({
         $width={scaledSize}
         $height={scaledSize}
         $isFractal={isFractalType}
-        $rendering={rendering}
         $fx={fx}
         ref={wrapperRef}
       >

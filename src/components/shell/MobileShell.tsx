@@ -65,7 +65,7 @@ export const MobileShell: React.FC<ShellProps> = (p) => {
         <StatsChip>
           <span className="dot" />
           <StatsReadout compact statsRef={p.statsRef} running={p.iterating} rendering={p.rendering}
-            isFractal={p.isFractalType} maxIter={p.maxIter} />
+            isFractal={p.isFractalType} maxIter={p.maxIter} renderProgress={p.renderProgress} />
         </StatsChip>
       </Overlay>
       <BottomSheet state={sheet} dispatch={dispatch} actionRow={<CanvasToolbar {...rest} variant="mobile" />}>
