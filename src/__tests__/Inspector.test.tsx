@@ -9,45 +9,60 @@ const renderInspector = (over = {}, collapsed = false, onToggleCollapse = () => 
   renderWithTheme(<Inspector {...makeShellProps(over)} collapsed={collapsed} onToggleCollapse={onToggleCollapse} />);
 
 describe("Inspector tabs", () => {
-  it("has four tabs; System & Parameters is selected first and shows system, presets and parameters", () => {
+  it("has three tabs: Parameters, Look, Output; Parameters is selected first", () => {
     renderInspector();
     const tabs = screen.getAllByRole("tab");
-    expect(tabs.map(t => t.getAttribute("aria-label"))).toEqual(["System & Parameters", "Render", "Color", "Effects"]);
+    expect(tabs.map(t => t.getAttribute("aria-label"))).toEqual(["Parameters", "Look", "Output"]);
     expect(tabs[0]).toHaveAttribute("aria-selected", "true");
-    expect(screen.getByRole("button", { name: "Attractors" })).toBeInTheDocument();
-    expect(screen.getByTestId("controls")).toBeInTheDocument();
-    expect(screen.queryByRole("radiogroup", { name: "Background" })).toBeNull();
   });
 
-  it("switching tabs shows only that tab's panel", () => {
+  it("Parameters shows the system with a Change button, presets and parameters, but no system list", () => {
+    const onChangeSystem = jest.fn();
+    renderInspector({ onChangeSystem } as any);
+    expect(screen.getByRole("heading", { name: "Clifford" })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Change system" }));
+    expect(onChangeSystem).toHaveBeenCalled();
+    expect(screen.getByTestId("controls")).toBeInTheDocument();
+    expect(screen.queryByRole("list", { name: "Systems" })).toBeNull();
+  });
+
+  it("Look holds palette, background and effects", () => {
     renderInspector();
-    fireEvent.click(screen.getByRole("tab", { name: "Color" }));
-    expect(screen.getByRole("tab", { name: "Color" })).toHaveAttribute("aria-selected", "true");
+    fireEvent.click(screen.getByRole("tab", { name: "Look" }));
+    expect(screen.getByRole("button", { name: "Edit palette" })).toBeInTheDocument();
     expect(screen.getByRole("radiogroup", { name: "Background" })).toBeInTheDocument();
-    expect(screen.queryByTestId("controls")).toBeNull();
-    fireEvent.click(screen.getByRole("tab", { name: "Effects" }));
     expect(screen.getByRole("switch", { name: "Effects" })).toBeInTheDocument();
-    fireEvent.click(screen.getByRole("tab", { name: "Render" }));
+    expect(screen.queryByTestId("controls")).toBeNull();
+  });
+
+  it("Output holds size, quality, Export image and Copy link", () => {
+    const p = makeShellProps();
+    renderWithTheme(<Inspector {...p} collapsed={false} onToggleCollapse={() => {}} />);
+    fireEvent.click(screen.getByRole("tab", { name: "Output" }));
     expect(screen.getByRole("radiogroup", { name: "Size" })).toBeInTheDocument();
+    expect(screen.getByRole("radiogroup", { name: "Quality" })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Export image" }));
+    expect(p.onOpenExport).toHaveBeenCalled();
+    expect(screen.getByRole("button", { name: "Copy link" })).toBeInTheDocument();
   });
 
   it("tab panel is labelled by its tab, and arrow keys move between tabs", () => {
     renderInspector();
-    const first = screen.getByRole("tab", { name: "System & Parameters" });
+    const first = screen.getByRole("tab", { name: "Parameters" });
     expect(screen.getByRole("tabpanel")).toHaveAttribute("aria-labelledby", first.id);
     first.focus();
     fireEvent.keyDown(first, { key: "ArrowRight" });
-    expect(screen.getByRole("tab", { name: "Render" })).toHaveAttribute("aria-selected", "true");
-    expect(document.activeElement).toBe(screen.getByRole("tab", { name: "Render" }));
+    expect(screen.getByRole("tab", { name: "Look" })).toHaveAttribute("aria-selected", "true");
+    expect(document.activeElement).toBe(screen.getByRole("tab", { name: "Look" }));
     fireEvent.keyDown(document.activeElement!, { key: "ArrowLeft" });
     fireEvent.keyDown(document.activeElement!, { key: "ArrowLeft" });
-    expect(screen.getByRole("tab", { name: "Effects" })).toHaveAttribute("aria-selected", "true");
+    expect(screen.getByRole("tab", { name: "Output" })).toHaveAttribute("aria-selected", "true");
   });
 
   it("stats and footer actions stay visible on every tab", () => {
     const p = makeShellProps();
     renderWithTheme(<Inspector {...p} collapsed={false} onToggleCollapse={() => {}} />);
-    fireEvent.click(screen.getByRole("tab", { name: "Effects" }));
+    fireEvent.click(screen.getByRole("tab", { name: "Output" }));
     expect(screen.getByLabelText("Render statistics")).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Run" }));
     expect(p.onToggleIteration).toHaveBeenCalled();

@@ -130,30 +130,41 @@ interface Props {
   renderSystemPicker?: (close: () => void) => React.ReactNode;
   onOpenExport: () => void;
   compact?: boolean;
+  /** Optional controlled picker state (lets other UI, e.g. the inspector, open the picker). */
+  pickerOpen?: boolean;
+  onPickerOpenChange?: (open: boolean) => void;
 }
 
 export const TopBar: React.FC<Props> = ({
   systemLabel, systemCount, onSystemClick, renderSystemPicker, onOpenExport, compact = false,
+  pickerOpen: pickerOpenProp, onPickerOpenChange,
 }) => {
   const navigate = useNavigate();
   const { currentTheme, setTheme, availableThemes } = useTheme();
   const { status, share } = useShare();
-  const [pickerOpen, setPickerOpen] = useState(false);
+  const [pickerOpenState, setPickerOpenState] = useState(false);
+  const pickerOpen = pickerOpenProp ?? pickerOpenState;
+  const setPickerOpen = useCallback((open: boolean) => {
+    if (pickerOpenProp === undefined) setPickerOpenState(open);
+    onPickerOpenChange?.(open);
+  }, [pickerOpenProp, onPickerOpenChange]);
   const pillRef = useRef<HTMLDivElement>(null);
   const shareText = status === "copied" ? "Copied" : status === "failed" ? "Couldn't copy" : "Share";
   const pillButtonRef = useRef<HTMLButtonElement>(null);
   const popoverRef = useRef<HTMLDivElement>(null);
-  const close = useCallback(() => setPickerOpen(false), []);
+  const close = useCallback(() => setPickerOpen(false), [setPickerOpen]);
   // Escape returns focus to the pill (a pick moves on to the canvas, so focus isn't forced back).
-  const closeToPill = useCallback(() => { setPickerOpen(false); pillButtonRef.current?.focus(); }, []);
+  const closeToPill = useCallback(() => { setPickerOpen(false); pillButtonRef.current?.focus(); }, [setPickerOpen]);
 
   // Move focus into the picker when it opens.
   useEffect(() => {
     if (!pickerOpen) return;
-    const first = popoverRef.current?.querySelector<HTMLElement>(
-      'input, button, [href], select, textarea, [tabindex]:not([tabindex="-1"])'
-    );
-    first?.focus();
+    // Prefer the search box (typing is the fastest way to pick), else the first focusable element.
+    const root = popoverRef.current;
+    const target =
+      root?.querySelector<HTMLElement>('input[type="search"], input') ??
+      root?.querySelector<HTMLElement>('button, [href], select, textarea, [tabindex]:not([tabindex="-1"])');
+    target?.focus();
   }, [pickerOpen]);
 
   useEffect(() => {
@@ -171,7 +182,7 @@ export const TopBar: React.FC<Props> = ({
   }, [pickerOpen, close, closeToPill]);
 
   const onPill = () => {
-    if (renderSystemPicker) setPickerOpen(o => !o);
+    if (renderSystemPicker) setPickerOpen(!pickerOpen);
     else onSystemClick?.();
   };
 

@@ -53,5 +53,14 @@ describe("ResponsiveShell", () => {
     fireEvent.pointerDown(screen.getByTestId("canvas"));
     expect(screen.queryByRole("tabpanel")).toBeNull();
   });
+
+  it("on desktop, the inspector's Change button opens the top-bar system picker", () => {
+    mockMatchMedia(false);
+    renderWithTheme(<MemoryRouter><AppThemeProvider><ResponsiveShell {...makeShellProps()} /></AppThemeProvider></MemoryRouter>);
+    expect(screen.queryByRole("dialog", { name: "Choose system" })).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: "Change system" }));
+    expect(screen.getByRole("dialog", { name: "Choose system" })).toBeInTheDocument();
+    expect(document.activeElement).toBe(screen.getByRole("searchbox", { name: "Search systems" }));
+  });
 });
 

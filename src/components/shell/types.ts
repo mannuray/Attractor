@@ -22,4 +22,6 @@ export interface ShellProps extends Omit<CanvasToolbarProps, "variant"> {
   maxIter?: number;
   /** Restore the parameters from before the last Reset. */
   onUndoReset?: () => void;
+  /** Open the system picker (desktop: the top-bar popover). */
+  onChangeSystem?: () => void;
 }

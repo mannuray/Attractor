@@ -70,5 +70,23 @@ describe("TopBar", () => {
     fireEvent.keyDown(document, { key: "Escape" });
     expect(document.activeElement).toBe(pill);
   });
+
+  it("the picker can be opened from outside (controlled)", () => {
+    const onPickerOpenChange = jest.fn();
+    const { rerender } = wrap(
+      <TopBar systemLabel="Clifford" onOpenExport={() => {}} pickerOpen={false} onPickerOpenChange={onPickerOpenChange}
+        renderSystemPicker={() => <button>Pick</button>} />
+    );
+    expect(screen.queryByRole("dialog", { name: "Choose system" })).toBeNull();
+    rerender(
+      <MemoryRouter><AppThemeProvider>
+        <TopBar systemLabel="Clifford" onOpenExport={() => {}} pickerOpen onPickerOpenChange={onPickerOpenChange}
+          renderSystemPicker={() => <button>Pick</button>} />
+      </AppThemeProvider></MemoryRouter>
+    );
+    expect(screen.getByRole("dialog", { name: "Choose system" })).toBeInTheDocument();
+    fireEvent.keyDown(document, { key: "Escape" });
+    expect(onPickerOpenChange).toHaveBeenCalledWith(false);
+  });
 });
 

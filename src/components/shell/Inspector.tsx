@@ -1,17 +1,17 @@
 import React, { useEffect, useRef, useState } from "react";
 import styled from "styled-components";
 import { ShellProps } from "./types";
-import { SystemPanel, RenderPanel, ColorPanel, FxPanel, StatsReadout } from "../panels";
+import { RenderPanel, ColorPanel, FxPanel, StatsReadout } from "../panels";
+import { useShare } from "../../hooks/useShare";
 import { Icon } from "../ui/Icon";
 import { tokens } from "../../theme/tokens";
 
-type TabId = "params" | "render" | "color" | "fx";
+type TabId = "params" | "look" | "output";
 
 const TABS: { id: TabId; label: string; icon: string }[] = [
-  { id: "params", label: "System & Parameters", icon: "grain" },
-  { id: "render", label: "Render", icon: "aspect_ratio" },
-  { id: "color", label: "Color", icon: "palette" },
-  { id: "fx", label: "Effects", icon: "auto_fix_high" },
+  { id: "params", label: "Parameters", icon: "tune" },
+  { id: "look", label: "Look", icon: "palette" },
+  { id: "output", label: "Output", icon: "download" },
 ];
 
 const Aside = styled.aside<{ $collapsed: boolean }>`
@@ -44,7 +44,7 @@ const SmallIconButton = styled.button`
 `;
 const Tabs = styled.div<{ $collapsed: boolean }>`
   display: grid;
-  grid-template-columns: ${p => (p.$collapsed ? "1fr" : "repeat(4, 1fr)")};
+  grid-template-columns: ${p => (p.$collapsed ? "1fr" : "repeat(3, 1fr)")};
   gap: 4px; padding: 4px;
   background: rgba(11, 14, 23, 0.8);
   border: 1px solid rgba(61, 73, 76, 0.2);
@@ -61,6 +61,33 @@ const TabButton = styled.button<{ $active: boolean }>`
 const Body = styled.div`
   flex: 1; min-height: 0; overflow-y: auto; padding: 16px 12px;
   display: flex; flex-direction: column; gap: 18px;
+`;
+const SystemRow = styled.div`
+  display: flex; align-items: center; justify-content: space-between; gap: 8px;
+  padding: 8px 10px; border-radius: 10px;
+  background: ${p => p.theme.surfaceLowest}; border: 1px solid ${p => p.theme.hairline};
+  .k { font: 400 11px/0.875rem ${tokens.font.mono}; letter-spacing: 0.06em; text-transform: uppercase; color: ${p => p.theme.textMid}; }
+  h3 { margin: 2px 0 0; font: 600 15px/1.25rem ${tokens.font.ui}; color: ${p => p.theme.textHigh}; }
+  button {
+    display: inline-flex; align-items: center; gap: 2px; padding: 4px 8px; border-radius: 6px; cursor: pointer;
+    background: transparent; border: 1px solid ${p => p.theme.primaryBorder};
+    color: ${p => p.theme.primary}; font: 500 12px/1rem ${tokens.font.ui};
+    &:hover { background: ${p => p.theme.primarySoft}; }
+  }
+`;
+const Divider = styled.div`height: 1px; background: ${p => p.theme.hairline};`;
+const OutputActions = styled.div`
+  display: flex; flex-direction: column; gap: 8px;
+  button {
+    width: 100%; height: 36px; display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+    border-radius: 8px; cursor: pointer; font: 500 13px/1.25rem ${tokens.font.ui};
+  }
+  .primary { border: none; background: ${p => p.theme.primaryContainer}; color: ${p => p.theme.onPrimary}; font-weight: 600; box-shadow: ${p => p.theme.glowPrimary}; }
+  .primary:hover { filter: brightness(1.1); }
+  .secondary { background: transparent; border: 1px solid ${p => p.theme.hairlineStrong}; color: ${p => p.theme.textHigh}; }
+  .secondary:hover { background: ${p => p.theme.surfaceHigh}; }
+  .secondary[data-state="failed"] { border-color: ${p => p.theme.danger}; color: ${p => p.theme.danger}; }
+  .secondary[data-state="copied"] { border-color: ${p => p.theme.primaryBorder}; color: ${p => p.theme.primary}; }
 `;
 const Toast = styled.div`
   display: flex; align-items: center; justify-content: space-between; gap: 8px;
@@ -97,6 +124,7 @@ type Props = ShellProps & { collapsed: boolean; onToggleCollapse: () => void };
 
 export const Inspector: React.FC<Props> = (p) => {
   const [tab, setTab] = useState<TabId>("params");
+  const { status: shareStatus, share } = useShare();
   const [undoVisible, setUndoVisible] = useState(false);
   const tabRefs = useRef<Partial<Record<TabId, HTMLButtonElement | null>>>({});
   const undoTimer = useRef<number>();
@@ -171,15 +199,43 @@ export const Inspector: React.FC<Props> = (p) => {
           <Body id={panelId} role="tabpanel" aria-labelledby={`inspector-tab-${tab}`} tabIndex={0}>
             {tab === "params" && (
               <>
-                <SystemPanel value={p.attractorType} onChange={p.onAttractorTypeChange} showSearch={false} listMaxHeight={136} />
+                <SystemRow>
+                  <div>
+                    <div className="k">System</div>
+                    <h3>{p.systemLabel}</h3>
+                  </div>
+                  {p.onChangeSystem && (
+                    <button type="button" aria-label="Change system" onClick={p.onChangeSystem}>
+                      Change <Icon name="chevronDown" size={14} />
+                    </button>
+                  )}
+                </SystemRow>
                 {p.controls}
               </>
             )}
-            {tab === "render" && <RenderPanel canvasSize={p.canvasSize} onCanvasSizeChange={p.onCanvasSizeChange}
-              oversampling={p.oversampling} onOversamplingChange={p.onOversamplingChange} />}
-            {tab === "color" && <ColorPanel paletteData={p.paletteData} bgColor={p.bgColor}
-              onBgModeChange={p.onBgModeChange} onOpenPalette={p.onOpenPalette} />}
-            {tab === "fx" && <FxPanel fx={p.fx} onChange={p.onFxChange} />}
+            {tab === "look" && (
+              <>
+                <ColorPanel paletteData={p.paletteData} bgColor={p.bgColor}
+                  onBgModeChange={p.onBgModeChange} onOpenPalette={p.onOpenPalette} />
+                <Divider />
+                <FxPanel fx={p.fx} onChange={p.onFxChange} />
+              </>
+            )}
+            {tab === "output" && (
+              <>
+                <RenderPanel canvasSize={p.canvasSize} onCanvasSizeChange={p.onCanvasSizeChange}
+                  oversampling={p.oversampling} onOversamplingChange={p.onOversamplingChange} />
+                <OutputActions>
+                  <button type="button" className="primary" aria-label="Export image" onClick={p.onOpenExport}>
+                    <Icon name="download" size={16} /> Export image
+                  </button>
+                  <button type="button" className="secondary" aria-label="Copy link" data-state={shareStatus} onClick={share}>
+                    <Icon name={shareStatus === "copied" ? "check" : shareStatus === "failed" ? "error" : "link"} size={16} />
+                    {shareStatus === "copied" ? "Link copied" : shareStatus === "failed" ? "Couldn't copy" : "Copy link"}
+                  </button>
+                </OutputActions>
+              </>
+            )}
           </Body>
           <Footer>
             <StatsReadout statsRef={p.statsRef} running={p.iterating} rendering={p.rendering}

@@ -20,11 +20,13 @@ const ToolbarDock = styled.div`
 
 export const DesktopShell: React.FC<ShellProps> = (p) => {
   const [collapsed, setCollapsed] = useState(false);
+  const [pickerOpen, setPickerOpen] = useState(false);
 
   const { canvas, ...rest } = p;
   return (
     <Page>
       <TopBar systemLabel={p.systemLabel} systemCount={registry.getAll().length} onOpenExport={p.onOpenExport}
+        pickerOpen={pickerOpen} onPickerOpenChange={setPickerOpen}
         renderSystemPicker={(close) => (
           <SystemPanel value={p.attractorType} onChange={p.onAttractorTypeChange} onPicked={close} />
         )} />
@@ -35,7 +37,7 @@ export const DesktopShell: React.FC<ShellProps> = (p) => {
             <CanvasToolbar {...rest} />
           </ToolbarDock>
         </Stage>
-        <Inspector {...p} collapsed={collapsed} onToggleCollapse={() => setCollapsed(c => !c)} />
+        <Inspector {...p} onChangeSystem={() => setPickerOpen(true)} collapsed={collapsed} onToggleCollapse={() => setCollapsed(c => !c)} />
       </Row>
     </Page>
   );
