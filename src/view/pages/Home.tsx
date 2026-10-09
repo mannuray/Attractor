@@ -350,6 +350,10 @@ function Home() {
         onExportCurrent={worker.saveImage}
         onExportSize={exportWorker.exportImage}
         exporting={exportWorker.exporting}
+        subtitle={systemLabel}
+        canvasSize={worker.canvasSize}
+        oversampling={worker.oversampling}
+        paletteData={palette.paletteData}
       />
     </>
   );

@@ -1,4 +1,4 @@
-import { screen, fireEvent } from "@testing-library/react";
+import { screen, fireEvent, act } from "@testing-library/react";
 import { renderWithTheme } from "./renderWithTheme";
 import { ExportModal } from "../components/ExportModal";
 
@@ -7,7 +7,7 @@ const props = () => ({ isOpen: true, onClose: jest.fn(), onExportCurrent: jest.f
 describe("ExportModal", () => {
   it("is a labelled dialog", () => {
     renderWithTheme(<ExportModal {...props()} />);
-    expect(screen.getByRole("dialog", { name: "Export image" })).toBeInTheDocument();
+    expect(screen.getByRole("dialog", { name: "Export render" })).toBeInTheDocument();
   });
 
   it("exports the selected size", () => {
@@ -43,4 +43,23 @@ describe("ExportModal", () => {
     fireEvent.keyDown(document, { key: "Escape" });
     expect(p.onClose).toHaveBeenCalled();
   });
+
+  it("shows the output summary for the chosen size", () => {
+    renderWithTheme(<ExportModal {...props()} subtitle="Clifford" />);
+    expect(screen.getAllByText("Clifford").length).toBeGreaterThan(0);
+    fireEvent.click(screen.getByRole("radio", { name: "1440 px" }));
+    expect(screen.getByText("1440 × 1440 px")).toBeInTheDocument();
+  });
+
+  it("copies the share link from the footer", async () => {
+    const writeText = jest.fn().mockResolvedValue(undefined);
+    const original = navigator.clipboard;
+    Object.assign(navigator, { clipboard: { writeText } });
+    renderWithTheme(<ExportModal {...props()} />);
+    await act(async () => { fireEvent.click(screen.getByRole("button", { name: "Copy share link" })); });
+    expect(writeText).toHaveBeenCalledWith(window.location.href);
+    expect(screen.getByText("Link copied")).toBeInTheDocument();
+    Object.assign(navigator, { clipboard: original });
+  });
 });
+
