@@ -1,4 +1,4 @@
-import { distance, midpoint, clampZoom, pinchZoom } from "../lib/gestureMath";
+import { distance, midpoint, clampZoom, pinchZoom, clientToCanvas } from "../lib/gestureMath";
 
 describe("gestureMath", () => {
   it("computes distance and midpoint", () => {
@@ -21,4 +21,18 @@ describe("gestureMath", () => {
     expect(clampZoom(NaN)).toBe(1);
     expect(clampZoom(Infinity)).toBe(1);
   });
+
+  describe("clientToCanvas", () => {
+    const rect = { left: 100, top: 50, width: 400, height: 400 };
+    it("maps client coords to canvas pixels using the display zoom", () => {
+      expect(clientToCanvas(rect, 0.5, 800, 300, 250, false)).toEqual({ x: 400, y: 400 });
+    });
+    it("rejects a start point outside the canvas", () => {
+      expect(clientToCanvas(rect, 0.5, 800, 50, 250, false)).toBeNull();
+    });
+    it("clamps moves that overshoot the edge instead of freezing", () => {
+      expect(clientToCanvas(rect, 0.5, 800, 900, -20, true)).toEqual({ x: 800, y: 0 });
+    });
+  });
 });
+

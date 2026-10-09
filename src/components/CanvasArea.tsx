@@ -1,6 +1,7 @@
 import React from "react";
 import styled, { keyframes, css } from "styled-components";
 import { useCanvasGestures } from "../hooks/useCanvasGestures";
+import { clientToCanvas } from "../lib/gestureMath";
 import { DragPoint } from "../hooks/useFractalZoom";
 
 const CanvasContainer = styled.div<{ $scrollable: boolean }>`
@@ -136,14 +137,9 @@ export const CanvasArea: React.FC<CanvasAreaProps> = ({
   const scaledSize = canvasSize * zoom;
   const wrapperRef = React.useRef<HTMLDivElement>(null);
 
-  const toCanvasPoint = React.useCallback((clientX: number, clientY: number) => {
+  const toCanvasPoint = React.useCallback((clientX: number, clientY: number, clamp: boolean) => {
     const el = wrapperRef.current;
-    if (!el) return null;
-    const r = el.getBoundingClientRect();
-    const x = (clientX - r.left) / zoom;
-    const y = (clientY - r.top) / zoom;
-    if (x < 0 || y < 0 || x > canvasSize || y > canvasSize) return null;
-    return { x, y };
+    return el ? clientToCanvas(el.getBoundingClientRect(), zoom, canvasSize, clientX, clientY, clamp) : null;
   }, [zoom, canvasSize]);
 
   const gestures = useCanvasGestures({

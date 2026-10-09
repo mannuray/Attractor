@@ -15,3 +15,17 @@ export function pinchZoom(startZoom: number, startDist: number, dist: number): n
   if (startDist <= 0 || !Number.isFinite(dist)) return clampZoom(startZoom);
   return clampZoom(startZoom * (dist / startDist));
 }
+
+export interface RectLike { left: number; top: number; width: number; height: number }
+
+/**
+ * Convert client coordinates to canvas pixels. Start points outside the canvas return null;
+ * with `clamp`, points past the edge are clamped (so a drag overshooting the edge keeps tracking).
+ */
+export function clientToCanvas(rect: RectLike, zoom: number, size: number, clientX: number, clientY: number, clamp: boolean): Pt | null {
+  const x = (clientX - rect.left) / zoom;
+  const y = (clientY - rect.top) / zoom;
+  if (clamp) return { x: Math.min(size, Math.max(0, x)), y: Math.min(size, Math.max(0, y)) };
+  if (x < 0 || y < 0 || x > size || y > size) return null;
+  return { x, y };
+}

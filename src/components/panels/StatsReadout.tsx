@@ -4,6 +4,10 @@ import { formatCompact } from "../../attractors/shared/types";
 import { initialStats, nextStatsSample, StatsSample } from "../../lib/statsSample";
 import { tokens } from "../../theme/tokens";
 
+// Samples outlive the component: keyed by the render's stats ref, so remounting (breakpoint swap,
+// collapsing the inspector) resumes the same clock instead of restarting it.
+const samples = new WeakMap<object, StatsSample>();
+
 export function formatDuration(ms: number): string {
   const total = Math.floor(ms / 1000);
   const m = Math.floor(total / 60);
@@ -35,16 +39,19 @@ interface Props {
 }
 
 export const StatsReadout: React.FC<Props> = ({ statsRef, running, rendering, isFractal, maxIter, compact = false }) => {
-  const [sample, setSample] = useState<StatsSample>(initialStats);
+  const [sample, setSample] = useState<StatsSample>(() => samples.get(statsRef) ?? initialStats);
   const runningRef = useRef(running);
   runningRef.current = running;
 
   useEffect(() => {
     if (isFractal) return;
-    let last = initialStats;
+    let last = samples.get(statsRef) ?? initialStats;
     const id = window.setInterval(() => {
-      last = nextStatsSample(last, statsRef.current.totalIterations, performance.now(), runningRef.current);
-      setSample(last);
+      const next = nextStatsSample(last, statsRef.current.totalIterations, performance.now(), runningRef.current);
+      samples.set(statsRef, next);
+      // Skip re-rendering when nothing visible changed (e.g. idle).
+      if (next.iterations !== last.iterations || next.elapsedMs !== last.elapsedMs || next.rate !== last.rate) setSample(next);
+      last = next;
     }, 250);
     return () => window.clearInterval(id);
   }, [statsRef, isFractal]);

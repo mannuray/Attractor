@@ -7,7 +7,7 @@ interface Options {
   onZoomChange: (z: number) => void;
   scrollRef: React.RefObject<HTMLElement>;
   selectEnabled: boolean;
-  toCanvasPoint: (clientX: number, clientY: number) => DragPoint | null;
+  toCanvasPoint: (clientX: number, clientY: number, clamp: boolean) => DragPoint | null;
   onSelectStart: (pt: DragPoint) => void;
   onSelectMove: (pt: DragPoint) => void;
   onSelectEnd: () => void;
@@ -40,7 +40,7 @@ export function useCanvasGestures(o: Options) {
       return;
     }
     if (selectEnabled) {
-      const pt = toCanvasPoint(e.clientX, e.clientY);
+      const pt = toCanvasPoint(e.clientX, e.clientY, false);
       if (pt) { mode.current = "select"; onSelectStart(pt); }
     } else if (e.pointerType !== "mouse") {
       mode.current = "pan";
@@ -54,13 +54,21 @@ export function useCanvasGestures(o: Options) {
     const { toCanvasPoint, onSelectMove, onZoomChange, scrollRef } = opts.current;
 
     if (mode.current === "select") {
-      const pt = toCanvasPoint(e.clientX, e.clientY);
+      const pt = toCanvasPoint(e.clientX, e.clientY, true);
       if (pt) onSelectMove(pt);
     } else if (mode.current === "pan") {
       scrollRef.current?.scrollBy(prev.x - e.clientX, prev.y - e.clientY);
     } else if (mode.current === "pinch" && pinch.current && pointers.current.size === 2) {
       const [a, b] = pts();
-      onZoomChange(pinchZoom(pinch.current.startZoom, pinch.current.startDist, distance(a, b)));
+      const dist = distance(a, b);
+      // Fingers that land on (almost) the same point give no usable baseline; take the first
+      // real spread as the baseline instead of freezing the zoom for the whole gesture.
+      if (pinch.current.startDist < 10) {
+        if (dist >= 10) { pinch.current.startDist = dist; pinch.current.startZoom = opts.current.zoom; }
+        pinch.current.lastMid = midpoint(a, b);
+        return;
+      }
+      onZoomChange(pinchZoom(pinch.current.startZoom, pinch.current.startDist, dist));
       const mid = midpoint(a, b);
       scrollRef.current?.scrollBy(pinch.current.lastMid.x - mid.x, pinch.current.lastMid.y - mid.y);
       pinch.current.lastMid = mid;

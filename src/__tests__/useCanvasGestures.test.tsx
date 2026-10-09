@@ -95,5 +95,16 @@ describe("useCanvasGestures", () => {
     expect(onSelectCancel).toHaveBeenCalledTimes(1);
     expect(onSelectEnd).not.toHaveBeenCalled();
   });
+
+  it("a pinch that starts with coincident fingers zooms once they spread", () => {
+    const { h, opts } = setup(false);
+    act(() => {
+      h().onPointerDown(ev(1, 100, 100));
+      h().onPointerDown(ev(2, 100, 100));   // dist 0: can't scale yet
+      h().onPointerMove(ev(2, 120, 100));   // dist 20 → becomes the baseline
+      h().onPointerMove(ev(2, 140, 100));   // dist 40 → 2×
+    });
+    expect(opts.onZoomChange).toHaveBeenLastCalledWith(2);
+  });
 });
 
