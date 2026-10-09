@@ -86,11 +86,47 @@ describe("ColorPanel", () => {
 });
 
 describe("FxPanel", () => {
+  const fx = { enabled: true, bloom: 0, grain: 0.1, vignette: 0.65, exposure: 1 };
+
   it("toggles effects", () => {
     const onChange = jest.fn();
-    renderWithTheme(<FxPanel fx={{ enabled: false, bloom: 0, grain: 0, vignette: 0, exposure: 1 }} onChange={onChange} />);
+    renderWithTheme(<FxPanel fx={{ ...fx, enabled: false }} onChange={onChange} />);
     fireEvent.click(screen.getByRole("switch", { name: "Effects" }));
     expect(onChange).toHaveBeenCalledWith({ enabled: true });
+  });
+
+  it("values can be typed in the units they are shown in, clamped to range", () => {
+    const onChange = jest.fn();
+    renderWithTheme(<FxPanel fx={fx} onChange={onChange} />);
+    const vignette = screen.getByRole("textbox", { name: "Vignette value" });
+    expect(vignette).toHaveValue("65%");
+    fireEvent.focus(vignette);
+    fireEvent.change(vignette, { target: { value: "40" } });
+    fireEvent.keyDown(vignette, { key: "Enter" });
+    expect(onChange).toHaveBeenLastCalledWith({ vignette: 0.4 });
+
+    const grain = screen.getByRole("textbox", { name: "Grain value" });
+    fireEvent.focus(grain);
+    fireEvent.change(grain, { target: { value: "250%" } });
+    fireEvent.blur(grain);
+    expect(onChange).toHaveBeenLastCalledWith({ grain: 0.5 });
+
+    const exposure = screen.getByRole("textbox", { name: "Exposure value" });
+    fireEvent.focus(exposure);
+    fireEvent.change(exposure, { target: { value: "1.5" } });
+    fireEvent.blur(exposure);
+    expect(onChange).toHaveBeenLastCalledWith({ exposure: 1.5 });
+  });
+
+  it("ignores text that isn't a number", () => {
+    const onChange = jest.fn();
+    renderWithTheme(<FxPanel fx={fx} onChange={onChange} />);
+    const vignette = screen.getByRole("textbox", { name: "Vignette value" });
+    fireEvent.focus(vignette);
+    fireEvent.change(vignette, { target: { value: "abc" } });
+    fireEvent.blur(vignette);
+    expect(onChange).not.toHaveBeenCalled();
+    expect(vignette).toHaveValue("65%");
   });
 });
 
