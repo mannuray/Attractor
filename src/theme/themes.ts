@@ -18,6 +18,54 @@ export interface ThemeColors {
   success: string;
   danger: string;
   bgPage: string;
+  primary: string;
+  primarySoft: string;
+  primaryBorder: string;
+  focusBorder: string;
+  onPrimary: string;
+  secondary: string;
+  secondarySoft: string;
+  glowPrimary: string;
+  glowSecondary: string;
+  canvasBg: string;
+  surface: string;
+  surfaceLow: string;
+  surfaceHigh: string;
+  glass1: string;
+  glass2: string;
+  hairline: string;
+  hairlineStrong: string;
+  textHigh: string;
+  textMid: string;
+  textLow: string;
+}
+
+type RGB = [number, number, number];
+const rgba = (c: RGB, a: number) => `rgba(${c[0]}, ${c[1]}, ${c[2]}, ${a})`;
+
+function designColors(primary: RGB, secondary: RGB) {
+  return {
+    primary: rgba(primary, 1),
+    primarySoft: rgba(primary, 0.15),
+    primaryBorder: rgba(primary, 0.6),
+    focusBorder: rgba(primary, 0.35),
+    onPrimary: "#0A0B10",
+    secondary: rgba(secondary, 1),
+    secondarySoft: rgba(secondary, 0.15),
+    glowPrimary: `0 0 16px -2px ${rgba(primary, 0.35)}`,
+    glowSecondary: `0 0 16px -2px ${rgba(secondary, 0.35)}`,
+    canvasBg: "#0A0B10",
+    surface: "#0E111A",
+    surfaceLow: "#181B25",
+    surfaceHigh: "#272A33",
+    glass1: "rgba(14, 17, 26, 0.75)",
+    glass2: "rgba(22, 27, 40, 0.88)",
+    hairline: "rgba(255, 255, 255, 0.08)",
+    hairlineStrong: "rgba(255, 255, 255, 0.12)",
+    textHigh: "#F1F5F9",
+    textMid: "#94A3B8",
+    textLow: "#475569",
+  };
 }
 
 export const themes: Record<string, { label: string; colors: ThemeColors }> = {
@@ -43,6 +91,7 @@ export const themes: Record<string, { label: string; colors: ThemeColors }> = {
       success: "#2dd4bf",
       danger: "#f43f5e",
       bgPage: "#05070a",
+      ...designColors([6, 182, 212], [139, 92, 246]),
     }
   },
   electric_indigo: {
@@ -67,6 +116,7 @@ export const themes: Record<string, { label: string; colors: ThemeColors }> = {
       success: "#10b981",
       danger: "#ef4444",
       bgPage: "#121214",
+      ...designColors([99, 102, 241], [236, 72, 153]),
     }
   },
   emerald_matrix: {
@@ -91,6 +141,7 @@ export const themes: Record<string, { label: string; colors: ThemeColors }> = {
       success: "#34d399",
       danger: "#fb7185",
       bgPage: "#020a05",
+      ...designColors([52, 211, 153], [34, 211, 238]),
     }
   },
   solar_flare: {
@@ -115,6 +166,7 @@ export const themes: Record<string, { label: string; colors: ThemeColors }> = {
       success: "#4ade80",
       danger: "#f87171",
       bgPage: "#0f0a05",
+      ...designColors([251, 146, 60], [244, 63, 94]),
     }
   },
   crimson_void: {
@@ -139,6 +191,7 @@ export const themes: Record<string, { label: string; colors: ThemeColors }> = {
       success: "#10b981",
       danger: "#e11d48",
       bgPage: "#0a0505",
+      ...designColors([244, 63, 94], [251, 146, 60]),
     }
   }
 };
