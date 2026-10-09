@@ -1,5 +1,4 @@
 import React, { useCallback, useMemo, useEffect, useState } from "react";
-import styled from "styled-components";
 
 // Registry & Modules (MUST BE AT THE TOP to ensure all registrations happen before use)
 import { registry } from "../../attractors";
@@ -15,14 +14,10 @@ import {
 } from "../../hooks";
 
 // Components
-import { 
-  CanvasArea, 
-  SystemCommandBar, 
-  PaletteModal, 
-  ExportModal, 
-  Sidebar, 
-  FXControls 
-} from "../../components";
+import { CanvasArea, PaletteModal, ExportModal } from "../../components";
+import { ResponsiveShell } from "../../components/shell";
+import { bgColorFor, BgMode } from "../../lib/bgMode";
+import { useTheme } from "../../theme/ThemeContext";
 
 // Data
 import symmetricIconData, {
@@ -41,27 +36,8 @@ const slugify = (text: string): string => {
     .replace(/^-+|-+$/g, "");
 };
 
-// Styled components
-const PageContainer = styled.div`
-  display: flex;
-  width: 100vw;
-  height: 100vh;
-  overflow: hidden;
-  background: ${props => props.theme.bgPage};
-  transition: background 0.5s ease;
-`;
-
-const MainContent = styled.main`
-  flex: 1;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  position: relative;
-`;
-
 function Home() {
   // UI state
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [hunting, setHunting] = useState(false);
 
   // URL sync hook
@@ -76,6 +52,10 @@ function Home() {
   // Palette hook - initialize with icon preset
   const initialIcon = symmetricIconData[CONFIG.INITIAL_ICON_INDEX];
   const palette = usePalette(initialIcon.paletteData, initialIcon.palGamma ?? 0.5);
+  const { colors: themeColors } = useTheme();
+  const handleBgModeChange = useCallback((mode: BgMode) => {
+    palette.setBgColor(bgColorFor(mode, themeColors.bgPage));
+  }, [palette, themeColors.bgPage]);
 
   // Fractal zoom hook
   const fractalZoom = useFractalZoom();
@@ -153,11 +133,6 @@ function Home() {
       syncToUrl(attractor.attractorType, currentParams as Record<string, any>);
     }
   }, [attractor.attractorType, currentParams, syncToUrl]);
-
-  // Share link handler
-  const handleShareLink = useCallback(() => {
-    navigator.clipboard.writeText(window.location.href);
-  }, []);
 
   const handleOpenPalette = useCallback(() => setPaletteModalOpen(true), []);
   const handleClosePalette = useCallback(() => setPaletteModalOpen(false), []);
@@ -299,60 +274,61 @@ function Home() {
     );
   };
 
+  const systemLabel = registry.get(attractor.attractorType)?.label ?? attractor.attractorType;
+
+  const canvas = (
+    <CanvasArea
+      canvasRef={worker.canvasRef}
+      containerRef={worker.containerRef}
+      canvasSize={worker.canvasSize}
+      zoom={worker.zoom}
+      canvasKey={worker.canvasKey}
+      isFractalType={attractor.isFractalType}
+      rendering={worker.rendering}
+      isDragging={fractalZoom.isDragging}
+      dragSelection={dragSelection}
+      onMouseDown={handleFractalMouseDown}
+      onMouseMove={handleFractalMouseMove}
+      onMouseUp={handleFractalMouseUp}
+      fx={attractor.fx}
+    />
+  );
+
   return (
-    <PageContainer>
-      <Sidebar
+    <>
+      <ResponsiveShell
+        canvas={canvas}
         attractorType={attractor.attractorType}
+        systemLabel={systemLabel}
         onAttractorTypeChange={handleAttractorTypeChange}
+        controls={renderControls()}
+        fx={attractor.fx}
+        onFxChange={attractor.setFx}
         canvasSize={worker.canvasSize}
         onCanvasSizeChange={worker.setCanvasSize}
         oversampling={worker.oversampling}
         onOversamplingChange={worker.setOversampling}
+        paletteData={palette.paletteData}
+        bgColor={palette.bgColor}
+        onBgModeChange={handleBgModeChange}
+        onOpenPalette={handleOpenPalette}
+        onOpenExport={handleOpenExport}
+        rendering={worker.rendering}
         statsRef={worker.statsRef}
         maxIter={currentMaxIter}
-        rendering={worker.rendering}
-        collapsed={sidebarCollapsed}
-        onToggleCollapse={() => setSidebarCollapsed(!sidebarCollapsed)}
-      >
-        <FXControls fx={attractor.fx} onChange={attractor.setFx} />
-        {renderControls()}
-      </Sidebar>
-
-      <MainContent>
-        <CanvasArea
-          canvasRef={worker.canvasRef}
-          containerRef={worker.containerRef}
-          canvasSize={worker.canvasSize}
-          zoom={worker.zoom}
-          canvasKey={worker.canvasKey}
-          isFractalType={attractor.isFractalType}
-          rendering={worker.rendering}
-          isDragging={fractalZoom.isDragging}
-          dragSelection={dragSelection}
-          onMouseDown={handleFractalMouseDown}
-          onMouseMove={handleFractalMouseMove}
-          onMouseUp={handleFractalMouseUp}
-          fx={attractor.fx}
-        />
-
-        <SystemCommandBar
-          iterating={worker.iterating}
-          onToggleIteration={worker.toggleIteration}
-          isFractalType={attractor.isFractalType}
-          onHunt={handleHunt}
-          onCancelHunt={handleCancelHunt}
-          hunting={hunting}
-          onFitToView={worker.fitToView}
-          onZoomIn={worker.zoomIn}
-          onZoomOut={worker.zoomOut}
-          onZoomReset={worker.zoomReset}
-          onResetFractalView={handleResetFractalView}
-          onOpenPalette={handleOpenPalette}
-          onOpenExport={handleOpenExport}
-          onShareLink={handleShareLink}
-          onCycleBg={palette.cycleBgColor}
-        />
-      </MainContent>
+        iterating={worker.iterating}
+        onToggleIteration={worker.toggleIteration}
+        hunting={hunting}
+        onHunt={handleHunt}
+        onCancelHunt={handleCancelHunt}
+        isFractalType={attractor.isFractalType}
+        zoom={worker.zoom}
+        onFitToView={worker.fitToView}
+        onZoomIn={worker.zoomIn}
+        onZoomOut={worker.zoomOut}
+        onZoomReset={worker.zoomReset}
+        onResetFractalView={handleResetFractalView}
+      />
 
       <PaletteModal
         isOpen={paletteModalOpen}
@@ -376,7 +352,7 @@ function Home() {
         onExportSize={exportWorker.exportImage}
         exporting={exportWorker.exporting}
       />
-    </PageContainer>
+    </>
   );
 }
 

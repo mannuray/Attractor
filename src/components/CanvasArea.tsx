@@ -9,11 +9,11 @@ const CanvasContainer = styled.div<{ $scrollable: boolean }>`
   justify-content: ${props => props.$scrollable ? "flex-start" : "center"};
   overflow: ${props => props.$scrollable ? "auto" : "hidden"};
   position: relative;
-  background-color: ${props => props.theme.bgPage};
+  background-color: ${props => props.theme.canvasBg};
   background-image: 
-    linear-gradient(${props => props.theme.accentMuted} 1px, transparent 1px),
-    linear-gradient(90deg, ${props => props.theme.accentMuted} 1px, transparent 1px);
-  background-size: 40px 40px;
+    linear-gradient(${props => props.theme.hairline} 1px, transparent 1px),
+    linear-gradient(90deg, ${props => props.theme.hairline} 1px, transparent 1px);
+  background-size: 48px 48px;
   background-position: center center;
   transition: background-color 0.5s ease;
 `;
@@ -35,10 +35,10 @@ const CanvasWrapper = styled.div<{
   height: ${props => props.$height}px;
   flex-shrink: 0;
   cursor: ${props => props.$isFractal ? "crosshair" : "default"};
-  border-radius: 4px;
+  border-radius: 10px;
   overflow: hidden;
   box-shadow: 0 12px 48px rgba(0, 0, 0, 0.8);
-  border: 1px solid ${props => props.theme.accentBorder};
+  border: 1px solid ${props => props.theme.hairline};
   
   --pulse-color-1: ${props => props.theme.danger}99;
   --pulse-color-2: ${props => props.theme.danger}44;
