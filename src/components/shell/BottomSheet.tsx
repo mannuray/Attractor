@@ -114,15 +114,19 @@ export const BottomSheet: React.FC<Props> = ({ state, dispatch, actionRow, child
     swiped.current = true;
     dispatch({ type: dy < 0 ? "expand" : "collapse" });
   };
-  const onHandleClick = () => {
-    if (swiped.current) { swiped.current = false; return; }
+  const onHandleClick = (e: React.MouseEvent) => {
+    const fromSwipe = swiped.current;
+    swiped.current = false;
+    // detail === 0 means keyboard activation, which is never the tail of a swipe.
+    if (fromSwipe && e.detail !== 0) return;
     dispatch({ type: "toggle" });
   };
+  const cancelDrag = () => { dragStartY.current = null; };
 
   const handle = (
     <Handle type="button" $expanded={state.expanded} aria-label={state.expanded ? "Collapse panel" : "Expand panel"}
       aria-expanded={state.expanded} onClick={onHandleClick} onPointerDown={onPointerDown} onPointerUp={onPointerUp}
-      onPointerCancel={() => { dragStartY.current = null; }} />
+      onPointerCancel={cancelDrag} onLostPointerCapture={cancelDrag} />
   );
 
   if (!state.expanded) {
@@ -132,7 +136,7 @@ export const BottomSheet: React.FC<Props> = ({ state, dispatch, actionRow, child
         <PeekRow>{actionRow}</PeekRow>
         <IconTabs role="tablist" aria-label="Control sections">
           {TABS.map(t => (
-            <IconTab key={t.id} type="button" role="tab" aria-selected={false} $active={state.tab === t.id}
+            <IconTab key={t.id} type="button" role="tab" id={`sheet-tab-${t.id}`} aria-selected={state.tab === t.id} $active={state.tab === t.id}
               onClick={() => dispatch({ type: "tapTab", tab: t.id })}>
               <span className="ico"><Icon name={t.icon} size={20} />{state.tab === t.id && <span className="pip" />}</span>
               {t.label}
@@ -148,13 +152,14 @@ export const BottomSheet: React.FC<Props> = ({ state, dispatch, actionRow, child
       {handle}
       <PillTabs role="tablist" aria-label="Control sections">
         {TABS.map(t => (
-          <PillTab key={t.id} type="button" role="tab" aria-selected={state.tab === t.id} $active={state.tab === t.id}
+          <PillTab key={t.id} type="button" role="tab" id={`sheet-tab-${t.id}`} aria-controls="sheet-panel"
+            aria-selected={state.tab === t.id} $active={state.tab === t.id}
             onClick={() => dispatch({ type: "tapTab", tab: t.id })}>
             {t.label}
           </PillTab>
         ))}
       </PillTabs>
-      <Panel role="tabpanel">{children}</Panel>
+      <Panel id="sheet-panel" role="tabpanel" aria-labelledby={`sheet-tab-${state.tab}`}>{children}</Panel>
       <StickyActions>{actionRow}</StickyActions>
     </Sheet>
   );
